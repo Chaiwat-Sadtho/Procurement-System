@@ -81,6 +81,7 @@ export class PurchaseRequestsService {
       qb.andWhere('pr.requesterId = :userId', { userId: user.id });
     } else if (user.role === UserRole.MANAGER) {
       const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!fullUser) throw new NotFoundException('User not found');
       qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
     }
 
@@ -108,7 +109,7 @@ export class PurchaseRequestsService {
   ): Promise<PurchaseRequest> {
     const pr = await this.prRepository.findOne({
       where: { id },
-      relations: ['items', 'requester', 'approver'],
+      relations: { items: true, requester: true, approver: true },
     });
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
 
@@ -118,6 +119,7 @@ export class PurchaseRequestsService {
 
     if (user.role === UserRole.MANAGER) {
       const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!fullUser) throw new NotFoundException('User not found');
       if (pr.departmentId !== fullUser.departmentId) {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
@@ -133,7 +135,7 @@ export class PurchaseRequestsService {
   ): Promise<PurchaseRequest> {
     const pr = await this.prRepository.findOne({
       where: { id, requesterId },
-      relations: ['items'],
+      relations: { items: true },
     });
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
     if (pr.status !== PrStatus.DRAFT) throw new BadRequestException('Only draft PRs can be edited');
@@ -186,6 +188,7 @@ export class PurchaseRequestsService {
     }
 
     const manager = await this.userRepository.findOne({ where: { id: managerId } });
+    if (!manager) throw new NotFoundException('Manager not found');
     if (pr.departmentId !== manager.departmentId) {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
@@ -208,6 +211,7 @@ export class PurchaseRequestsService {
     }
 
     const manager = await this.userRepository.findOne({ where: { id: managerId } });
+    if (!manager) throw new NotFoundException('Manager not found');
     if (pr.departmentId !== manager.departmentId) {
       throw new ForbiddenException('Cannot reject PRs from other departments');
     }
