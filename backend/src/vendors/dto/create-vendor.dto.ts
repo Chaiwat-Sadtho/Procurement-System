@@ -14,6 +14,7 @@ export class CreateVendorDto {
   @ApiPropertyOptional({ example: '0105563123456' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
   taxId?: string;
 

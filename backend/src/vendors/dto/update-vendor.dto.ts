@@ -15,6 +15,7 @@ export class UpdateVendorDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
   taxId?: string;
 

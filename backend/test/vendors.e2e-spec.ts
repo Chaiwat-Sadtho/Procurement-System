@@ -124,6 +124,14 @@ describe('Vendors (e2e)', () => {
       .expect(409);
   });
 
+  it('POST /api/v1/vendors — empty taxId → 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/vendors')
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .send({ name: `Blank Tax ${tag}`, taxId: '' })
+      .expect(400);
+  });
+
   it('POST /api/v1/vendors — employee → 403', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/vendors')
