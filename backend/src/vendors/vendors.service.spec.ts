@@ -1,0 +1,133 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { VendorsService } from './vendors.service';
+import { Vendor } from './entities/vendor.entity';
+import { VendorCategory } from './entities/vendor-category.entity';
+
+const mockVendor: Partial<Vendor> = {
+  id: 1,
+  name: 'บริษัท ไอทีซัพพลาย จำกัด',
+  taxId: '0105563123456',
+  isBlacklisted: false,
+  blacklistReason: null,
+  categories: [],
+};
+
+const mockBlacklistedVendor: Partial<Vendor> = {
+  ...mockVendor,
+  isBlacklisted: true,
+  blacklistReason: 'ส่งของไม่ตรงสเปค',
+};
+
+const mockVendorRepo = {
+  findOne: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  createQueryBuilder: jest.fn(),
+};
+
+const mockCategoryRepo = {
+  findBy: jest.fn().mockResolvedValue([]),
+};
+
+describe('VendorsService', () => {
+  let service: VendorsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        VendorsService,
+        { provide: getRepositoryToken(Vendor), useValue: mockVendorRepo },
+        { provide: getRepositoryToken(VendorCategory), useValue: mockCategoryRepo },
+      ],
+    }).compile();
+    service = module.get<VendorsService>(VendorsService);
+    jest.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('should create vendor successfully', async () => {
+      mockVendorRepo.findOne.mockResolvedValue(null);
+      mockVendorRepo.create.mockReturnValue(mockVendor);
+      mockVendorRepo.save.mockResolvedValue(mockVendor);
+
+      const result = await service.create({
+        name: 'บริษัท ไอทีซัพพลาย จำกัด',
+        taxId: '0105563123456',
+      });
+
+      expect(result.name).toBe('บริษัท ไอทีซัพพลาย จำกัด');
+      expect(mockVendorRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if taxId already exists', async () => {
+      mockVendorRepo.findOne.mockResolvedValue(mockVendor);
+      await expect(
+        service.create({ name: 'อีกบริษัท', taxId: '0105563123456' }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should throw NotFoundException if vendor not found', async () => {
+      mockVendorRepo.findOne.mockResolvedValue(null);
+      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return vendor when found', async () => {
+      mockVendorRepo.findOne.mockResolvedValue({ ...mockVendor });
+      const result = await service.findOne(1);
+      expect(result.id).toBe(1);
+    });
+  });
+
+  describe('blacklist', () => {
+    it('should blacklist a vendor with reason', async () => {
+      mockVendorRepo.findOne.mockResolvedValue({ ...mockVendor });
+      mockVendorRepo.save.mockResolvedValue({
+        ...mockVendor,
+        isBlacklisted: true,
+        blacklistReason: 'ส่งของไม่ตรงสเปค',
+      });
+
+      const result = await service.blacklist(1, { reason: 'ส่งของไม่ตรงสเปค' });
+      expect(result.isBlacklisted).toBe(true);
+      expect(result.blacklistReason).toBe('ส่งของไม่ตรงสเปค');
+    });
+
+    it('should throw BadRequestException if vendor is already blacklisted', async () => {
+      mockVendorRepo.findOne.mockResolvedValue({ ...mockBlacklistedVendor });
+      await expect(
+        service.blacklist(1, { reason: 'เหตุผลใหม่' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if vendor not found', async () => {
+      mockVendorRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.blacklist(999, { reason: 'เหตุผล' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('unblacklist', () => {
+    it('should remove vendor from blacklist', async () => {
+      mockVendorRepo.findOne.mockResolvedValue({ ...mockBlacklistedVendor });
+      mockVendorRepo.save.mockResolvedValue({
+        ...mockBlacklistedVendor,
+        isBlacklisted: false,
+        blacklistReason: null,
+      });
+
+      const result = await service.unblacklist(1);
+      expect(result.isBlacklisted).toBe(false);
+      expect(result.blacklistReason).toBeNull();
+    });
+
+    it('should throw BadRequestException if vendor is not blacklisted', async () => {
+      mockVendorRepo.findOne.mockResolvedValue({ ...mockVendor });
+      await expect(service.unblacklist(1)).rejects.toThrow(BadRequestException);
+    });
+  });
+});
