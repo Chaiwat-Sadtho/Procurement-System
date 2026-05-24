@@ -32,17 +32,17 @@ export class User {
   @Column({ name: 'password_hash', select: false })
   passwordHash: string;
 
-  @ApiProperty()
-  @Column({ name: 'first_name', nullable: true })
-  firstName: string;
+  @ApiPropertyOptional()
+  @Column({ name: 'first_name', type: 'varchar', nullable: true })
+  firstName: string | null;
 
   @ApiPropertyOptional()
   @Column({ name: 'middle_name', type: 'varchar', nullable: true })
   middleName: string | null;
 
-  @ApiProperty()
-  @Column({ name: 'last_name', nullable: true })
-  lastName: string;
+  @ApiPropertyOptional()
+  @Column({ name: 'last_name', type: 'varchar', nullable: true })
+  lastName: string | null;
 
   @ApiProperty({ enum: UserRole })
   @Column({ type: 'enum', enum: UserRole, default: UserRole.EMPLOYEE })

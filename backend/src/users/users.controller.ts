@@ -6,6 +6,8 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { UserRole } from './entities/user.entity';
 
 @ApiTags('Users')
@@ -24,13 +26,21 @@ export class UsersController {
 
   @ApiOperation({ summary: 'เปลี่ยน role (PO only)' })
   @Patch(':id/role')
-  updateRole(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRoleDto) {
-    return this.usersService.updateRole(id, dto);
+  updateRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRoleDto,
+    @CurrentUser() actor: CurrentUserPayload,
+  ) {
+    return this.usersService.updateRole(id, dto, actor.id);
   }
 
   @ApiOperation({ summary: 'activate/deactivate user (PO only)' })
   @Patch(':id/status')
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
-    return this.usersService.updateStatus(id, dto);
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+    @CurrentUser() actor: CurrentUserPayload,
+  ) {
+    return this.usersService.updateStatus(id, dto, actor.id);
   }
 }

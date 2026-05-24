@@ -111,6 +111,23 @@ describe('AuthService', () => {
         service.login({ email: 'notexist@test.com', password: 'pass' }),
       ).rejects.toThrow(UnauthorizedException);
     });
+
+    it('should throw UnauthorizedException when account is deactivated', async () => {
+      const inactiveUser = {
+        ...mockUser,
+        isActive: false,
+        passwordHash: await bcrypt.hash('password123', 10),
+      };
+      mockUserRepository.createQueryBuilder.mockReturnValue({
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(inactiveUser),
+      });
+
+      await expect(
+        service.login({ email: 'test@test.com', password: 'password123' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
   });
 
   describe('getProfile', () => {
