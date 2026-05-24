@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { UsersModule } from './users/users.module';
 import { PurchaseRequestsModule } from './purchase-requests/purchase-requests.module';
+import { VendorsModule } from './vendors/vendors.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PurchaseRequestsModule } from './purchase-requests/purchase-requests.mo
     DepartmentsModule,
     UsersModule,
     PurchaseRequestsModule,
+    VendorsModule,
   ],
 })
 export class AppModule {}
