@@ -8,6 +8,8 @@ describe('Purchase Requests (e2e)', () => {
   let app: INestApplication;
   let employeeToken: string;
   let managerToken: string;
+  let procurementToken: string;
+  let otherEmployeeToken: string;
   let prId: number;
 
   const createPrBody = {
@@ -40,6 +42,25 @@ describe('Purchase Requests (e2e)', () => {
       .send({ email: 'manager@company.com', password: 'Password123' })
       .expect(201);
     managerToken = mgrRes.body.access_token;
+
+    const procRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'procurement@company.com', password: 'Password123' })
+      .expect(201);
+    procurementToken = procRes.body.access_token;
+
+    // Register a second employee (default role = employee) to test cross-user access.
+    // Unique email per run keeps re-runs from colliding on the unique constraint.
+    const otherRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `pr-e2e-emp2-${Date.now()}@test.com`,
+        password: 'Password123',
+        firstName: 'Other',
+        lastName: 'Employee',
+      })
+      .expect(201);
+    otherEmployeeToken = otherRes.body.access_token;
   });
 
   afterAll(async () => {
@@ -183,5 +204,39 @@ describe('Purchase Requests (e2e)', () => {
       .delete(`/api/v1/purchase-requests/${freshPrId}`)
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(204);
+  });
+
+  // --- Access control / role-guard boundaries ---
+
+  it('POST /api/v1/purchase-requests — manager cannot create (RolesGuard 403)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/purchase-requests')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send(createPrBody)
+      .expect(403);
+  });
+
+  it('POST /api/v1/purchase-requests/:id/approve — employee cannot approve (RolesGuard 403)', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-requests/${prId}/approve`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-requests/:id — another employee cannot access (403)', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-requests/${prId}`)
+      .set('Authorization', `Bearer ${otherEmployeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-requests — procurement officer sees all PRs', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
   });
 });

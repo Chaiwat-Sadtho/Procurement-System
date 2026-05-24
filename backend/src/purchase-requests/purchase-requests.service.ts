@@ -84,10 +84,15 @@ export class PurchaseRequestsService {
       if (!fullUser) throw new NotFoundException('User not found');
       qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
     }
+    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
 
     if (status) qb.andWhere('pr.status = :status', { status });
     if (from) qb.andWhere('pr.createdAt >= :from', { from: new Date(from) });
-    if (to) qb.andWhere('pr.createdAt <= :to', { to: new Date(to) });
+    if (to) {
+      const toEnd = new Date(to);
+      toEnd.setHours(23, 59, 59, 999);
+      qb.andWhere('pr.createdAt <= :to', { to: toEnd });
+    }
     if (search) qb.andWhere('pr.title ILIKE :search', { search: `%${search}%` });
 
     const sortField =
@@ -124,6 +129,7 @@ export class PurchaseRequestsService {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
     }
+    // PROCUREMENT_OFFICER: no access restriction — can view any PR (intentional)
 
     return pr;
   }

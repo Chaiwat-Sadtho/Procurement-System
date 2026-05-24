@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
 @ApiTags('Purchase Requests')
@@ -25,19 +26,19 @@ export class PurchaseRequestsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.EMPLOYEE)
   @Post()
-  create(@CurrentUser() user: any, @Body() dto: CreatePurchaseRequestDto) {
+  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreatePurchaseRequestDto) {
     return this.service.create(user.id, dto);
   }
 
   @ApiOperation({ summary: 'ดู PR list — กรองตาม role อัตโนมัติ (All)' })
   @Get()
-  findAll(@CurrentUser() user: any, @Query() query: PrQueryDto) {
+  findAll(@CurrentUser() user: CurrentUserPayload, @Query() query: PrQueryDto) {
     return this.service.findAll(user, query);
   }
 
   @ApiOperation({ summary: 'ดู PR รายละเอียด (All)' })
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
     return this.service.findOne(id, user);
   }
 
@@ -47,7 +48,7 @@ export class PurchaseRequestsController {
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdatePurchaseRequestDto,
   ) {
     return this.service.update(id, user.id, dto);
@@ -58,7 +59,7 @@ export class PurchaseRequestsController {
   @Roles(UserRole.EMPLOYEE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
     return this.service.remove(id, user.id);
   }
 
@@ -66,7 +67,7 @@ export class PurchaseRequestsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.EMPLOYEE)
   @Post(':id/submit')
-  submit(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+  submit(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
     return this.service.submit(id, user.id);
   }
 
@@ -74,7 +75,7 @@ export class PurchaseRequestsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.MANAGER)
   @Post(':id/approve')
-  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
     return this.service.approve(id, user.id);
   }
 
@@ -84,7 +85,7 @@ export class PurchaseRequestsController {
   @Post(':id/reject')
   reject(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Body() dto: RejectPurchaseRequestDto,
   ) {
     return this.service.reject(id, user.id, dto);
