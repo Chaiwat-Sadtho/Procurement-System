@@ -16,6 +16,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { itemTotal, sumMoney } from '../common/money';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -83,14 +84,12 @@ export class PurchaseOrdersService {
         quantity: item.quantity,
         unit: item.unit,
         unitPrice: item.unitPrice,
-        totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+        totalPrice: itemTotal(item.quantity, item.unitPrice),
         receivedQuantity: 0,
       }),
     );
 
-    const totalAmount = Number(
-      items.reduce((sum, item) => sum + Number(item.totalPrice), 0).toFixed(2),
-    );
+    const totalAmount = sumMoney(items.map((item) => item.totalPrice));
 
     const po = this.poRepository.create({
       poNumber,
@@ -222,14 +221,12 @@ export class PurchaseOrdersService {
             quantity: item.quantity,
             unit: item.unit,
             unitPrice: item.unitPrice,
-            totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+            totalPrice: itemTotal(item.quantity, item.unitPrice),
             receivedQuantity: 0,
           }),
         );
         po.items = await manager.save(PurchaseOrderItem, newItems);
-        po.totalAmount = Number(
-          po.items.reduce((sum, item) => sum + Number(item.totalPrice), 0).toFixed(2),
-        );
+        po.totalAmount = sumMoney(po.items.map((item) => item.totalPrice));
         return manager.save(PurchaseOrder, po);
       });
     }
