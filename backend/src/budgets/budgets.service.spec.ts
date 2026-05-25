@@ -4,6 +4,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { BudgetsService } from './budgets.service';
 import { Budget } from './entities/budget.entity';
 import { User } from '../users/entities/user.entity';
+import { Department } from '../departments/entities/department.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const mockBudget = {
@@ -28,6 +29,10 @@ const mockUserRepo = {
   find: jest.fn().mockResolvedValue([]),
 };
 
+const mockDepartmentRepo = {
+  findOne: jest.fn(),
+};
+
 const mockDataSource = {
   manager: {
     findOne: jest.fn(),
@@ -48,6 +53,7 @@ describe('BudgetsService', () => {
         BudgetsService,
         { provide: getRepositoryToken(Budget), useValue: mockBudgetRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        { provide: getRepositoryToken(Department), useValue: mockDepartmentRepo },
         { provide: getDataSourceToken(), useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },
       ],
@@ -120,6 +126,25 @@ describe('BudgetsService', () => {
         ...mockBudget, reservedAmount: 900000, usedAmount: 50000,
       });
       await expect(service.reserveAmount(1, 2026, null, 100000)).rejects.toThrow(BadRequestException);
+    });
+
+    // Minor #2: budget warning ต้องบอกชื่อแผนกในข้อความ (procurement officer รับแจ้งหลาย dept ต้องแยกออก)
+    it('should include the department name in the warning notification', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
+      mockDepartmentRepo.findOne.mockResolvedValue({ id: 1, name: 'Engineering' });
+      mockUserRepo.find.mockResolvedValue([{ id: 5 }]);
+
+      // committed 850000/1000000 = 85% > 80% → trigger warning
+      await service.reserveAmount(1, 2026, null, 850000);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockNotificationsService.sendToMany).toHaveBeenCalledWith(
+        [5],
+        expect.objectContaining({
+          title: expect.stringContaining('Engineering'),
+        }),
+      );
     });
 
     // P5-3: quarter เป็นเลข → where ต้อง match quarter ตรง ไม่ใช่ IsNull
