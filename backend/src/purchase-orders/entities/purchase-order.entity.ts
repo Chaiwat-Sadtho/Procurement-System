@@ -3,7 +3,7 @@ import {
   ManyToOne, OneToMany, JoinColumn,
   CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { PurchaseRequest } from '../../purchase-requests/entities/purchase-request.entity';
 import { Vendor } from '../../vendors/entities/vendor.entity';
@@ -61,6 +61,7 @@ export class PurchaseOrder {
   @Column({ name: 'expected_delivery_date', type: 'date' })
   expectedDeliveryDate: string;
 
+  @ApiPropertyOptional({ nullable: true, example: '2025-06-15' })
   @Column({ name: 'actual_delivery_date', type: 'date', nullable: true })
   actualDeliveryDate: string;
 

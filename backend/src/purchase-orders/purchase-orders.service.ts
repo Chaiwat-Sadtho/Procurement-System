@@ -1,8 +1,8 @@
 import {
   Injectable, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, QueryFailedError, Like } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource, Not, QueryFailedError, Like } from 'typeorm';
 import { PurchaseOrder, PoStatus } from './entities/purchase-order.entity';
 import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
 import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
@@ -26,6 +26,8 @@ export class PurchaseOrdersService {
     private readonly vendorRepository: Repository<Vendor>,
     @InjectRepository(VendorRating)
     private readonly ratingRepository: Repository<VendorRating>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   private async generatePoNumber(): Promise<string> {
@@ -141,23 +143,28 @@ export class PurchaseOrdersService {
     if (dto.notes !== undefined) po.notes = dto.notes;
 
     if (dto.items) {
-      await this.poItemRepository.delete({ poId: id });
-      const newItems = dto.items.map((item) =>
-        this.poItemRepository.create({
-          poId: id,
-          prItemId: item.prItemId,
-          itemName: item.itemName,
-          quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: item.unitPrice,
-          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
-          receivedQuantity: 0,
-        }),
-      );
-      po.items = await this.poItemRepository.save(newItems);
-      po.totalAmount = Number(
-        po.items.reduce((sum, item) => sum + Number(item.totalPrice), 0).toFixed(2),
-      );
+      // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว PO จะเหลือ 0 item
+      const items = dto.items;
+      return this.dataSource.transaction(async (manager) => {
+        await manager.delete(PurchaseOrderItem, { poId: id });
+        const newItems = items.map((item) =>
+          manager.create(PurchaseOrderItem, {
+            poId: id,
+            prItemId: item.prItemId,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+            receivedQuantity: 0,
+          }),
+        );
+        po.items = await manager.save(PurchaseOrderItem, newItems);
+        po.totalAmount = Number(
+          po.items.reduce((sum, item) => sum + Number(item.totalPrice), 0).toFixed(2),
+        );
+        return manager.save(PurchaseOrder, po);
+      });
     }
 
     return this.poRepository.save(po);

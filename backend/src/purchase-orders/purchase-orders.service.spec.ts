@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { PurchaseOrdersService } from './purchase-orders.service';
@@ -42,6 +42,7 @@ const mockPoItemRepo = {
 const mockPrRepo = { findOne: jest.fn() };
 const mockVendorRepo = { findOne: jest.fn(), update: jest.fn() };
 const mockRatingRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.fn(), createQueryBuilder: jest.fn() };
+const mockDataSource = { transaction: jest.fn() };
 
 describe('PurchaseOrdersService', () => {
   let service: PurchaseOrdersService;
@@ -55,6 +56,7 @@ describe('PurchaseOrdersService', () => {
         { provide: getRepositoryToken(PurchaseRequest), useValue: mockPrRepo },
         { provide: getRepositoryToken(Vendor), useValue: mockVendorRepo },
         { provide: getRepositoryToken(VendorRating), useValue: mockRatingRepo },
+        { provide: getDataSourceToken(), useValue: mockDataSource },
       ],
     }).compile();
     service = module.get<PurchaseOrdersService>(PurchaseOrdersService);
@@ -198,6 +200,36 @@ describe('PurchaseOrdersService', () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockCompletedPo });
       mockRatingRepo.findOne.mockResolvedValue({ id: 1 });
       await expect(service.rateVendor(1, 1, { score: 5 })).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('should delete and recreate items inside a single transaction (atomic)', async () => {
+      const manager = {
+        delete: jest.fn().mockResolvedValue({ affected: 1 }),
+        create: jest.fn().mockImplementation((_e: unknown, data: unknown) => data),
+        save: jest.fn().mockImplementation((_e: unknown, data: unknown) => Promise.resolve(data)),
+      };
+      mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo, items: [{ id: 9 }] });
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+
+      const result = await service.update(1, {
+        items: [
+          { itemName: 'A', quantity: 2, unit: 'pcs', unitPrice: 100 },
+          { itemName: 'B', quantity: 1, unit: 'pcs', unitPrice: 50 },
+        ],
+      });
+
+      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, { poId: 1 });
+      // destructive delete + recreate must run through the transaction manager, never the bare repo
+      expect(mockPoItemRepo.delete).not.toHaveBeenCalled();
+      expect(result.totalAmount).toBe(250);
+    });
+
+    it('should throw BadRequest if PO is not draft', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
+      await expect(service.update(1, { notes: 'x' })).rejects.toThrow(BadRequestException);
     });
   });
 });

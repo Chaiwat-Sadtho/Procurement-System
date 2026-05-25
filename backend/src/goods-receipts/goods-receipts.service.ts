@@ -4,7 +4,7 @@ import {
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Like, QueryFailedError } from 'typeorm';
 import { GoodsReceiptNote, GrnStatus } from './entities/goods-receipt-note.entity';
-import { GoodsReceiptItem } from './entities/goods-receipt-item.entity';
+import { GoodsReceiptItem, ItemCondition } from './entities/goods-receipt-item.entity';
 import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { CreateGoodsReceiptDto } from './dto/create-goods-receipt.dto';
@@ -56,8 +56,11 @@ export class GoodsReceiptsService {
             `PO item ${dtoItem.poItemId} not found in PO ${dto.poId}`,
           );
         }
-        // P4-3: กันรับของเกินจำนวนที่สั่ง (received สะสม + ที่รับครั้งนี้ ต้องไม่เกิน ordered)
-        const totalAfterReceipt = Number(poItem.receivedQuantity) + Number(dtoItem.receivedQuantity);
+        // ของชำรุดไม่นับเป็นของที่รับจริง — เฉพาะ condition=good เท่านั้นที่นับเข้า receivedQuantity
+        const effectiveQty =
+          dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
+        // P4-3: กันรับของเกินจำนวนที่สั่ง (good สะสม + good ครั้งนี้ ต้องไม่เกิน ordered)
+        const totalAfterReceipt = Number(poItem.receivedQuantity) + effectiveQty;
         if (totalAfterReceipt > Number(poItem.quantity)) {
           throw new BadRequestException(
             `Over-receipt for item "${poItem.itemName}": ordered ${poItem.quantity}, ` +
@@ -96,8 +99,10 @@ export class GoodsReceiptsService {
       for (const dtoItem of dto.items) {
         const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
         if (!poItem) continue; // validated in step 3 — guard for strict null safety
+        const effectiveQty =
+          dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
         poItem.receivedQuantity = Number(
-          (Number(poItem.receivedQuantity) + dtoItem.receivedQuantity).toFixed(2),
+          (Number(poItem.receivedQuantity) + effectiveQty).toFixed(2),
         );
         await manager.save(PurchaseOrderItem, poItem);
       }

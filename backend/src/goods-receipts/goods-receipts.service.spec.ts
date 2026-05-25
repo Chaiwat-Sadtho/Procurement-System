@@ -172,6 +172,33 @@ describe('GoodsReceiptsService', () => {
       expect(countArg.where.grnNumber.value).toBe(`GRN-${year}-%`);
     });
 
+    it('should NOT count damaged items toward receivedQuantity (PO stays partially_received)', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      // รับครบ 2 ชิ้น แต่ทั้งหมดชำรุด → ไม่นับเป็นของที่รับจริง
+      await service.create(1, {
+        poId: 1,
+        receivedDate: '2025-11-15',
+        items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.DAMAGED }],
+      });
+
+      const savedPoItemCalls = manager.save.mock.calls.filter((c: any) => c[0] === PurchaseOrderItem);
+      expect(savedPoItemCalls[0][1].receivedQuantity).toBe(0);
+      const savedPoCalls = manager.save.mock.calls.filter((c: any) => c[0] === PurchaseOrder);
+      expect(savedPoCalls[0][1].status).toBe(PoStatus.PARTIALLY_RECEIVED);
+    });
+
     it('should throw ConflictException if grn_number collides (23505) instead of leaking 500', async () => {
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
