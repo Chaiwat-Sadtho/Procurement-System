@@ -197,6 +197,35 @@ describe('GoodsReceiptsService', () => {
       expect(mockAuditLogsService.log).toHaveBeenCalled();
     });
 
+    it('should skip consume + warn (not throw) when PR not found on full receipt', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo, prId: 7, totalAmount: 1000,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        // PR lookup คืน null (ข้อมูลเพี้ยน)
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+      const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
+
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD }],
+        }),
+      ).resolves.toBeDefined();
+
+      expect(mockBudgetsService.consumeAmount).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
     it('should throw BadRequest if PO is not in receivable status', async () => {
       const manager = createMockEntityManager({ ...mockAcknowledgedPo, status: PoStatus.DRAFT });
       mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));

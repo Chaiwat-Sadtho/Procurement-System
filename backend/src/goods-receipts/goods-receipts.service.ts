@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Like, QueryFailedError } from 'typeorm';
@@ -19,6 +19,8 @@ const RECEIVABLE_STATUSES = [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED]
 
 @Injectable()
 export class GoodsReceiptsService {
+  private readonly logger = new Logger(GoodsReceiptsService.name);
+
   constructor(
     @InjectRepository(GoodsReceiptNote)
     private readonly grnRepository: Repository<GoodsReceiptNote>,
@@ -141,6 +143,12 @@ export class GoodsReceiptsService {
             Number(prData.totalEstimatedAmount),
             Number(po.totalAmount),
             manager,
+          );
+        } else {
+          // ไม่ควรเกิด — PO ทุกตัวมาจาก PR จริง (UQ_active_po_per_pr). ถ้าเกิด = ข้อมูลเพี้ยน
+          // และ reserved budget จะค้างไม่ถูก release จึง log ไว้ debug (ไม่ throw เพื่อไม่ rollback GRN ที่ถูกต้อง)
+          this.logger.warn(
+            `PO ${po.id} completed but PR ${po.prId} not found — reserved budget not consumed`,
           );
         }
       }
