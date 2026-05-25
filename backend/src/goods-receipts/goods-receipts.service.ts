@@ -9,6 +9,11 @@ import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-or
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { CreateGoodsReceiptDto } from './dto/create-goods-receipt.dto';
 import { GrnQueryDto } from './dto/grn-query.dto';
+import { PurchaseRequest } from '../purchase-requests/entities/purchase-request.entity';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 const RECEIVABLE_STATUSES = [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED];
 
@@ -25,10 +30,13 @@ export class GoodsReceiptsService {
     private readonly poItemRepository: Repository<PurchaseOrderItem>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly budgetsService: BudgetsService,
+    private readonly auditLogsService: AuditLogsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(receivedBy: number, dto: CreateGoodsReceiptDto): Promise<GoodsReceiptNote> {
-    return this.dataSource.transaction(async (manager) => {
+    const { grn, poCompleted } = await this.dataSource.transaction(async (manager) => {
       // 1. Fetch PO with items inside transaction
       const po = await manager.findOne(PurchaseOrder, {
         where: { id: dto.poId },
@@ -118,8 +126,49 @@ export class GoodsReceiptsService {
       if (allReceived) po.actualDeliveryDate = dto.receivedDate;
       await manager.save(PurchaseOrder, po);
 
-      return savedGrn;
+      // 7. เมื่อรับของครบ — consume budget ภายใน transaction เดียวกัน
+      if (allReceived) {
+        const prData = await manager.findOne(PurchaseRequest, {
+          where: { id: po.prId },
+          select: { id: true, departmentId: true, fiscalYear: true, quarter: true, totalEstimatedAmount: true },
+        });
+        if (prData) {
+          // P5-5: ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
+          await this.budgetsService.consumeAmount(
+            prData.departmentId,
+            prData.fiscalYear ?? new Date().getFullYear(),
+            prData.quarter, // P5-3: consume งบไตรมาสเดียวกับที่ reserve
+            Number(prData.totalEstimatedAmount),
+            Number(po.totalAmount),
+            manager,
+          );
+        }
+      }
+
+      return { grn: savedGrn, poCompleted: allReceived };
     });
+
+    // audit + notification หลัง transaction commit (fire-and-forget)
+    void this.auditLogsService.log({
+      userId: receivedBy,
+      action: 'GRN_CREATED',
+      entityType: 'GoodsReceiptNote',
+      entityId: grn.id,
+      newValue: { grnNumber: grn.grnNumber, poId: dto.poId, poCompleted },
+    }).catch(() => {});
+
+    if (poCompleted) {
+      void this.notificationsService.send({
+        userId: receivedBy,
+        title: 'PO รับของครบแล้ว',
+        message: `GRN ${grn.grnNumber} บันทึกแล้ว — PO รับของครบแล้ว`,
+        type: NotificationType.GRN_CREATED,
+        referenceId: grn.id,
+        referenceType: 'GoodsReceiptNote',
+      }).catch(() => {});
+    }
+
+    return grn;
   }
 
   async findAll(
