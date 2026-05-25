@@ -93,8 +93,15 @@ export class PurchaseOrdersService {
     try {
       return await this.poRepository.save(po);
     } catch (err) {
-      // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
+        const constraint = (err as { constraint?: string }).constraint;
+        // P4-2: index บังคับว่า PR มี active PO ได้ใบเดียว — ถ้า app-level check หลุดเพราะ race DB จะจับตรงนี้
+        if (constraint === 'UQ_active_po_per_pr') {
+          throw new ConflictException(
+            `Purchase Request ${dto.prId} already has an active PO`,
+          );
+        }
+        // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
         throw new ConflictException('PO number collision, please retry');
       }
       throw err;

@@ -18,10 +18,6 @@ const mockAcknowledgedPo: Partial<PurchaseOrder> = {
   items: [mockPoItem as PurchaseOrderItem],
 };
 
-const mockPartialPo: Partial<PurchaseOrder> = {
-  ...mockAcknowledgedPo, status: PoStatus.PARTIALLY_RECEIVED,
-};
-
 const mockGrn: Partial<GoodsReceiptNote> = {
   id: 1, grnNumber: 'GRN-2025-0001', poId: 1,
 };
@@ -195,6 +191,62 @@ describe('GoodsReceiptsService', () => {
 
       const savedPoItemCalls = manager.save.mock.calls.filter((c: any) => c[0] === PurchaseOrderItem);
       expect(savedPoItemCalls[0][1].receivedQuantity).toBe(0);
+      const savedPoCalls = manager.save.mock.calls.filter((c: any) => c[0] === PurchaseOrder);
+      expect(savedPoCalls[0][1].status).toBe(PoStatus.PARTIALLY_RECEIVED);
+    });
+
+    it('should reject duplicate poItemId in one payload that cumulatively over-receives (P4-3)', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      // poItem 1 สั่ง 2 — payload เดียวส่งซ้ำ 2 บรรทัด (2 + 1 = 3) ต้องโยน BadRequest แม้แต่ละบรรทัดไม่เกิน
+      await expect(service.create(1, {
+        poId: 1,
+        receivedDate: '2025-11-15',
+        items: [
+          { poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD },
+          { poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD },
+        ],
+      })).rejects.toThrow(BadRequestException);
+    });
+
+    it('should keep PO partially_received when one of several items is not fully received', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo,
+            items: [
+              { id: 1, quantity: 2, receivedQuantity: 0 },
+              { id: 2, quantity: 2, receivedQuantity: 0 },
+            ],
+          });
+        }
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      // item 1 รับครบ (2/2) แต่ item 2 รับแค่ 1/2 → PO ต้องยังเป็น partially_received
+      await service.create(1, {
+        poId: 1,
+        receivedDate: '2025-11-15',
+        items: [
+          { poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD },
+          { poItemId: 2, receivedQuantity: 1, condition: ItemCondition.GOOD },
+        ],
+      });
+
       const savedPoCalls = manager.save.mock.calls.filter((c: any) => c[0] === PurchaseOrder);
       expect(savedPoCalls[0][1].status).toBe(PoStatus.PARTIALLY_RECEIVED);
     });

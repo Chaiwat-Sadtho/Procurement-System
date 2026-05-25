@@ -1,5 +1,5 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
+  Entity, PrimaryGeneratedColumn, Column, Index,
   ManyToOne, OneToMany, JoinColumn,
   CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
@@ -19,6 +19,8 @@ export enum PoStatus {
 }
 
 @Entity('purchase_orders')
+// P4-2: หนึ่ง PR ที่ approved แปลงเป็น active PO ได้ครั้งเดียว (PO ที่ถูก cancel ไม่นับ) — บังคับระดับ DB กัน race
+@Index('UQ_active_po_per_pr', ['prId'], { unique: true, where: `status != 'cancelled'` })
 export class PurchaseOrder {
   @ApiProperty()
   @PrimaryGeneratedColumn()
@@ -63,7 +65,7 @@ export class PurchaseOrder {
 
   @ApiPropertyOptional({ nullable: true, example: '2025-06-15' })
   @Column({ name: 'actual_delivery_date', type: 'date', nullable: true })
-  actualDeliveryDate: string;
+  actualDeliveryDate: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })

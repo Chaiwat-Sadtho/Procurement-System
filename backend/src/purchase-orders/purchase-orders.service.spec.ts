@@ -101,6 +101,24 @@ describe('PurchaseOrdersService', () => {
       })).rejects.toThrow(ConflictException);
     });
 
+    it('should map active-PO unique violation (P4-2 race) to a clear ConflictException', async () => {
+      mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
+      mockPoRepo.findOne.mockResolvedValue(null); // app-level check ผ่าน (race) แต่ DB index จับได้
+      mockVendorRepo.findOne.mockResolvedValue(mockVendor);
+      mockPoRepo.count.mockResolvedValue(0);
+      mockPoItemRepo.create.mockReturnValue({ itemName: 'Item', quantity: 1, unitPrice: 1000, totalPrice: 1000 });
+      mockPoRepo.create.mockReturnValue({ ...mockDraftPo });
+      const dbErr = new QueryFailedError('insert', [], new Error('dup'));
+      (dbErr as { code?: string }).code = '23505';
+      (dbErr as { constraint?: string }).constraint = 'UQ_active_po_per_pr';
+      mockPoRepo.save.mockRejectedValue(dbErr);
+
+      await expect(service.create(1, {
+        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+      })).rejects.toThrow(/already has an active PO/);
+    });
+
     it('should throw BadRequestException if PR is not approved', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockApprovedPr, status: PrStatus.SUBMITTED });
       await expect(service.create(1, {

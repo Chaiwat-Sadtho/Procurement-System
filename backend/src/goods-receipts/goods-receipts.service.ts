@@ -48,7 +48,8 @@ export class GoodsReceiptsService {
       });
       const grnNumber = `GRN-${year}-${String(count + 1).padStart(4, '0')}`;
 
-      // 3. Build and validate GRN items
+      // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)
+      const effectiveByPoItem = new Map<number, number>();
       const grnItems = dto.items.map((dtoItem) => {
         const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
         if (!poItem) {
@@ -59,14 +60,16 @@ export class GoodsReceiptsService {
         // ของชำรุดไม่นับเป็นของที่รับจริง — เฉพาะ condition=good เท่านั้นที่นับเข้า receivedQuantity
         const effectiveQty =
           dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
-        // P4-3: กันรับของเกินจำนวนที่สั่ง (good สะสม + good ครั้งนี้ ต้องไม่เกิน ordered)
-        const totalAfterReceipt = Number(poItem.receivedQuantity) + effectiveQty;
+        // P4-3: ordered ต้องคลุม received สะสมเดิม + ของที่รับใน payload นี้ทั้งหมด (รวมบรรทัดซ้ำ poItemId เดียวกัน)
+        const priorInRequest = effectiveByPoItem.get(dtoItem.poItemId) ?? 0;
+        const totalAfterReceipt = Number(poItem.receivedQuantity) + priorInRequest + effectiveQty;
         if (totalAfterReceipt > Number(poItem.quantity)) {
           throw new BadRequestException(
             `Over-receipt for item "${poItem.itemName}": ordered ${poItem.quantity}, ` +
-              `already received ${poItem.receivedQuantity}, cannot receive ${dtoItem.receivedQuantity} more`,
+              `already received ${poItem.receivedQuantity}, cannot receive ${priorInRequest + effectiveQty} more`,
           );
         }
+        effectiveByPoItem.set(dtoItem.poItemId, priorInRequest + effectiveQty);
         return manager.create(GoodsReceiptItem, {
           poItemId: dtoItem.poItemId,
           receivedQuantity: dtoItem.receivedQuantity,
@@ -74,7 +77,17 @@ export class GoodsReceiptsService {
         });
       });
 
-      // 4. Save GRN
+      // 4. ปรับ received_quantity ใน memory แล้วสรุปสถานะ PO ก่อนเขียน DB (เขียน GRN status ครั้งเดียว)
+      for (const poItem of po.items) {
+        const received = effectiveByPoItem.get(poItem.id);
+        if (received === undefined) continue;
+        poItem.receivedQuantity = Number((Number(poItem.receivedQuantity) + received).toFixed(2));
+      }
+      const allReceived = po.items.every(
+        (item) => Number(item.receivedQuantity) >= Number(item.quantity),
+      );
+
+      // 5. Save GRN ครั้งเดียวด้วยสถานะที่ถูกต้อง
       const grnData = manager.create(GoodsReceiptNote, {
         grnNumber,
         poId: dto.poId,
@@ -82,7 +95,7 @@ export class GoodsReceiptsService {
         receivedDate: dto.receivedDate,
         notes: dto.notes,
         items: grnItems,
-        status: GrnStatus.PARTIAL, // determined after checking quantities below
+        status: allReceived ? GrnStatus.COMPLETE : GrnStatus.PARTIAL,
       });
       let savedGrn: GoodsReceiptNote;
       try {
@@ -95,30 +108,15 @@ export class GoodsReceiptsService {
         throw err;
       }
 
-      // 5. Update po_item.received_quantity for each item
-      for (const dtoItem of dto.items) {
-        const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
-        if (!poItem) continue; // validated in step 3 — guard for strict null safety
-        const effectiveQty =
-          dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
-        poItem.receivedQuantity = Number(
-          (Number(poItem.receivedQuantity) + effectiveQty).toFixed(2),
-        );
-        await manager.save(PurchaseOrderItem, poItem);
+      // 6. persist received_quantity ของ po items + สถานะ PO
+      for (const poItem of po.items) {
+        if (effectiveByPoItem.has(poItem.id)) {
+          await manager.save(PurchaseOrderItem, poItem);
+        }
       }
-
-      // 6. Re-check all items to determine final PO status
-      const allReceived = po.items.every(
-        (item) => Number(item.receivedQuantity) >= Number(item.quantity),
-      );
-
       po.status = allReceived ? PoStatus.COMPLETED : PoStatus.PARTIALLY_RECEIVED;
       if (allReceived) po.actualDeliveryDate = dto.receivedDate;
       await manager.save(PurchaseOrder, po);
-
-      // Update GRN status to reflect actual receipt completeness
-      savedGrn.status = allReceived ? GrnStatus.COMPLETE : GrnStatus.PARTIAL;
-      await manager.save(GoodsReceiptNote, savedGrn);
 
       return savedGrn;
     });
