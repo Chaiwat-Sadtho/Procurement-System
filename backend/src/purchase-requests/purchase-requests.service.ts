@@ -316,14 +316,6 @@ export class PurchaseRequestsService {
     pr.rejectReason = dto.reason;
     const saved = await this.prRepository.save(pr);
 
-    // P5-5: reject เกิดตอน SUBMITTED จึงยังไม่มี fiscalYear → fallback ปีปัจจุบัน (release เป็น no-op อยู่แล้ว)
-    void this.budgetsService.releaseReservedAmount(
-      pr.departmentId,
-      pr.fiscalYear ?? new Date().getFullYear(),
-      pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
-      Number(pr.totalEstimatedAmount),
-    ).catch(() => {});
-
     void this.auditLogsService.log({
       userId: managerId,
       action: 'PR_REJECTED',
