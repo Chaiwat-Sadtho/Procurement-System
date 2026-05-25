@@ -1,8 +1,8 @@
 import {
   Injectable, NotFoundException, BadRequestException, ForbiddenException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, Like, DataSource } from 'typeorm';
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -10,6 +10,10 @@ import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { UpdatePurchaseRequestDto } from './dto/update-purchase-request.dto';
 import { RejectPurchaseRequestDto } from './dto/reject-purchase-request.dto';
 import { PrQueryDto } from './dto/pr-query.dto';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -20,6 +24,11 @@ export class PurchaseRequestsService {
     private readonly prItemRepository: Repository<PurchaseRequestItem>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly budgetsService: BudgetsService,
+    private readonly auditLogsService: AuditLogsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async generatePrNumber(): Promise<string> {
@@ -182,8 +191,38 @@ export class PurchaseRequestsService {
     const pr = await this.prRepository.findOne({ where: { id, requesterId } });
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
     if (pr.status !== PrStatus.DRAFT) throw new BadRequestException('Only draft PRs can be submitted');
+
     pr.status = PrStatus.SUBMITTED;
-    return this.prRepository.save(pr);
+    const saved = await this.prRepository.save(pr);
+
+    void this.auditLogsService.log({
+      userId: requesterId,
+      action: 'PR_SUBMITTED',
+      entityType: 'PurchaseRequest',
+      entityId: id,
+      oldValue: { status: PrStatus.DRAFT },
+      newValue: { status: PrStatus.SUBMITTED },
+    }).catch(() => {});
+
+    void (async () => {
+      const managers = await this.userRepository.find({
+        where: { departmentId: pr.departmentId, role: UserRole.MANAGER, isActive: true },
+      });
+      if (managers.length > 0) {
+        await this.notificationsService.sendToMany(
+          managers.map((m) => m.id),
+          {
+            title: 'มี PR ใหม่รอการอนุมัติ',
+            message: `${saved.prNumber}: ${saved.title} รอการอนุมัติ`,
+            type: NotificationType.PR_SUBMITTED,
+            referenceId: id,
+            referenceType: 'PurchaseRequest',
+          },
+        );
+      }
+    })().catch(() => {});
+
+    return saved;
   }
 
   async approve(id: number, managerId: number): Promise<PurchaseRequest> {
@@ -199,10 +238,46 @@ export class PurchaseRequestsService {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
 
-    pr.status = PrStatus.APPROVED;
-    pr.approvedBy = managerId;
-    pr.approvedAt = new Date();
-    return this.prRepository.save(pr);
+    // P5-5: ตรึงปีงบประมาณตอน approve เพื่อใช้ค่าเดิมตลอด lifecycle (reserve→consume/release)
+    const fiscalYear = new Date().getFullYear();
+
+    const savedPr = await this.dataSource.transaction(async (txManager) => {
+      pr.status = PrStatus.APPROVED;
+      pr.approvedBy = managerId;
+      pr.approvedAt = new Date();
+      pr.fiscalYear = fiscalYear;
+      const saved = await txManager.save(PurchaseRequest, pr);
+
+      await this.budgetsService.reserveAmount(
+        pr.departmentId,
+        fiscalYear,
+        pr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
+        Number(pr.totalEstimatedAmount),
+        txManager,
+      );
+
+      return saved;
+    });
+
+    void this.auditLogsService.log({
+      userId: managerId,
+      action: 'PR_APPROVED',
+      entityType: 'PurchaseRequest',
+      entityId: id,
+      oldValue: { status: PrStatus.SUBMITTED },
+      newValue: { status: PrStatus.APPROVED, approvedBy: managerId },
+    }).catch(() => {});
+
+    void this.notificationsService.send({
+      userId: savedPr.requesterId,
+      title: 'PR ของคุณได้รับการอนุมัติ',
+      message: `${savedPr.prNumber}: ${savedPr.title} ได้รับการอนุมัติแล้ว`,
+      type: NotificationType.PR_APPROVED,
+      referenceId: id,
+      referenceType: 'PurchaseRequest',
+    }).catch(() => {});
+
+    return savedPr;
   }
 
   async reject(
@@ -224,6 +299,34 @@ export class PurchaseRequestsService {
 
     pr.status = PrStatus.REJECTED;
     pr.rejectReason = dto.reason;
-    return this.prRepository.save(pr);
+    const saved = await this.prRepository.save(pr);
+
+    // P5-5: reject เกิดตอน SUBMITTED จึงยังไม่มี fiscalYear → fallback ปีปัจจุบัน (release เป็น no-op อยู่แล้ว)
+    void this.budgetsService.releaseReservedAmount(
+      pr.departmentId,
+      pr.fiscalYear ?? new Date().getFullYear(),
+      pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
+      Number(pr.totalEstimatedAmount),
+    ).catch(() => {});
+
+    void this.auditLogsService.log({
+      userId: managerId,
+      action: 'PR_REJECTED',
+      entityType: 'PurchaseRequest',
+      entityId: id,
+      oldValue: { status: PrStatus.SUBMITTED },
+      newValue: { status: PrStatus.REJECTED, rejectReason: dto.reason },
+    }).catch(() => {});
+
+    void this.notificationsService.send({
+      userId: saved.requesterId,
+      title: 'PR ของคุณถูกปฏิเสธ',
+      message: `${saved.prNumber}: ${saved.title} ถูกปฏิเสธ — เหตุผล: ${dto.reason}`,
+      type: NotificationType.PR_REJECTED,
+      referenceId: id,
+      referenceType: 'PurchaseRequest',
+    }).catch(() => {});
+
+    return saved;
   }
 }
