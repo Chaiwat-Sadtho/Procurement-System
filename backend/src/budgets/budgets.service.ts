@@ -45,7 +45,19 @@ export class BudgetsService {
       reservedAmount: 0,
       usedAmount: 0,
     });
-    return this.budgetRepository.save(budget);
+    try {
+      return await this.budgetRepository.save(budget);
+    } catch (err) {
+      // Race safety net: the findOne check above can be bypassed by a concurrent
+      // insert. The DB unique constraint (incl. the annual partial index) then
+      // raises 23505 — surface it as a ConflictException, not a 500.
+      if ((err as { code?: string }).code === '23505') {
+        throw new ConflictException(
+          `Budget for department ${dto.departmentId} in ${dto.fiscalYear} Q${dto.quarter ?? 'annual'} already exists`,
+        );
+      }
+      throw err;
+    }
   }
 
   async findAll(query: BudgetQueryDto): Promise<Budget[]> {

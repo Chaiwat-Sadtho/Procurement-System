@@ -1,12 +1,18 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Unique,
+  ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Unique, Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Department } from '../../departments/entities/department.entity';
 
 @Entity('budgets')
 @Unique(['departmentId', 'fiscalYear', 'quarter'])
+// Review #2: composite UNIQUE above lets duplicate annual rows through (Postgres treats
+// NULL quarters as distinct). This partial index enforces one annual budget per dept/year.
+@Index('UQ_annual_budget_per_dept_year', ['departmentId', 'fiscalYear'], {
+  unique: true,
+  where: '"quarter" IS NULL',
+})
 export class Budget {
   @ApiProperty()
   @PrimaryGeneratedColumn()
