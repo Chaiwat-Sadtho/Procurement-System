@@ -8,6 +8,9 @@ import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
 import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
 import { Vendor } from '../vendors/entities/vendor.entity';
 import { VendorRating } from '../vendors/entities/vendor-rating.entity';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const mockApprovedPr: Partial<PurchaseRequest> = {
   id: 1, status: PrStatus.APPROVED,
@@ -43,6 +46,9 @@ const mockPrRepo = { findOne: jest.fn() };
 const mockVendorRepo = { findOne: jest.fn(), update: jest.fn() };
 const mockRatingRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.fn(), createQueryBuilder: jest.fn() };
 const mockDataSource = { transaction: jest.fn() };
+const mockBudgetsService = { releaseReservedAmount: jest.fn().mockResolvedValue(undefined) };
+const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
+const mockNotificationsService = { send: jest.fn().mockResolvedValue(undefined) };
 
 describe('PurchaseOrdersService', () => {
   let service: PurchaseOrdersService;
@@ -57,6 +63,9 @@ describe('PurchaseOrdersService', () => {
         { provide: getRepositoryToken(Vendor), useValue: mockVendorRepo },
         { provide: getRepositoryToken(VendorRating), useValue: mockRatingRepo },
         { provide: getDataSourceToken(), useValue: mockDataSource },
+        { provide: BudgetsService, useValue: mockBudgetsService },
+        { provide: AuditLogsService, useValue: mockAuditLogsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
     service = module.get<PurchaseOrdersService>(PurchaseOrdersService);
@@ -165,13 +174,13 @@ describe('PurchaseOrdersService', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
       mockPoRepo.save.mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED });
-      const result = await service.acknowledge(1);
+      const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
     });
 
     it('should throw BadRequest if PO is not sent', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
-      await expect(service.acknowledge(1)).rejects.toThrow(BadRequestException);
+      await expect(service.acknowledge(1, 1)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -179,18 +188,32 @@ describe('PurchaseOrdersService', () => {
     it('should cancel a draft PO', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
       mockPoRepo.save.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
-      const result = await service.cancel(1);
+      const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
     });
 
     it('should throw BadRequest if PO is already completed', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockCompletedPo });
-      await expect(service.cancel(1)).rejects.toThrow(BadRequestException);
+      await expect(service.cancel(1, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequest if PO is already cancelled', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
-      await expect(service.cancel(1)).rejects.toThrow(BadRequestException);
+      await expect(service.cancel(1, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('P5-2: should release reserved budget when cancelling a PO of an approved PR', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT });
+      mockPoRepo.save.mockResolvedValue({ id: 1, status: PoStatus.CANCELLED });
+      mockPrRepo.findOne.mockResolvedValue({
+        id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, totalEstimatedAmount: 50000, status: PrStatus.APPROVED,
+      });
+
+      await service.cancel(1, 1);
+      // รอ fire-and-forget IIFE ปล่อย microtask
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(1, 2026, null, 50000);
     });
   });
 

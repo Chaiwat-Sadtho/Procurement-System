@@ -12,6 +12,10 @@ import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { RateVendorDto } from './dto/rate-vendor.dto';
 import { PoQueryDto } from './dto/po-query.dto';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -28,6 +32,9 @@ export class PurchaseOrdersService {
     private readonly ratingRepository: Repository<VendorRating>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly budgetsService: BudgetsService,
+    private readonly auditLogsService: AuditLogsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async generatePoNumber(): Promise<string> {
@@ -90,8 +97,9 @@ export class PurchaseOrdersService {
       items,
     });
 
+    let savedPo: PurchaseOrder;
     try {
-      return await this.poRepository.save(po);
+      savedPo = await this.poRepository.save(po);
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         const constraint = (err as { constraint?: string }).constraint;
@@ -106,6 +114,38 @@ export class PurchaseOrdersService {
       }
       throw err;
     }
+
+    void this.auditLogsService.log({
+      userId: createdBy,
+      action: 'PO_CREATED',
+      entityType: 'PurchaseOrder',
+      entityId: savedPo.id,
+      newValue: {
+        poNumber: savedPo.poNumber,
+        prId: dto.prId,
+        vendorId: dto.vendorId,
+        totalAmount: savedPo.totalAmount,
+      },
+    }).catch(() => {});
+
+    void (async () => {
+      const linkedPr = await this.prRepository.findOne({
+        where: { id: dto.prId },
+        select: { id: true, requesterId: true, prNumber: true },
+      });
+      if (linkedPr) {
+        await this.notificationsService.send({
+          userId: linkedPr.requesterId,
+          title: 'สร้าง PO จาก PR ของคุณแล้ว',
+          message: `${savedPo.poNumber} ถูกสร้างจาก ${linkedPr.prNumber} แล้ว`,
+          type: NotificationType.PO_CREATED,
+          referenceId: savedPo.id,
+          referenceType: 'PurchaseOrder',
+        });
+      }
+    })().catch(() => {});
+
+    return savedPo;
   }
 
   async findAll(
@@ -185,17 +225,28 @@ export class PurchaseOrdersService {
     return this.poRepository.save(po);
   }
 
-  async acknowledge(id: number): Promise<PurchaseOrder> {
+  async acknowledge(id: number, userId: number): Promise<PurchaseOrder> {
     const po = await this.poRepository.findOne({ where: { id } });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status !== PoStatus.SENT) {
       throw new BadRequestException('Only sent POs can be acknowledged');
     }
     po.status = PoStatus.ACKNOWLEDGED;
-    return this.poRepository.save(po);
+    const saved = await this.poRepository.save(po);
+
+    void this.auditLogsService.log({
+      userId,
+      action: 'PO_ACKNOWLEDGED',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      oldValue: { status: PoStatus.SENT },
+      newValue: { status: PoStatus.ACKNOWLEDGED },
+    }).catch(() => {});
+
+    return saved;
   }
 
-  async cancel(id: number): Promise<PurchaseOrder> {
+  async cancel(id: number, userId: number): Promise<PurchaseOrder> {
     const po = await this.poRepository.findOne({ where: { id } });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status === PoStatus.COMPLETED) {
@@ -204,8 +255,40 @@ export class PurchaseOrdersService {
     if (po.status === PoStatus.CANCELLED) {
       throw new BadRequestException('PO is already cancelled');
     }
+    const oldStatus = po.status;
     po.status = PoStatus.CANCELLED;
-    return this.poRepository.save(po);
+    const saved = await this.poRepository.save(po);
+
+    // P5-2: release reserved budget ของ PR ที่ผูกอยู่ กัน budget leak
+    // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
+    void (async () => {
+      const pr = await this.prRepository.findOne({
+        where: { id: po.prId },
+        select: {
+          id: true, departmentId: true, fiscalYear: true,
+          quarter: true, totalEstimatedAmount: true, status: true,
+        },
+      });
+      if (pr && pr.status === PrStatus.APPROVED) {
+        await this.budgetsService.releaseReservedAmount(
+          pr.departmentId,
+          pr.fiscalYear ?? new Date().getFullYear(),
+          pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
+          Number(pr.totalEstimatedAmount),
+        );
+      }
+    })().catch(() => {});
+
+    void this.auditLogsService.log({
+      userId,
+      action: 'PO_CANCELLED',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      oldValue: { status: oldStatus },
+      newValue: { status: PoStatus.CANCELLED },
+    }).catch(() => {});
+
+    return saved;
   }
 
   async rateVendor(poId: number, ratedBy: number, dto: RateVendorDto): Promise<VendorRating> {

@@ -8,6 +8,9 @@ import { VendorRating } from '../vendors/entities/vendor-rating.entity';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { PurchaseOrdersController } from './purchase-orders.controller';
 import { GoodsReceiptsModule } from '../goods-receipts/goods-receipts.module';
+import { BudgetsModule } from '../budgets/budgets.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { GoodsReceiptsModule } from '../goods-receipts/goods-receipts.module';
       PurchaseOrder, PurchaseOrderItem, PurchaseRequest, Vendor, VendorRating,
     ]),
     GoodsReceiptsModule,
+    BudgetsModule,
+    AuditLogsModule,
+    NotificationsModule,
   ],
   controllers: [PurchaseOrdersController],
   providers: [PurchaseOrdersService],
