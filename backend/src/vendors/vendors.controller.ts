@@ -8,6 +8,7 @@ import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { BlacklistVendorDto } from './dto/blacklist-vendor.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
+import { VendorRatingQueryDto } from './dto/vendor-rating-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -42,6 +43,17 @@ export class VendorsController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.vendorsService.findOne(id);
+  }
+
+  @ApiOperation({ summary: 'ดูประวัติคะแนน vendor (PO, Manager)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.PROCUREMENT_OFFICER, UserRole.MANAGER)
+  @Get(':id/ratings')
+  findRatings(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: VendorRatingQueryDto,
+  ) {
+    return this.vendorsService.findRatings(id, query);
   }
 
   @ApiOperation({ summary: 'แก้ไขข้อมูล vendor (PO only)' })

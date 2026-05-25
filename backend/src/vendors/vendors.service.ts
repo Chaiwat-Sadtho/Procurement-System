@@ -5,10 +5,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Vendor } from './entities/vendor.entity';
 import { VendorCategory } from './entities/vendor-category.entity';
+import { VendorRating } from './entities/vendor-rating.entity';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { BlacklistVendorDto } from './dto/blacklist-vendor.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
+import { VendorRatingQueryDto } from './dto/vendor-rating-query.dto';
+
+interface RawRatingRow {
+  id: number;
+  vendorId: number;
+  poId: number;
+  score: number;
+  comment: string | null;
+  createdAt: Date;
+  poNumber: string;
+  raterId: number;
+  raterFirstName: string | null;
+  raterLastName: string | null;
+}
 
 @Injectable()
 export class VendorsService {
@@ -17,6 +32,8 @@ export class VendorsService {
     private readonly vendorRepository: Repository<Vendor>,
     @InjectRepository(VendorCategory)
     private readonly categoryRepository: Repository<VendorCategory>,
+    @InjectRepository(VendorRating)
+    private readonly ratingRepository: Repository<VendorRating>,
   ) {}
 
   async create(dto: CreateVendorDto): Promise<Vendor> {
@@ -82,6 +99,67 @@ export class VendorsService {
     });
     if (!vendor) throw new NotFoundException(`Vendor ${id} not found`);
     return vendor;
+  }
+
+  async findRatings(
+    id: number,
+    query: VendorRatingQueryDto,
+  ): Promise<{
+    data: Array<{
+      id: number;
+      vendorId: number;
+      poId: number;
+      purchaseOrder: { id: number; poNumber: string };
+      score: number;
+      comment: string | null;
+      ratedBy: { id: number; fullName: string };
+      createdAt: Date;
+    }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    await this.findOne(id); // 404 if vendor missing
+
+    const { page = 1, limit = 20 } = query;
+
+    const rows = await this.ratingRepository
+      .createQueryBuilder('rating')
+      .leftJoin('purchase_orders', 'po', 'po.id = rating.po_id')
+      .leftJoin('users', 'rater', 'rater.id = rating.rated_by')
+      .select([
+        'rating.id AS id',
+        'rating.vendor_id AS "vendorId"',
+        'rating.po_id AS "poId"',
+        'rating.score AS score',
+        'rating.comment AS comment',
+        'rating.created_at AS "createdAt"',
+        'po.po_number AS "poNumber"',
+        'rater.id AS "raterId"',
+        'rater.first_name AS "raterFirstName"',
+        'rater.last_name AS "raterLastName"',
+      ])
+      .where('rating.vendor_id = :id', { id })
+      .orderBy('rating.created_at', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<RawRatingRow>();
+
+    const total = await this.ratingRepository.count({ where: { vendorId: id } });
+
+    const data = rows.map((r) => ({
+      id: r.id,
+      vendorId: r.vendorId,
+      poId: r.poId,
+      purchaseOrder: { id: r.poId, poNumber: r.poNumber },
+      score: r.score,
+      comment: r.comment,
+      ratedBy: {
+        id: r.raterId,
+        fullName: [r.raterFirstName, r.raterLastName].filter(Boolean).join(' '),
+      },
+      createdAt: r.createdAt,
+    }));
+
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async update(id: number, dto: UpdateVendorDto): Promise<Vendor> {

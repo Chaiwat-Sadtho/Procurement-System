@@ -203,6 +203,19 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     expect(Number(vendorRes.body.ratingAvg)).toBe(4);
   });
 
+  it('GET /api/v1/vendors/:id/ratings — returns paginated rating history with PO number', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/vendors/${vendorId}/ratings`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    expect(res.body.data).toBeInstanceOf(Array);
+    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.data[0]).toHaveProperty('purchaseOrder.poNumber');
+    expect(res.body.data[0]).toHaveProperty('ratedBy.fullName');
+    expect(res.body.meta).toMatchObject({ page: 1, limit: 20 });
+  });
+
   it('POST /api/v1/purchase-orders/:id/ratings — cannot rate twice', async () => {
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-orders/${poId}/ratings`)
