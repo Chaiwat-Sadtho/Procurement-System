@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { DataSource } from 'typeorm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { Budget } from '../src/budgets/entities/budget.entity';
 
 // Idempotency note: department name, user emails, vendor category name and vendor taxId
 // have UNIQUE constraints, so we tag them per-run (`tag = Date.now()`) to keep the suite
@@ -154,6 +156,24 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     expect(Number(summary.body.usedAmount)).toBe(0);
     expect(Number(summary.body.totalAmount)).toBe(500000);
     expect(Number(summary.body.remaining)).toBe(490000);
+  });
+
+  // --- REVIEW #2: DB-level uniqueness for annual budgets ---
+
+  it('rejects a duplicate annual budget at the DB level (partial unique index)', async () => {
+    // deptId already has one annual budget (created in beforeAll). Insert a second one
+    // directly via the DataSource to bypass the service findOne check and prove the DB
+    // partial unique index itself rejects it — Postgres treats NULL quarters as distinct,
+    // so the composite UNIQUE alone would let this through.
+    const dataSource = app.get(DataSource);
+    await expect(
+      dataSource.getRepository(Budget).insert({
+        departmentId: deptId,
+        fiscalYear,
+        quarter: null,
+        totalAmount: 99999,
+      }),
+    ).rejects.toMatchObject({ code: '23505' });
   });
 
   // --- AUDIT: PR_SUBMITTED + PR_APPROVED logged ---

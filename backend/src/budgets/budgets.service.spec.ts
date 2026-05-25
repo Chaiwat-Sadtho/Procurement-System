@@ -80,6 +80,19 @@ describe('BudgetsService', () => {
         service.create({ departmentId: 1, fiscalYear: 2026, totalAmount: 1000000 }),
       ).rejects.toThrow(ConflictException);
     });
+
+    // Review #2: under a race the findOne check passes (null) but the DB unique
+    // constraint (incl. the annual partial index) rejects the insert with 23505.
+    // create() must surface that as a ConflictException, not a raw QueryFailedError.
+    it('should map a 23505 unique-violation on save to ConflictException', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(null);
+      mockBudgetRepo.create.mockReturnValue({ ...mockBudget });
+      mockBudgetRepo.save.mockRejectedValue(Object.assign(new Error('duplicate key'), { code: '23505' }));
+
+      await expect(
+        service.create({ departmentId: 1, fiscalYear: 2026, totalAmount: 1000000 }),
+      ).rejects.toThrow(ConflictException);
+    });
   });
 
   describe('reserveAmount', () => {
