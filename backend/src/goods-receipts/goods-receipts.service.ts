@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, BadRequestException, ConflictException,
+} from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Like, QueryFailedError } from 'typeorm';
 import { GoodsReceiptNote, GrnStatus } from './entities/goods-receipt-note.entity';
 import { GoodsReceiptItem } from './entities/goods-receipt-item.entity';
 import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
@@ -39,9 +41,11 @@ export class GoodsReceiptsService {
         );
       }
 
-      // 2. Generate GRN number
+      // 2. Generate GRN number — นับเฉพาะ GRN ของปีปัจจุบัน (prefix GRN-YYYY-) เพื่อ reset running number รายปี
       const year = new Date().getFullYear();
-      const count = await manager.count(GoodsReceiptNote);
+      const count = await manager.count(GoodsReceiptNote, {
+        where: { grnNumber: Like(`GRN-${year}-%`) },
+      });
       const grnNumber = `GRN-${year}-${String(count + 1).padStart(4, '0')}`;
 
       // 3. Build and validate GRN items
@@ -77,7 +81,16 @@ export class GoodsReceiptsService {
         items: grnItems,
         status: GrnStatus.PARTIAL, // determined after checking quantities below
       });
-      const savedGrn = await manager.save(GoodsReceiptNote, grnData);
+      let savedGrn: GoodsReceiptNote;
+      try {
+        savedGrn = await manager.save(GoodsReceiptNote, grnData);
+      } catch (err) {
+        // ถ้า 2 request gen grn_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
+        if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
+          throw new ConflictException('GRN number collision, please retry');
+        }
+        throw err;
+      }
 
       // 5. Update po_item.received_quantity for each item
       for (const dtoItem of dto.items) {

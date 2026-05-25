@@ -88,7 +88,15 @@ export class PurchaseOrdersService {
       items,
     });
 
-    return this.poRepository.save(po);
+    try {
+      return await this.poRepository.save(po);
+    } catch (err) {
+      // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
+      if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
+        throw new ConflictException('PO number collision, please retry');
+      }
+      throw err;
+    }
   }
 
   async findAll(

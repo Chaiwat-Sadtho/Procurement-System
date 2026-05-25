@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { QueryFailedError } from 'typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { PurchaseOrder, PoStatus } from './entities/purchase-order.entity';
@@ -79,6 +80,23 @@ describe('PurchaseOrdersService', () => {
       });
       expect(result.status).toBe(PoStatus.DRAFT);
       expect(mockPoRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if po_number collides (23505) instead of leaking 500', async () => {
+      mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
+      mockPoRepo.findOne.mockResolvedValue(null);
+      mockVendorRepo.findOne.mockResolvedValue(mockVendor);
+      mockPoRepo.count.mockResolvedValue(0);
+      mockPoItemRepo.create.mockReturnValue({ itemName: 'Item', quantity: 1, unitPrice: 1000, totalPrice: 1000 });
+      mockPoRepo.create.mockReturnValue({ ...mockDraftPo });
+      const dbErr = new QueryFailedError('insert', [], new Error('dup'));
+      (dbErr as { code?: string }).code = '23505';
+      mockPoRepo.save.mockRejectedValue(dbErr);
+
+      await expect(service.create(1, {
+        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+      })).rejects.toThrow(ConflictException);
     });
 
     it('should throw BadRequestException if PR is not approved', async () => {

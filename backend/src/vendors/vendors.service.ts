@@ -22,6 +22,7 @@ interface RawRatingRow {
   poNumber: string;
   raterId: number;
   raterFirstName: string | null;
+  raterMiddleName: string | null;
   raterLastName: string | null;
 }
 
@@ -135,6 +136,7 @@ export class VendorsService {
         'po.po_number AS "poNumber"',
         'rater.id AS "raterId"',
         'rater.first_name AS "raterFirstName"',
+        'rater.middle_name AS "raterMiddleName"',
         'rater.last_name AS "raterLastName"',
       ])
       .where('rating.vendor_id = :id', { id })
@@ -154,7 +156,9 @@ export class VendorsService {
       comment: r.comment,
       ratedBy: {
         id: r.raterId,
-        fullName: [r.raterFirstName, r.raterLastName].filter(Boolean).join(' '),
+        fullName: [r.raterFirstName, r.raterMiddleName, r.raterLastName]
+          .filter(Boolean)
+          .join(' '),
       },
       createdAt: r.createdAt,
     }));

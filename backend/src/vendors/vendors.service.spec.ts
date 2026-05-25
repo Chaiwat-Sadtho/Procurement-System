@@ -168,6 +168,7 @@ describe('VendorsService', () => {
           poNumber: 'PO-2025-0005',
           raterId: 3,
           raterFirstName: 'วิชัย',
+          raterMiddleName: 'ก.',
           raterLastName: 'จัดซื้อ',
         },
       ]);
@@ -183,7 +184,7 @@ describe('VendorsService', () => {
         purchaseOrder: { id: 5, poNumber: 'PO-2025-0005' },
         score: 4,
         comment: 'ส่งตรงเวลา',
-        ratedBy: { id: 3, fullName: 'วิชัย จัดซื้อ' },
+        ratedBy: { id: 3, fullName: 'วิชัย ก. จัดซื้อ' },
         createdAt: new Date('2025-01-10T00:00:00Z'),
       });
     });
