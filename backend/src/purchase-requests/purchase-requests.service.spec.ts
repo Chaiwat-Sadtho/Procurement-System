@@ -116,6 +116,31 @@ describe('PurchaseRequestsService', () => {
       expect(mockPrRepo.save).toHaveBeenCalled();
     });
 
+    it('should generate PR number from MAX existing suffix, surviving a delete gap', async () => {
+      // จำลองกรณีลบ PR กลางปีออก: count = 2 (count+1 จะได้ 0003 ซ้ำ) แต่ MAX จริงคือ PR-2026-0003
+      const year = new Date().getFullYear();
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      mockPrRepo.count.mockResolvedValue(2);
+      mockPrRepo.findOne.mockResolvedValue({ id: 3, prNumber: `PR-${year}-0003` });
+
+      let generatedPrNumber = '';
+      mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
+      mockPrRepo.create.mockImplementation((entity) => {
+        generatedPrNumber = entity.prNumber;
+        return { ...mockDraftPr, prNumber: entity.prNumber };
+      });
+      mockPrRepo.save.mockImplementation((e) => Promise.resolve(e));
+
+      await service.create(1, {
+        title: 'Test PR',
+        requiredDate: '2026-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+      });
+
+      // MAX+1 = 0004 (ไม่ใช่ count+1 = 0003 ที่จะชน unique constraint)
+      expect(generatedPrNumber).toBe(`PR-${year}-0004`);
+    });
+
     it('should throw NotFoundException if requester not found', async () => {
       mockUserRepo.findOne.mockResolvedValue(null);
       await expect(
