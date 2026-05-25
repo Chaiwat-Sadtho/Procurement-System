@@ -4,6 +4,7 @@ import {
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
 import { Budget } from './entities/budget.entity';
+import { Department } from '../departments/entities/department.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
@@ -18,6 +19,8 @@ export class BudgetsService {
     private readonly budgetRepository: Repository<Budget>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
@@ -264,11 +267,15 @@ export class BudgetsService {
     });
     if (managers.length === 0) return;
 
+    // procurement officer รับแจ้งงบหลายแผนก → ใส่ชื่อแผนกในข้อความให้แยกออกว่าเป็นงบของแผนกไหน
+    const department = await this.departmentRepository.findOne({ where: { id: departmentId } });
+    const deptName = department?.name ?? `แผนก #${departmentId}`;
+
     await this.notificationsService.sendToMany(
       managers.map((m) => m.id),
       {
-        title: `⚠ งบประมาณปี ${fiscalYear} ใกล้หมด`,
-        message: `งบประมาณใช้ไปแล้ว ${usagePercent}% (${committed.toLocaleString()} / ${total.toLocaleString()} บาท)`,
+        title: `⚠ งบประมาณ ${deptName} ปี ${fiscalYear} ใกล้หมด`,
+        message: `งบประมาณแผนก ${deptName} ใช้ไปแล้ว ${usagePercent}% (${committed.toLocaleString()} / ${total.toLocaleString()} บาท)`,
         type: NotificationType.BUDGET_WARNING,
         referenceType: 'Budget',
       },

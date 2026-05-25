@@ -14,6 +14,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { itemTotal, sumMoney } from '../common/money';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -58,13 +59,11 @@ export class PurchaseRequestsService {
         quantity: item.quantity,
         unit: item.unit,
         estimatedUnitPrice: item.estimatedUnitPrice,
-        estimatedTotalPrice: Number((item.quantity * item.estimatedUnitPrice).toFixed(2)),
+        estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
       }),
     );
 
-    const totalEstimatedAmount = Number(
-      items.reduce((sum, item) => sum + Number(item.estimatedTotalPrice), 0).toFixed(2),
-    );
+    const totalEstimatedAmount = sumMoney(items.map((item) => item.estimatedTotalPrice));
 
     const pr = this.prRepository.create({
       prNumber,
@@ -183,13 +182,11 @@ export class PurchaseRequestsService {
           quantity: item.quantity,
           unit: item.unit,
           estimatedUnitPrice: item.estimatedUnitPrice,
-          estimatedTotalPrice: Number((item.quantity * item.estimatedUnitPrice).toFixed(2)),
+          estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
         }),
       );
       pr.items = await this.prItemRepository.save(newItems);
-      pr.totalEstimatedAmount = Number(
-        pr.items.reduce((sum, item) => sum + Number(item.estimatedTotalPrice), 0).toFixed(2),
-      );
+      pr.totalEstimatedAmount = sumMoney(pr.items.map((item) => item.estimatedTotalPrice));
     }
 
     return this.prRepository.save(pr);

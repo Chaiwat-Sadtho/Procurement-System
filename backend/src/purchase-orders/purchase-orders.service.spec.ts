@@ -104,6 +104,27 @@ describe('PurchaseOrdersService', () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
+    // Minor #1: คูณ quantity × unitPrice ต้องใช้ decimal ไม่ใช่ float
+    // 1.03 × 1.5 = 1.545 → ปัดครึ่งขึ้น = 1.55 (float .toFixed(2) ได้ 1.54)
+    it('should compute item total with decimal precision (1.03 × 1.5 = 1.55)', async () => {
+      mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
+      mockPoRepo.findOne.mockResolvedValue(null);
+      mockVendorRepo.findOne.mockResolvedValue(mockVendor);
+      mockPoRepo.count.mockResolvedValue(0);
+      mockPoItemRepo.create.mockImplementation((e) => e);
+      mockPoRepo.create.mockImplementation((e) => e);
+      mockTxSave(jest.fn().mockImplementation((_entity, e) => Promise.resolve(e)));
+
+      const result = await service.create(1, {
+        prId: 1, vendorId: 1,
+        expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'X', quantity: 1.03, unit: 'unit', unitPrice: 1.5 }],
+      });
+
+      expect(result.items[0].totalPrice).toBe(1.55);
+      expect(result.totalAmount).toBe(1.55);
+    });
+
     // P5-6: PO ที่แพงกว่า PR estimate ต้อง reserve ส่วนต่างเพิ่ม (delta บวก) เพื่อกัน used ทะลุ total ตอน consume
     it('should reserve the positive delta when PO total exceeds PR estimate', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockApprovedPr, totalEstimatedAmount: 1000 });

@@ -141,6 +141,29 @@ describe('PurchaseRequestsService', () => {
       expect(generatedPrNumber).toBe(`PR-${year}-0004`);
     });
 
+    // Minor #1: คูณ quantity × unitPrice ต้องใช้ decimal ไม่ใช่ float
+    // 1.03 × 1.5 = 1.545 → ปัดครึ่งขึ้น = 1.55 (float .toFixed(2) ได้ 1.54 เพราะเก็บเป็น 1.5449999…)
+    it('should compute item total with decimal precision (1.03 × 1.5 = 1.55)', async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      mockPrRepo.count.mockResolvedValue(0);
+      mockPrItemRepo.create.mockImplementation((e) => e);
+      let saved: any;
+      mockPrRepo.create.mockImplementation((e) => e);
+      mockPrRepo.save.mockImplementation((e) => {
+        saved = e;
+        return Promise.resolve(e);
+      });
+
+      await service.create(1, {
+        title: 'Decimal PR',
+        requiredDate: '2025-12-31',
+        items: [{ itemName: 'X', quantity: 1.03, unit: 'unit', estimatedUnitPrice: 1.5 }],
+      });
+
+      expect(saved.items[0].estimatedTotalPrice).toBe(1.55);
+      expect(saved.totalEstimatedAmount).toBe(1.55);
+    });
+
     it('should throw NotFoundException if requester not found', async () => {
       mockUserRepo.findOne.mockResolvedValue(null);
       await expect(
