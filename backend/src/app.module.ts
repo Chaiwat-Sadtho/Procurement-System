@@ -8,6 +8,7 @@ import { PurchaseRequestsModule } from './purchase-requests/purchase-requests.mo
 import { VendorsModule } from './vendors/vendors.module';
 import { GoodsReceiptsModule } from './goods-receipts/goods-receipts.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
     VendorsModule,
     GoodsReceiptsModule,
     PurchaseOrdersModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
