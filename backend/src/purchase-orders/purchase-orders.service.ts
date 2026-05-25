@@ -12,6 +12,10 @@ import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { RateVendorDto } from './dto/rate-vendor.dto';
 import { PoQueryDto } from './dto/po-query.dto';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -28,13 +32,23 @@ export class PurchaseOrdersService {
     private readonly ratingRepository: Repository<VendorRating>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly budgetsService: BudgetsService,
+    private readonly auditLogsService: AuditLogsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
     // นับเฉพาะ PO ของปีปัจจุบัน (prefix PO-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    const count = await this.poRepository.count({ where: { poNumber: Like(`PO-${year}-%`) } });
-    return `PO-${year}-${String(count + 1).padStart(4, '0')}`;
+    // ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen เลขซ้ำ → 23505.
+    // suffix เป็น zero-padded 4 หลัก ดังนั้น ORDER BY แบบ lexical = numeric order ภายใน prefix ปีเดียวกัน
+    const latest = await this.poRepository.findOne({
+      where: { poNumber: Like(`PO-${year}-%`) },
+      order: { poNumber: 'DESC' },
+      select: { id: true, poNumber: true },
+    });
+    const next = latest ? parseInt(latest.poNumber.slice(-4), 10) + 1 : 1;
+    return `PO-${year}-${String(next).padStart(4, '0')}`;
   }
 
   async create(createdBy: number, dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
@@ -90,8 +104,22 @@ export class PurchaseOrdersService {
       items,
     });
 
+    // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
+    // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
+    const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
+
+    let savedPo: PurchaseOrder;
     try {
-      return await this.poRepository.save(po);
+      savedPo = await this.dataSource.transaction(async (manager) => {
+        await this.budgetsService.adjustReservedAmount(
+          pr.departmentId,
+          pr.fiscalYear ?? new Date().getFullYear(),
+          pr.quarter,
+          reserveDelta,
+          manager,
+        );
+        return manager.save(PurchaseOrder, po);
+      });
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         const constraint = (err as { constraint?: string }).constraint;
@@ -106,6 +134,38 @@ export class PurchaseOrdersService {
       }
       throw err;
     }
+
+    void this.auditLogsService.log({
+      userId: createdBy,
+      action: 'PO_CREATED',
+      entityType: 'PurchaseOrder',
+      entityId: savedPo.id,
+      newValue: {
+        poNumber: savedPo.poNumber,
+        prId: dto.prId,
+        vendorId: dto.vendorId,
+        totalAmount: savedPo.totalAmount,
+      },
+    }).catch(() => {});
+
+    void (async () => {
+      const linkedPr = await this.prRepository.findOne({
+        where: { id: dto.prId },
+        select: { id: true, requesterId: true, prNumber: true },
+      });
+      if (linkedPr) {
+        await this.notificationsService.send({
+          userId: linkedPr.requesterId,
+          title: 'สร้าง PO จาก PR ของคุณแล้ว',
+          message: `${savedPo.poNumber} ถูกสร้างจาก ${linkedPr.prNumber} แล้ว`,
+          type: NotificationType.PO_CREATED,
+          referenceId: savedPo.id,
+          referenceType: 'PurchaseOrder',
+        });
+      }
+    })().catch(() => {});
+
+    return savedPo;
   }
 
   async findAll(
@@ -185,17 +245,28 @@ export class PurchaseOrdersService {
     return this.poRepository.save(po);
   }
 
-  async acknowledge(id: number): Promise<PurchaseOrder> {
+  async acknowledge(id: number, userId: number): Promise<PurchaseOrder> {
     const po = await this.poRepository.findOne({ where: { id } });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status !== PoStatus.SENT) {
       throw new BadRequestException('Only sent POs can be acknowledged');
     }
     po.status = PoStatus.ACKNOWLEDGED;
-    return this.poRepository.save(po);
+    const saved = await this.poRepository.save(po);
+
+    void this.auditLogsService.log({
+      userId,
+      action: 'PO_ACKNOWLEDGED',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      oldValue: { status: PoStatus.SENT },
+      newValue: { status: PoStatus.ACKNOWLEDGED },
+    }).catch(() => {});
+
+    return saved;
   }
 
-  async cancel(id: number): Promise<PurchaseOrder> {
+  async cancel(id: number, userId: number): Promise<PurchaseOrder> {
     const po = await this.poRepository.findOne({ where: { id } });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status === PoStatus.COMPLETED) {
@@ -204,8 +275,40 @@ export class PurchaseOrdersService {
     if (po.status === PoStatus.CANCELLED) {
       throw new BadRequestException('PO is already cancelled');
     }
+    const oldStatus = po.status;
     po.status = PoStatus.CANCELLED;
-    return this.poRepository.save(po);
+    const saved = await this.poRepository.save(po);
+
+    // P5-2: release reserved budget ของ PR ที่ผูกอยู่ กัน budget leak
+    // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
+    void (async () => {
+      const pr = await this.prRepository.findOne({
+        where: { id: po.prId },
+        select: {
+          id: true, departmentId: true, fiscalYear: true,
+          quarter: true, totalEstimatedAmount: true, status: true,
+        },
+      });
+      if (pr && pr.status === PrStatus.APPROVED) {
+        await this.budgetsService.releaseReservedAmount(
+          pr.departmentId,
+          pr.fiscalYear ?? new Date().getFullYear(),
+          pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
+          Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
+        );
+      }
+    })().catch(() => {});
+
+    void this.auditLogsService.log({
+      userId,
+      action: 'PO_CANCELLED',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      oldValue: { status: oldStatus },
+      newValue: { status: PoStatus.CANCELLED },
+    }).catch(() => {});
+
+    return saved;
   }
 
   async rateVendor(poId: number, ratedBy: number, dto: RateVendorDto): Promise<VendorRating> {

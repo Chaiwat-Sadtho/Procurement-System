@@ -8,6 +8,10 @@ import { GoodsReceiptItem } from './entities/goods-receipt-item.entity';
 import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { ItemCondition } from './entities/goods-receipt-item.entity';
+import { PurchaseRequest } from '../purchase-requests/entities/purchase-request.entity';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const mockPoItem: Partial<PurchaseOrderItem> = {
   id: 1, quantity: 2, receivedQuantity: 0, itemName: 'Laptop',
@@ -41,6 +45,10 @@ const mockGrnRepo = {
   createQueryBuilder: jest.fn(),
 };
 
+const mockBudgetsService = { consumeAmount: jest.fn() };
+const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
+const mockNotificationsService = { send: jest.fn().mockResolvedValue(undefined) };
+
 describe('GoodsReceiptsService', () => {
   let service: GoodsReceiptsService;
 
@@ -53,6 +61,9 @@ describe('GoodsReceiptsService', () => {
         { provide: getRepositoryToken(PurchaseOrder), useValue: {} },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: {} },
         { provide: getDataSourceToken(), useValue: mockDataSource },
+        { provide: BudgetsService, useValue: mockBudgetsService },
+        { provide: AuditLogsService, useValue: mockAuditLogsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
     service = module.get<GoodsReceiptsService>(GoodsReceiptsService);
@@ -111,6 +122,110 @@ describe('GoodsReceiptsService', () => {
       expect(savedPoCalls[0][1].status).toBe(PoStatus.COMPLETED);
     });
 
+    it('should consume budget + fire audit/notification when all items received', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo,
+            prId: 7,
+            totalAmount: 1000,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        if (entity === PurchaseRequest) {
+          return Promise.resolve({
+            id: 7, departmentId: 3, fiscalYear: 2025, quarter: 2, totalEstimatedAmount: 1200,
+          });
+        }
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.create(1, {
+        poId: 1,
+        receivedDate: '2025-11-15',
+        items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD }],
+      });
+
+      // P5-6: reserved สะท้อนยอด PO จริง → consume release ยอด PO (1000) ไม่ใช่ PR estimate (1200), usedToAdd=PO amount
+      expect(mockBudgetsService.consumeAmount).toHaveBeenCalledWith(
+        3, 2025, 2, 1000, 1000, manager,
+      );
+      // audit + notification ยิงหลัง commit
+      expect(mockAuditLogsService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'GRN_CREATED',
+          entityType: 'GoodsReceiptNote',
+          entityId: mockGrn.id,
+          newValue: expect.objectContaining({ poCompleted: true }),
+        }),
+      );
+      expect(mockNotificationsService.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 1,
+          referenceId: mockGrn.id,
+          referenceType: 'GoodsReceiptNote',
+        }),
+      );
+    });
+
+    it('should NOT consume budget or send notification when only partially received', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo, prId: 7, totalAmount: 1000,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.create(1, {
+        poId: 1,
+        receivedDate: '2025-11-15',
+        items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
+      });
+
+      expect(mockBudgetsService.consumeAmount).not.toHaveBeenCalled();
+      expect(mockNotificationsService.send).not.toHaveBeenCalled();
+      // audit ยิงทุกครั้งที่สร้าง GRN สำเร็จ
+      expect(mockAuditLogsService.log).toHaveBeenCalled();
+    });
+
+    it('should skip consume + warn (not throw) when PR not found on full receipt', async () => {
+      const manager = createMockEntityManager(mockAcknowledgedPo);
+      manager.findOne.mockImplementation((entity: any) => {
+        if (entity === PurchaseOrder) {
+          return Promise.resolve({
+            ...mockAcknowledgedPo, prId: 7, totalAmount: 1000,
+            items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
+          });
+        }
+        // PR lookup คืน null (ข้อมูลเพี้ยน)
+        return Promise.resolve(null);
+      });
+      manager.save.mockResolvedValue(mockGrn);
+      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+      const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
+
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD }],
+        }),
+      ).resolves.toBeDefined();
+
+      expect(mockBudgetsService.consumeAmount).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
     it('should throw BadRequest if PO is not in receivable status', async () => {
       const manager = createMockEntityManager({ ...mockAcknowledgedPo, status: PoStatus.DRAFT });
       mockDataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
@@ -143,7 +258,7 @@ describe('GoodsReceiptsService', () => {
       })).rejects.toThrow(BadRequestException);
     });
 
-    it('should scope GRN running number count to current year (yearly reset)', async () => {
+    it('should scope GRN running number lookup to current year (yearly reset)', async () => {
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
@@ -164,8 +279,12 @@ describe('GoodsReceiptsService', () => {
       });
 
       const year = new Date().getFullYear();
-      const countArg = manager.count.mock.calls[0][1];
-      expect(countArg.where.grnNumber.value).toBe(`GRN-${year}-%`);
+      // GRN number มาจาก MAX(grnNumber) ของปีปัจจุบัน (findOne + ORDER BY DESC) ไม่ใช่ count
+      const grnFindCall = manager.findOne.mock.calls.find(
+        (c: any) => c[0] === GoodsReceiptNote,
+      );
+      expect(grnFindCall[1].where.grnNumber.value).toBe(`GRN-${year}-%`);
+      expect(grnFindCall[1].order.grnNumber).toBe('DESC');
     });
 
     it('should NOT count damaged items toward receivedQuantity (PO stays partially_received)', async () => {

@@ -66,16 +66,16 @@ export class PurchaseOrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROCUREMENT_OFFICER)
   @Post(':id/acknowledge')
-  acknowledge(@Param('id', ParseIntPipe) id: number) {
-    return this.poService.acknowledge(id);
+  acknowledge(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.poService.acknowledge(id, user.id);
   }
 
   @ApiOperation({ summary: 'ยกเลิก PO (PO only)' })
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROCUREMENT_OFFICER)
   @Post(':id/cancel')
-  cancel(@Param('id', ParseIntPipe) id: number) {
-    return this.poService.cancel(id);
+  cancel(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.poService.cancel(id, user.id);
   }
 
   @ApiOperation({ summary: 'ให้คะแนน vendor หลัง PO completed (PO only)' })

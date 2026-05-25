@@ -1,10 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PurchaseRequestsService } from './purchase-requests.service';
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
+import { BudgetsService } from '../budgets/budgets.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const mockUser: Partial<User> = {
   id: 1,
@@ -51,6 +55,22 @@ const mockPrItemRepo = {
 
 const mockUserRepo = {
   findOne: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
+};
+
+const mockBudgetsService = {
+  reserveAmount: jest.fn().mockResolvedValue(undefined),
+  releaseReservedAmount: jest.fn().mockResolvedValue(undefined),
+};
+const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
+const mockNotificationsService = {
+  send: jest.fn().mockResolvedValue(undefined),
+  sendToMany: jest.fn().mockResolvedValue(undefined),
+};
+// approve() ใช้ dataSource.transaction(cb) — mock ให้รัน cb พร้อม fake EntityManager
+const mockTxManager = { save: jest.fn((_, e) => Promise.resolve(e)) };
+const mockDataSource = {
+  transaction: jest.fn((cb) => cb(mockTxManager)),
 };
 
 describe('PurchaseRequestsService', () => {
@@ -63,6 +83,10 @@ describe('PurchaseRequestsService', () => {
         { provide: getRepositoryToken(PurchaseRequest), useValue: mockPrRepo },
         { provide: getRepositoryToken(PurchaseRequestItem), useValue: mockPrItemRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        { provide: DataSource, useValue: mockDataSource },
+        { provide: BudgetsService, useValue: mockBudgetsService },
+        { provide: AuditLogsService, useValue: mockAuditLogsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
     service = module.get<PurchaseRequestsService>(PurchaseRequestsService);
@@ -90,6 +114,31 @@ describe('PurchaseRequestsService', () => {
 
       expect(result.status).toBe(PrStatus.DRAFT);
       expect(mockPrRepo.save).toHaveBeenCalled();
+    });
+
+    it('should generate PR number from MAX existing suffix, surviving a delete gap', async () => {
+      // จำลองกรณีลบ PR กลางปีออก: count = 2 (count+1 จะได้ 0003 ซ้ำ) แต่ MAX จริงคือ PR-2026-0003
+      const year = new Date().getFullYear();
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      mockPrRepo.count.mockResolvedValue(2);
+      mockPrRepo.findOne.mockResolvedValue({ id: 3, prNumber: `PR-${year}-0003` });
+
+      let generatedPrNumber = '';
+      mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
+      mockPrRepo.create.mockImplementation((entity) => {
+        generatedPrNumber = entity.prNumber;
+        return { ...mockDraftPr, prNumber: entity.prNumber };
+      });
+      mockPrRepo.save.mockImplementation((e) => Promise.resolve(e));
+
+      await service.create(1, {
+        title: 'Test PR',
+        requiredDate: '2026-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+      });
+
+      // MAX+1 = 0004 (ไม่ใช่ count+1 = 0003 ที่จะชน unique constraint)
+      expect(generatedPrNumber).toBe(`PR-${year}-0004`);
     });
 
     it('should throw NotFoundException if requester not found', async () => {
@@ -148,6 +197,37 @@ describe('PurchaseRequestsService', () => {
       mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: 2 });
       await expect(service.approve(1, 2)).rejects.toThrow(ForbiddenException);
     });
+
+    it('should reserve annual budget (quarter null) when approving a PR without quarter', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: null });
+      mockUserRepo.findOne.mockResolvedValue(mockManager);
+
+      await service.approve(1, 2);
+
+      // P5-3: reserve ต้องส่ง quarter (null = งบรายปี) ตาม signature (deptId, fiscalYear, quarter, amount, txManager)
+      expect(mockBudgetsService.reserveAmount).toHaveBeenCalledWith(
+        mockSubmittedPr.departmentId,
+        expect.any(Number),
+        null,
+        expect.any(Number),
+        mockTxManager,
+      );
+    });
+
+    it('P5-3: should reserve the PR quarter when approving a quarterly PR', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: 2 });
+      mockUserRepo.findOne.mockResolvedValue(mockManager);
+
+      await service.approve(1, 2);
+
+      expect(mockBudgetsService.reserveAmount).toHaveBeenCalledWith(
+        mockSubmittedPr.departmentId,
+        expect.any(Number),
+        2,
+        expect.any(Number),
+        mockTxManager,
+      );
+    });
   });
 
   describe('reject', () => {
@@ -162,6 +242,8 @@ describe('PurchaseRequestsService', () => {
 
       const result = await service.reject(1, 2, { reason: 'No budget' });
       expect(result.status).toBe(PrStatus.REJECTED);
+      // reject เกิดได้เฉพาะตอน SUBMITTED (ยังไม่เคย reserve งบ) → ต้องไม่แตะ budget
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when rejecting non-submitted PR', async () => {
