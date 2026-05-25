@@ -242,6 +242,8 @@ describe('PurchaseRequestsService', () => {
 
       const result = await service.reject(1, 2, { reason: 'No budget' });
       expect(result.status).toBe(PrStatus.REJECTED);
+      // reject เกิดได้เฉพาะตอน SUBMITTED (ยังไม่เคย reserve งบ) → ต้องไม่แตะ budget
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when rejecting non-submitted PR', async () => {
