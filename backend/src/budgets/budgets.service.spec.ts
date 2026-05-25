@@ -172,6 +172,55 @@ describe('BudgetsService', () => {
     });
   });
 
+  describe('adjustReservedAmount', () => {
+    it('should increase reserved by a positive delta within budget', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget, reservedAmount: 1200, usedAmount: 0,
+      });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.adjustReservedAmount(1, 2026, null, 300);
+
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
+        Budget, 1, { reservedAmount: 1500 },
+      );
+    });
+
+    it('should throw BadRequestException when positive delta exceeds available budget', async () => {
+      // available = 1000000 - 900000 - 50000 = 50000, delta +100000
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget, reservedAmount: 900000, usedAmount: 50000,
+      });
+      await expect(service.adjustReservedAmount(1, 2026, null, 100000)).rejects.toThrow(BadRequestException);
+      expect(mockDataSource.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should decrease reserved by a negative delta without validating availability', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget, reservedAmount: 1200, usedAmount: 0,
+      });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.adjustReservedAmount(1, 2026, null, -200);
+
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
+        Budget, 1, { reservedAmount: 1000 },
+      );
+    });
+
+    it('should skip silently when no budget configured', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue(null);
+      await expect(service.adjustReservedAmount(1, 2026, null, 500)).resolves.toBeUndefined();
+      expect(mockDataSource.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing when delta is zero', async () => {
+      await service.adjustReservedAmount(1, 2026, null, 0);
+      expect(mockDataSource.manager.findOne).not.toHaveBeenCalled();
+      expect(mockDataSource.manager.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getSummary', () => {
     it('should return budget summary with remaining calculation', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({

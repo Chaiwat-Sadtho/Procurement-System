@@ -195,6 +195,48 @@ export class BudgetsService {
     });
   }
 
+  // P5-6: ปรับ reserved ให้สะท้อนยอด PO จริงตอนสร้าง PO (delta = PO total - PR estimate)
+  // delta > 0 (PO แพงกว่าที่ประเมิน) ต้องเช็คงบคงเหลือก่อน เพื่อกัน used ทะลุ total ตอน consume
+  // delta < 0 (PO ถูกกว่า) คืนงบส่วนเกิน ไม่ต้อง validate
+  async adjustReservedAmount(
+    departmentId: number,
+    fiscalYear: number,
+    quarter: number | null,
+    delta: number,
+    txManager?: EntityManager,
+  ): Promise<void> {
+    if (delta === 0) return;
+    const mgr = txManager ?? this.dataSource.manager;
+
+    const budget = await mgr.findOne(Budget, {
+      where: this.budgetWhere(departmentId, fiscalYear, quarter),
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!budget) return;
+
+    const newReserved = Math.max(0, Number(budget.reservedAmount) + delta);
+
+    if (delta > 0) {
+      const totalCommitted = newReserved + Number(budget.usedAmount);
+      if (totalCommitted > Number(budget.totalAmount)) {
+        const available =
+          Number(budget.totalAmount) - Number(budget.reservedAmount) - Number(budget.usedAmount);
+        throw new BadRequestException(
+          `งบประมาณไม่เพียงพอสำหรับยอด PO ที่เพิ่มขึ้น: ต้องการเพิ่ม ${delta}, คงเหลือ ${available}`,
+        );
+      }
+    }
+
+    await mgr.update(Budget, budget.id, {
+      reservedAmount: Number(newReserved.toFixed(2)),
+    });
+
+    const totalCommitted = newReserved + Number(budget.usedAmount);
+    if (delta > 0 && totalCommitted / Number(budget.totalAmount) > 0.8) {
+      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount)).catch(() => {});
+    }
+  }
+
   private async notifyBudgetWarning(
     departmentId: number,
     fiscalYear: number,

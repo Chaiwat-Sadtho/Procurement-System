@@ -104,9 +104,22 @@ export class PurchaseOrdersService {
       items,
     });
 
+    // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
+    // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
+    const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
+
     let savedPo: PurchaseOrder;
     try {
-      savedPo = await this.poRepository.save(po);
+      savedPo = await this.dataSource.transaction(async (manager) => {
+        await this.budgetsService.adjustReservedAmount(
+          pr.departmentId,
+          pr.fiscalYear ?? new Date().getFullYear(),
+          pr.quarter,
+          reserveDelta,
+          manager,
+        );
+        return manager.save(PurchaseOrder, po);
+      });
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         const constraint = (err as { constraint?: string }).constraint;
@@ -281,7 +294,7 @@ export class PurchaseOrdersService {
           pr.departmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
           pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
-          Number(pr.totalEstimatedAmount),
+          Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
         );
       }
     })().catch(() => {});
