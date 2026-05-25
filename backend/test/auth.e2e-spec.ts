@@ -1,12 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { DataSource } from 'typeorm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
+// Idempotency note (test-isolation fix): register + PATCH /me persist to the real
+// DB. We tag the email with a per-run value (`tag = Date.now()`) so the suite is
+// re-runnable on a dirty DB volume, and tear the user down in afterAll so the table
+// does not accumulate test rows across runs.
+
 describe('Auth (e2e)', () => {
   let app: INestApplication;
+  let dataSource: DataSource;
   let accessToken: string;
+
+  const tag = Date.now();
+  const email = `e2e-${tag}@test.com`;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -18,9 +28,12 @@ describe('Auth (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
+
+    dataSource = app.get(DataSource);
   });
 
   afterAll(async () => {
+    await dataSource.query('DELETE FROM users WHERE email = $1', [email]);
     await app.close();
   });
 
@@ -28,7 +41,7 @@ describe('Auth (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
-        email: 'e2e@test.com',
+        email,
         password: 'Password123',
         firstName: 'John',
         middleName: 'Michael',
@@ -43,7 +56,7 @@ describe('Auth (e2e)', () => {
   it('POST /api/v1/auth/login — returns token', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'e2e@test.com', password: 'Password123' })
+      .send({ email, password: 'Password123' })
       .expect(201);
 
     expect(res.body).toHaveProperty('access_token');
@@ -53,7 +66,7 @@ describe('Auth (e2e)', () => {
   it('POST /api/v1/auth/login — rejects wrong password', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'e2e@test.com', password: 'wrongpassword' })
+      .send({ email, password: 'wrongpassword' })
       .expect(401);
   });
 
@@ -63,7 +76,7 @@ describe('Auth (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(res.body).toHaveProperty('email', 'e2e@test.com');
+    expect(res.body).toHaveProperty('email', email);
     expect(res.body).toHaveProperty('fullName', 'John Michael Doe');
     expect(res.body).toHaveProperty('role');
     expect(res.body).not.toHaveProperty('passwordHash');
@@ -83,6 +96,6 @@ describe('Auth (e2e)', () => {
       .expect(200);
 
     expect(res.body).toHaveProperty('fullName', 'John Edited Doe');
-    expect(res.body).toHaveProperty('email', 'e2e@test.com');
+    expect(res.body).toHaveProperty('email', email);
   });
 });
