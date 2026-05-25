@@ -51,12 +51,16 @@ export class GoodsReceiptsService {
         );
       }
 
-      // 2. Generate GRN number — นับเฉพาะ GRN ของปีปัจจุบัน (prefix GRN-YYYY-) เพื่อ reset running number รายปี
+      // 2. Generate GRN number — ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen ซ้ำ → 23505.
+      // suffix zero-padded 4 หลัก ดังนั้น ORDER BY lexical = numeric order ภายใน prefix ปีเดียวกัน (อยู่ใน transaction เดียวกัน)
       const year = new Date().getFullYear();
-      const count = await manager.count(GoodsReceiptNote, {
+      const latestGrn = await manager.findOne(GoodsReceiptNote, {
         where: { grnNumber: Like(`GRN-${year}-%`) },
+        order: { grnNumber: 'DESC' },
+        select: { id: true, grnNumber: true },
       });
-      const grnNumber = `GRN-${year}-${String(count + 1).padStart(4, '0')}`;
+      const nextGrn = latestGrn ? parseInt(latestGrn.grnNumber.slice(-4), 10) + 1 : 1;
+      const grnNumber = `GRN-${year}-${String(nextGrn).padStart(4, '0')}`;
 
       // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)
       const effectiveByPoItem = new Map<number, number>();

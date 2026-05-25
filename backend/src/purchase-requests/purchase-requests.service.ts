@@ -1,8 +1,8 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ForbiddenException,
+  Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, Like, DataSource } from 'typeorm';
+import { Repository, Like, DataSource, QueryFailedError } from 'typeorm';
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -34,8 +34,15 @@ export class PurchaseRequestsService {
   private async generatePrNumber(): Promise<string> {
     const year = new Date().getFullYear();
     // นับเฉพาะ PR ของปีปัจจุบัน (prefix PR-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    const count = await this.prRepository.count({ where: { prNumber: Like(`PR-${year}-%`) } });
-    return `PR-${year}-${String(count + 1).padStart(4, '0')}`;
+    // ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen เลขซ้ำ → 23505.
+    // suffix เป็น zero-padded 4 หลัก ดังนั้น ORDER BY แบบ lexical = numeric order ภายใน prefix ปีเดียวกัน
+    const latest = await this.prRepository.findOne({
+      where: { prNumber: Like(`PR-${year}-%`) },
+      order: { prNumber: 'DESC' },
+      select: { id: true, prNumber: true },
+    });
+    const next = latest ? parseInt(latest.prNumber.slice(-4), 10) + 1 : 1;
+    return `PR-${year}-${String(next).padStart(4, '0')}`;
   }
 
   async create(requesterId: number, dto: CreatePurchaseRequestDto): Promise<PurchaseRequest> {
@@ -71,7 +78,15 @@ export class PurchaseRequestsService {
       items,
     });
 
-    return this.prRepository.save(pr);
+    try {
+      return await this.prRepository.save(pr);
+    } catch (err) {
+      // ถ้า 2 request gen pr_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry (parity กับ PO/GRN)
+      if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
+        throw new ConflictException('PR number collision, please retry');
+      }
+      throw err;
+    }
   }
 
   async findAll(

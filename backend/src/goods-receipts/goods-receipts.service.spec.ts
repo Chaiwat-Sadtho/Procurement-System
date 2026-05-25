@@ -258,7 +258,7 @@ describe('GoodsReceiptsService', () => {
       })).rejects.toThrow(BadRequestException);
     });
 
-    it('should scope GRN running number count to current year (yearly reset)', async () => {
+    it('should scope GRN running number lookup to current year (yearly reset)', async () => {
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
@@ -279,8 +279,12 @@ describe('GoodsReceiptsService', () => {
       });
 
       const year = new Date().getFullYear();
-      const countArg = manager.count.mock.calls[0][1];
-      expect(countArg.where.grnNumber.value).toBe(`GRN-${year}-%`);
+      // GRN number มาจาก MAX(grnNumber) ของปีปัจจุบัน (findOne + ORDER BY DESC) ไม่ใช่ count
+      const grnFindCall = manager.findOne.mock.calls.find(
+        (c: any) => c[0] === GoodsReceiptNote,
+      );
+      expect(grnFindCall[1].where.grnNumber.value).toBe(`GRN-${year}-%`);
+      expect(grnFindCall[1].order.grnNumber).toBe('DESC');
     });
 
     it('should NOT count damaged items toward receivedQuantity (PO stays partially_received)', async () => {

@@ -40,8 +40,15 @@ export class PurchaseOrdersService {
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
     // นับเฉพาะ PO ของปีปัจจุบัน (prefix PO-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    const count = await this.poRepository.count({ where: { poNumber: Like(`PO-${year}-%`) } });
-    return `PO-${year}-${String(count + 1).padStart(4, '0')}`;
+    // ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen เลขซ้ำ → 23505.
+    // suffix เป็น zero-padded 4 หลัก ดังนั้น ORDER BY แบบ lexical = numeric order ภายใน prefix ปีเดียวกัน
+    const latest = await this.poRepository.findOne({
+      where: { poNumber: Like(`PO-${year}-%`) },
+      order: { poNumber: 'DESC' },
+      select: { id: true, poNumber: true },
+    });
+    const next = latest ? parseInt(latest.poNumber.slice(-4), 10) + 1 : 1;
+    return `PO-${year}-${String(next).padStart(4, '0')}`;
   }
 
   async create(createdBy: number, dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
