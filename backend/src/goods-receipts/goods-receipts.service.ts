@@ -144,7 +144,7 @@ export class GoodsReceiptsService {
             prData.departmentId,
             prData.fiscalYear ?? new Date().getFullYear(),
             prData.quarter, // P5-3: consume งบไตรมาสเดียวกับที่ reserve
-            Number(prData.totalEstimatedAmount),
+            Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) → release ยอด PO ไม่ใช่ PR estimate
             Number(po.totalAmount),
             manager,
           );

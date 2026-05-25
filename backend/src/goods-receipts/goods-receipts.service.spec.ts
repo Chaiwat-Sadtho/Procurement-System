@@ -149,9 +149,9 @@ describe('GoodsReceiptsService', () => {
         items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD }],
       });
 
-      // consume budget ด้วย fiscalYear/quarter ที่ตรึงไว้ + reservedToRelease=PR amount, usedToAdd=PO amount
+      // P5-6: reserved สะท้อนยอด PO จริง → consume release ยอด PO (1000) ไม่ใช่ PR estimate (1200), usedToAdd=PO amount
       expect(mockBudgetsService.consumeAmount).toHaveBeenCalledWith(
-        3, 2025, 2, 1200, 1000, manager,
+        3, 2025, 2, 1000, 1000, manager,
       );
       // audit + notification ยิงหลัง commit
       expect(mockAuditLogsService.log).toHaveBeenCalledWith(
