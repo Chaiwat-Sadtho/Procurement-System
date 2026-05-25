@@ -33,15 +33,63 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    // Login all users
-    const [empRes, mgrRes, poRes] = await Promise.all([
-      request(app.getHttpServer()).post('/api/v1/auth/login').send({ email: 'employee@company.com', password: 'Password123' }),
-      request(app.getHttpServer()).post('/api/v1/auth/login').send({ email: 'manager@company.com', password: 'Password123' }),
-      request(app.getHttpServer()).post('/api/v1/auth/login').send({ email: 'procurement@company.com', password: 'Password123' }),
-    ]);
-    employeeToken = empRes.body.access_token;
-    managerToken = mgrRes.body.access_token;
+    // Login procurement officer (seed user) — used for PO/GRN ops (role-based, dept-agnostic)
+    // and for the fresh dept/budget/user setup below.
+    const poRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'procurement@company.com', password: 'Password123' });
     poToken = poRes.body.access_token;
+
+    // Fresh department + annual budget so PR approve (which now reserves budget) succeeds.
+    const deptRes = await request(app.getHttpServer())
+      .post('/api/v1/departments')
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ name: `PO E2E Dept ${tag}` })
+      .expect(201);
+    const deptId = deptRes.body.id;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/budgets')
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ departmentId: deptId, fiscalYear: new Date().getFullYear(), totalAmount: 1000000 })
+      .expect(201);
+
+    // Fresh employee in that dept.
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `po-e2e-emp-${tag}@test.com`,
+        password: 'Password123',
+        firstName: 'PO',
+        lastName: 'Employee',
+        departmentId: deptId,
+      })
+      .expect(201);
+    const empRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: `po-e2e-emp-${tag}@test.com`, password: 'Password123' });
+    employeeToken = empRes.body.access_token;
+
+    // Fresh manager in that dept (role upgraded by PO).
+    const mgrReg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `po-e2e-mgr-${tag}@test.com`,
+        password: 'Password123',
+        firstName: 'PO',
+        lastName: 'Manager',
+        departmentId: deptId,
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${mgrReg.body.user.id}/role`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ role: 'manager' })
+      .expect(200);
+    const mgrRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: `po-e2e-mgr-${tag}@test.com`, password: 'Password123' });
+    managerToken = mgrRes.body.access_token;
 
     // Setup: สร้าง vendor category + vendor (tag กัน unique conflict)
     const catRes = await request(app.getHttpServer())

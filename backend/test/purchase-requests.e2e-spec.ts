@@ -11,6 +11,12 @@ describe('Purchase Requests (e2e)', () => {
   let procurementToken: string;
   let otherEmployeeToken: string;
   let prId: number;
+  let deptId: number;
+
+  // Tag per-run so the fresh dept/users don't collide on unique constraints across re-runs.
+  // A fresh dept + its own budget per run means no cross-run reservedAmount accumulation.
+  const tag = Date.now();
+  const fiscalYear = new Date().getFullYear();
 
   const createPrBody = {
     title: 'ขอซื้อคอมพิวเตอร์',
@@ -31,23 +37,66 @@ describe('Purchase Requests (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    const empRes = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'employee@company.com', password: 'Password123' })
-      .expect(201);
-    employeeToken = empRes.body.access_token;
-
-    const mgrRes = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'manager@company.com', password: 'Password123' })
-      .expect(201);
-    managerToken = mgrRes.body.access_token;
-
+    // Procurement officer (seed user) is used for procurement-only ops + dept/budget setup.
     const procRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' })
       .expect(201);
     procurementToken = procRes.body.access_token;
+
+    // Create a fresh department with its own annual budget so that PR approve
+    // (which now reserves budget via budgetsService.reserveAmount) succeeds.
+    const deptRes = await request(app.getHttpServer())
+      .post('/api/v1/departments')
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .send({ name: `PR E2E Dept ${tag}` })
+      .expect(201);
+    deptId = deptRes.body.id;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/budgets')
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .send({ departmentId: deptId, fiscalYear, totalAmount: 1000000 })
+      .expect(201);
+
+    // Register a fresh employee in that dept, then login.
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `pr-e2e-emp-${tag}@test.com`,
+        password: 'Password123',
+        firstName: 'PR',
+        lastName: 'Employee',
+        departmentId: deptId,
+      })
+      .expect(201);
+    const empRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: `pr-e2e-emp-${tag}@test.com`, password: 'Password123' })
+      .expect(201);
+    employeeToken = empRes.body.access_token;
+
+    // Register a fresh manager in that dept, PO upgrades role, then login.
+    const mgrReg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `pr-e2e-mgr-${tag}@test.com`,
+        password: 'Password123',
+        firstName: 'PR',
+        lastName: 'Manager',
+        departmentId: deptId,
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${mgrReg.body.user.id}/role`)
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .send({ role: 'manager' })
+      .expect(200);
+    const mgrRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: `pr-e2e-mgr-${tag}@test.com`, password: 'Password123' })
+      .expect(201);
+    managerToken = mgrRes.body.access_token;
 
     // Register a second employee (default role = employee) to test cross-user access.
     // Unique email per run keeps re-runs from colliding on the unique constraint.
