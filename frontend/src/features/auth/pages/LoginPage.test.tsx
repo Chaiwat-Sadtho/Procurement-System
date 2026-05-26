@@ -20,7 +20,7 @@ vi.mock('react-router-dom', async () => {
 
 function renderLoginPage() {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
     <QueryClientProvider client={queryClient}>
@@ -32,7 +32,10 @@ function renderLoginPage() {
 }
 
 describe('LoginPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+  })
 
   it('renders email and password fields', () => {
     renderLoginPage()
@@ -66,6 +69,11 @@ describe('LoginPage', () => {
         email: 'test@example.com',
         password: 'password123',
       })
+    })
+
+    await waitFor(() => {
+      expect(localStorage.getItem('token')).toBe('test-token')
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
     })
   })
 
