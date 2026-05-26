@@ -14,6 +14,9 @@ import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 const mockUser: User = {
   id: 1,
   email: 'test@example.com',
+  firstName: 'Test',
+  middleName: null,
+  lastName: 'User',
   fullName: 'Test User',
   role: 'employee',
   departmentId: 1,
