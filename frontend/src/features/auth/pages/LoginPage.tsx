@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { cn } from '@/shared/lib/utils'
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -36,10 +37,32 @@ const announcements = [
   },
   {
     icon: Calendar,
-    title: 'อบรมการใช้งานระบบ e-GP',
+    title: 'อบรมการใช้งานระบบ e-GP1',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+  },
+  {
+    icon: Calendar,
+    title: 'อบรมการใช้งานระบบ e-GP2',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+  },
+  {
+    icon: Calendar,
+    title: 'อบรมการใช้งานระบบ e-GP3',
     detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
   },
 ]
+
+const MAX_ROWS_PER_COL = 5
+
+const visibleAnnouncements = announcements.slice(0, MAX_ROWS_PER_COL * 2)
+
+const announcementColumns =
+  visibleAnnouncements.length > MAX_ROWS_PER_COL
+    ? [
+        visibleAnnouncements.slice(0, MAX_ROWS_PER_COL),
+        visibleAnnouncements.slice(MAX_ROWS_PER_COL),
+      ]
+    : [visibleAnnouncements]
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -67,22 +90,31 @@ export function LoginPage() {
           <span className="text-lg font-semibold">Procurement System</span>
         </div>
 
-        <div className="mt-16 max-w-xl">
+        <div className="mt-16 max-w-3xl">
           <h2 className="text-2xl font-semibold text-white">ประกาศ / ข่าวสาร</h2>
-          <ul className="mt-6 space-y-4">
-            {announcements.map((item) => (
-              <li
-                key={item.title}
-                className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
-              >
-                <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <div>
-                  <p className="font-medium text-white">{item.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
-                </div>
-              </li>
+          <div
+            className={cn(
+              'mt-6 grid gap-4',
+              announcementColumns.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
+            )}
+          >
+            {announcementColumns.map((column, columnIndex) => (
+              <ul key={columnIndex} className="space-y-4">
+                {column.map((item) => (
+                  <li
+                    key={item.title}
+                    className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
+                  >
+                    <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-medium text-white">{item.title}</p>
+                      <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ))}
-          </ul>
+          </div>
         </div>
 
         <p className="mt-auto pt-8 text-xs text-slate-400">
