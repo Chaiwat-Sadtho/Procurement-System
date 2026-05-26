@@ -36,9 +36,12 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-60 bg-card border-r flex flex-col z-10">
-      <div className="h-14 flex items-center px-6 border-b shrink-0">
-        <span className="font-semibold text-primary">Procurement</span>
+    <aside
+      aria-label="Main navigation"
+      className="fixed inset-y-0 left-0 w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-10"
+    >
+      <div className="h-14 flex items-center px-6 border-b border-slate-800 shrink-0">
+        <span className="font-semibold text-white">Procurement</span>
       </div>
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-3">
@@ -51,7 +54,7 @@ export function Sidebar() {
                     'flex items-center px-3 py-2 text-sm rounded-md transition-colors',
                     isActive
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white',
                   )
                 }
               >
@@ -61,13 +64,13 @@ export function Sidebar() {
           ))}
         </ul>
       </nav>
-      <div className="p-4 border-t shrink-0">
-        <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
-        <p className="text-xs text-muted-foreground truncate mb-2">{user?.email}</p>
+      <div className="p-4 border-t border-slate-800 shrink-0">
+        <p className="text-sm font-medium text-slate-100 truncate">{user?.fullName}</p>
+        <p className="text-xs text-slate-400 truncate mb-2">{user?.email}</p>
         <button
           type="button"
           onClick={handleLogout}
-          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+          className="text-xs text-slate-400 hover:text-white transition-colors"
         >
           Sign out
         </button>
