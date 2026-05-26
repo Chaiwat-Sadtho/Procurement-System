@@ -65,6 +65,7 @@ export function Sidebar() {
         <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
         <p className="text-xs text-muted-foreground truncate mb-2">{user?.email}</p>
         <button
+          type="button"
           onClick={handleLogout}
           className="text-xs text-muted-foreground hover:text-destructive transition-colors"
         >

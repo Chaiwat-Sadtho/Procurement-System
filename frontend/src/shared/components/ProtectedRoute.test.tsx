@@ -109,4 +109,22 @@ describe('ProtectedRoute', () => {
 
     expect(screen.getByText('Protected Content')).toBeInTheDocument()
   })
+
+  it('shows spinner and no content while loading', () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    } as ReturnType<typeof useCurrentUser>)
+
+    renderWithRouter(
+      <ProtectedRoute>
+        <div>Protected Content</div>
+      </ProtectedRoute>,
+    )
+
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument()
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument()
+    expect(document.querySelector('.animate-spin')).not.toBeNull()
+  })
 })
