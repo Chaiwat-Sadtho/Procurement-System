@@ -20,7 +20,9 @@ const navItems: NavItem[] = [
   { label: 'Users', path: '/users', allowedRoles: ['procurement_officer'] },
 ]
 
-export function Sidebar() {
+// Shared nav body used by both the desktop Sidebar and the mobile drawer.
+// onNavigate lets the mobile drawer close itself when a link is tapped.
+export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: user } = useCurrentUser()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -28,6 +30,7 @@ export function Sidebar() {
   function handleLogout() {
     localStorage.removeItem('token')
     queryClient.clear()
+    onNavigate?.()
     navigate('/login')
   }
 
@@ -36,10 +39,7 @@ export function Sidebar() {
   )
 
   return (
-    <aside
-      aria-label="Main navigation"
-      className="fixed inset-y-0 left-0 w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-10"
-    >
+    <>
       <div className="h-14 flex items-center px-6 border-b border-slate-800 shrink-0">
         <span className="font-semibold text-white">Procurement</span>
       </div>
@@ -49,6 +49,7 @@ export function Sidebar() {
             <li key={item.path}>
               <NavLink
                 to={item.path}
+                onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center px-3 py-2 text-sm rounded-md transition-colors',
@@ -75,6 +76,17 @@ export function Sidebar() {
           Sign out
         </button>
       </div>
+    </>
+  )
+}
+
+export function Sidebar() {
+  return (
+    <aside
+      aria-label="Main navigation"
+      className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r border-slate-800 bg-slate-900 lg:flex"
+    >
+      <SidebarContent />
     </aside>
   )
 }
