@@ -50,11 +50,6 @@ const announcements = [
     title: 'อบรมการใช้งานระบบ e-GP3',
     detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
   },
-  {
-    icon: Calendar,
-    title: 'อบรมการใช้งานระบบ e-GP4',
-    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
-  },
 ]
 
 const MAX_ROWS_PER_COL = 5
@@ -89,7 +84,10 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-12">
-      <aside className="hidden bg-slate-900 p-12 text-slate-100 lg:col-span-8 lg:flex lg:flex-col">
+      <aside
+        aria-label="ประกาศและข่าวสาร"
+        className="hidden bg-slate-900 p-12 text-slate-100 lg:col-span-8 lg:flex lg:flex-col"
+      >
         <div className="flex items-center gap-2 text-white">
           <Package className="h-6 w-6 text-primary" />
           <span className="text-lg font-semibold">Procurement System</span>

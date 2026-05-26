@@ -44,6 +44,13 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
+  it('labels the announcements panel as a named complementary landmark', () => {
+    renderLoginPage()
+    expect(
+      screen.getByRole('complementary', { name: 'ประกาศและข่าวสาร' }),
+    ).toBeInTheDocument()
+  })
+
   it('shows validation error when email is empty', async () => {
     const user = userEvent.setup()
     renderLoginPage()
