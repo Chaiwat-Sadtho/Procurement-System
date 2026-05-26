@@ -92,4 +92,35 @@ describe('LoginPage', () => {
       expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument()
     })
   })
+
+  it('submits with a short password since login enforces no length rule', async () => {
+    const { authApi } = await import('@/features/auth/api')
+    vi.mocked(authApi.login).mockResolvedValueOnce({ access_token: 'test-token' })
+
+    const user = userEvent.setup()
+    renderLoginPage()
+
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com')
+    await user.type(screen.getByLabelText(/password/i), '123')
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(authApi.login).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: '123',
+      })
+    })
+  })
+
+  it('shows "Password is required" when password is empty', async () => {
+    const user = userEvent.setup()
+    renderLoginPage()
+
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com')
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/password is required/i)).toBeInTheDocument()
+    })
+  })
 })

@@ -3,15 +3,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { Calendar, FileText, Megaphone, Package } from 'lucide-react'
 import { authApi } from '@/features/auth/api'
 import { Button } from '@/shared/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card'
 import {
   Form,
   FormControl,
@@ -24,10 +18,28 @@ import { Input } from '@/shared/components/ui/input'
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(1, 'Password is required'),
 })
 
 type LoginFormValues = z.infer<typeof schema>
+
+const announcements = [
+  {
+    icon: Megaphone,
+    title: 'ปิดปรับปรุงระบบ',
+    detail: 'เสาร์ที่ 30 พ.ค. 22:00–24:00 น.',
+  },
+  {
+    icon: FileText,
+    title: 'นโยบายจัดซื้อใหม่ ปีงบประมาณ 2569',
+    detail: 'มีผล 1 มิ.ย. — โปรดศึกษาก่อนสร้างคำขอซื้อ',
+  },
+  {
+    icon: Calendar,
+    title: 'อบรมการใช้งานระบบ e-GP',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+  },
+]
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -48,13 +60,45 @@ export function LoginPage() {
   })
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Procurement System</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="grid min-h-screen lg:grid-cols-12">
+      <aside className="hidden bg-slate-900 p-12 text-slate-100 lg:col-span-8 lg:flex lg:flex-col">
+        <div className="flex items-center gap-2 text-white">
+          <Package className="h-6 w-6 text-primary" />
+          <span className="text-lg font-semibold">Procurement System</span>
+        </div>
+
+        <div className="mt-16 max-w-xl">
+          <h2 className="text-2xl font-semibold text-white">ประกาศ / ข่าวสาร</h2>
+          <ul className="mt-6 space-y-4">
+            {announcements.map((item) => (
+              <li
+                key={item.title}
+                className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
+              >
+                <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <p className="font-medium text-white">{item.title}</p>
+                  <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="mt-auto pt-8 text-xs text-slate-400">
+          © 2026 Procurement System
+        </p>
+      </aside>
+
+      <main className="col-span-12 flex items-center justify-center bg-background p-6 lg:col-span-4">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-foreground">Sign in</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              เข้าสู่ระบบเพื่อจัดการงานจัดซื้อ
+            </p>
+          </div>
+
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
@@ -94,8 +138,8 @@ export function LoginPage() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
     </div>
   )
 }
