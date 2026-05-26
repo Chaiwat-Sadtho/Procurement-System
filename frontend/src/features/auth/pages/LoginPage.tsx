@@ -50,6 +50,11 @@ const announcements = [
     title: 'อบรมการใช้งานระบบ e-GP3',
     detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
   },
+  {
+    icon: Calendar,
+    title: 'อบรมการใช้งานระบบ e-GP4',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+  },
 ]
 
 const MAX_ROWS_PER_COL = 5
@@ -90,7 +95,7 @@ export function LoginPage() {
           <span className="text-lg font-semibold">Procurement System</span>
         </div>
 
-        <div className="mt-16 max-w-3xl">
+        <div className="mt-16">
           <h2 className="text-2xl font-semibold text-white">ประกาศ / ข่าวสาร</h2>
           <div
             className={cn(
