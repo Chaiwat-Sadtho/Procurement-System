@@ -311,5 +311,23 @@ describe('PurchaseRequestsService', () => {
         service.findOne(1, { id: 2, role: UserRole.MANAGER }),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('should load department relation so PR detail can show department name', async () => {
+      const prWithDept = {
+        ...mockDraftPr,
+        requesterId: 1,
+        department: { id: 1, name: 'IT' },
+      };
+      mockPrRepo.findOne.mockResolvedValue(prWithDept);
+
+      const result = await service.findOne(1, { id: 1, role: UserRole.EMPLOYEE });
+
+      expect(mockPrRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: expect.objectContaining({ department: true }),
+        }),
+      );
+      expect(result.department).toEqual({ id: 1, name: 'IT' });
+    });
   });
 });
