@@ -137,7 +137,7 @@ export class PurchaseRequestsService {
   ): Promise<PurchaseRequest> {
     const pr = await this.prRepository.findOne({
       where: { id },
-      relations: { items: true, requester: true, approver: true },
+      relations: { items: true, requester: true, approver: true, department: true },
     });
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
 
