@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/shared/components/AppLayout'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <ComingSoon title="Dashboard" /> },
-      { path: 'purchase-requests', element: <ComingSoon title="Purchase Requests" /> },
+      { path: 'purchase-requests', element: <PRListPage /> },
       {
         path: 'purchase-requests/new',
         element: (
