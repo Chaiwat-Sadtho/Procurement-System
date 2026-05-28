@@ -23,9 +23,9 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 201 96% 32%;
-    --table-header-bg: 204 94% 94%;
-    --table-header-foreground: 222.2 47.4% 11.2%;
     --radius: 0.5rem;
+    --table-header: 204 94% 94%;
+    --table-header-foreground: 222.2 47.4% 11.2%;
   }
 
   .dark {
@@ -48,7 +48,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 201 90% 45%;
-    --table-header-bg: 217.2 32.6% 17.5%;
+    --table-header: 222.2 47.4% 11.2%;
     --table-header-foreground: 210 40% 98%;
   }
 }

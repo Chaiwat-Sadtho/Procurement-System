@@ -27,7 +27,7 @@ export default {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         'table-header': {
-          DEFAULT: 'hsl(var(--table-header-bg))',
+          DEFAULT: 'hsl(var(--table-header))',
           foreground: 'hsl(var(--table-header-foreground))',
         },
       },
