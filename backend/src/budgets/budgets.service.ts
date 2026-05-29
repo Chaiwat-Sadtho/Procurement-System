@@ -232,6 +232,7 @@ export class BudgetsService {
     });
     if (!budget) return;
 
+    // ดิบ (ไม่ปัดผ่าน round2) — ใช้เฉพาะ validate เกินงบ + warning 80%; ค่าที่ store ใช้ applyAdjust ด้านล่าง
     const newReserved = Math.max(0, Number(budget.reservedAmount) + delta);
 
     if (delta > 0) {
