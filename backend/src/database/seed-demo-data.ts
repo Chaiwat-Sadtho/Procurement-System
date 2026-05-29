@@ -1,4 +1,6 @@
 import { UserRole } from '../users/entities/user.entity';
+import { PrStatus } from '../purchase-requests/entities/purchase-request.entity';
+import { PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 
 // ====== Departments ======
 // baseline (seedBaseline) สร้าง 3 ตัวแล้ว: Engineering(1) / Finance(2) / Operations(3)
@@ -98,3 +100,82 @@ const BUDGET_TOTAL_OVERRIDES: Record<string, number> = {
 export function budgetTotalFor(deptName: string, fy: number, quarter: number): number {
   return BUDGET_TOTAL_OVERRIDES[`${deptName}|${fy}|${quarter}`] ?? BUDGET_TOTAL_DEFAULT;
 }
+
+export interface PoPlan {
+  vendor: number;        // index ใน VENDORS
+  status: PoStatus;      // DRAFT|SENT|ACKNOWLEDGED|PARTIALLY_RECEIVED|COMPLETED|CANCELLED
+  splitGrn?: boolean;    // completed: true = 2 GRN (partial→complete), false/undefined = 1 GRN complete
+  damaged?: boolean;     // partially_received: true = มี GRN item condition=damaged เพิ่ม
+  rating?: number;       // completed เท่านั้น: คะแนน 1-5 (ไม่ใส่ = ยังไม่ rate)
+}
+export interface PrScenario {
+  dept: string;
+  title: string;
+  fy: number;            // ปีของ running number + วันที่ (และ fiscalYear column เมื่อ approved)
+  quarter: number;       // 1-4 (PR.quarter เสมอ; PO/GRN ใช้ตามนี้)
+  status: PrStatus;      // DRAFT|SUBMITTED|REJECTED|APPROVED (เว้น UNDER_REVIEW — service ไม่มี transition เข้า)
+  rejectReason?: string;
+  lines: Array<{ item: number; qty: number }>; // index ใน CATALOG
+  po?: PoPlan;           // เฉพาะ status APPROVED
+}
+
+// 40 PR: draft 6 / submitted 7 / rejected 4 / approved 23
+// approved 23 = no-PO 4 + active-PO 10 (draft2/sent3/ack2/partial3) + completed 7 + cancelled 2  → PO รวม 19
+// PO.total = PR.est ทุกใบ (priceFactor 1 → reconciliation ตรงไปตรงมา)
+export const PR_SCENARIOS: PrScenario[] = [
+  // --- warning row: Engineering 2026 Q1, approved + active PO รวม 850,000 / total 1,000,000 = 85% ---
+  { dept: 'Engineering', title: 'จัดซื้อโน้ตบุ๊กทีมพัฒนา', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 0, qty: 12 }], po: { vendor: 0, status: PoStatus.ACKNOWLEDGED } },            // 300,000
+  { dept: 'Engineering', title: 'จัดซื้อจอมอนิเตอร์ 27 นิ้ว', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 1, qty: 20 }], po: { vendor: 1, status: PoStatus.SENT } },                  // 300,000
+  { dept: 'Engineering', title: 'จัดซื้อเก้าอี้สำนักงาน', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 2, qty: 50 }], po: { vendor: 2, status: PoStatus.PARTIALLY_RECEIVED } },        // 250,000
+
+  // --- active PO ที่เหลือ (draft2/sent2/ack1/partial2) ---
+  { dept: 'Finance', title: 'จัดซื้อเครื่องพิมพ์เลเซอร์', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 4, qty: 5 }], po: { vendor: 3, status: PoStatus.DRAFT } },                     // 40,000
+  { dept: 'IT', title: 'จัดซื้อ Network Switch', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 6, qty: 2 }], po: { vendor: 4, status: PoStatus.DRAFT } },                              // 90,000
+  { dept: 'Operations', title: 'จัดซื้อกระดาษ A4 สต๊อกไตรมาส', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 3, qty: 30 }], po: { vendor: 5, status: PoStatus.SENT } },                // 36,000
+  { dept: 'Marketing', title: 'ต่ออายุ Software License', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 9, qty: 40 }], po: { vendor: 6, status: PoStatus.SENT } },                     // 140,000
+  { dept: 'IT', title: 'จัดซื้อ UPS สำรองไฟห้อง server', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 11, qty: 20 }], po: { vendor: 7, status: PoStatus.ACKNOWLEDGED } },             // 130,000
+  { dept: 'HR', title: 'จัดซื้อโต๊ะทำงานเหล็ก', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 7, qty: 10 }], po: { vendor: 8, status: PoStatus.PARTIALLY_RECEIVED } },                 // 75,000
+  { dept: 'Operations', title: 'จัดซื้อเก้าอี้คลังสินค้า', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 2, qty: 40 }], po: { vendor: 9, status: PoStatus.PARTIALLY_RECEIVED, damaged: true } }, // 200,000
+
+  // --- completed PO (7) → used; rating 6 ใบ (เว้นใบ 17 ไม่ rate) ---
+  { dept: 'Finance', title: 'จัดซื้อโน้ตบุ๊กฝ่ายบัญชี', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 0, qty: 4 }], po: { vendor: 0, status: PoStatus.COMPLETED, rating: 5 } },          // 100,000
+  { dept: 'Engineering', title: 'จัดซื้อ Server Rack', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 5, qty: 1 }], po: { vendor: 1, status: PoStatus.COMPLETED, rating: 4 } },          // 120,000
+  { dept: 'IT', title: 'จัดซื้อ Network Switch สำรอง', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 6, qty: 3 }], po: { vendor: 2, status: PoStatus.COMPLETED, rating: 3 } },          // 135,000
+  { dept: 'Operations', title: 'จัดซื้อกระดาษ A4 ปลายปี', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 3, qty: 50 }], po: { vendor: 18, status: PoStatus.COMPLETED, rating: 5 } },      // 60,000 (vendor blacklisted ภายหลัง)
+  { dept: 'Marketing', title: 'ต่ออายุ License ปลายปีงบ', fy: 2025, quarter: 4, status: PrStatus.APPROVED, lines: [{ item: 9, qty: 30 }], po: { vendor: 3, status: PoStatus.COMPLETED, rating: 2 } },       // 105,000
+  { dept: 'HR', title: 'จัดซื้อโต๊ะทำงานพนักงานใหม่', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 7, qty: 8 }], po: { vendor: 0, status: PoStatus.COMPLETED, splitGrn: true, rating: 4 } }, // 60,000
+  { dept: 'Finance', title: 'จัดซื้อเครื่องพิมพ์เพิ่ม', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 4, qty: 10 }], po: { vendor: 10, status: PoStatus.COMPLETED, splitGrn: true } }, // 80,000 (ยังไม่ rate)
+
+  // --- cancelled PO (2) → reserved คืน 0 ---
+  { dept: 'IT', title: 'จัดซื้อโน้ตบุ๊ก (ยกเลิกภายหลัง)', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 0, qty: 4 }], po: { vendor: 11, status: PoStatus.CANCELLED } },                 // 100,000 → 0
+  { dept: 'Marketing', title: 'จัดซื้อจอ (ยกเลิกเปลี่ยนสเปค)', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 1, qty: 6 }], po: { vendor: 19, status: PoStatus.CANCELLED } },             // 90,000 → 0 (vendor blacklisted)
+
+  // --- approved ไม่มี PO (4) → reserved += PR.est ---
+  { dept: 'Engineering', title: 'จัดซื้อไวท์บอร์ดห้องประชุม', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 10, qty: 10 }] },  // 22,000
+  { dept: 'Finance', title: 'จัดซื้อปากกาสต๊อก', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 8, qty: 20 }] },                // 5,000
+  { dept: 'HR', title: 'จัดซื้อกระดาษ A4', fy: 2026, quarter: 1, status: PrStatus.APPROVED, lines: [{ item: 3, qty: 15 }] },                      // 18,000
+  { dept: 'IT', title: 'จัดซื้อ UPS เพิ่ม', fy: 2026, quarter: 2, status: PrStatus.APPROVED, lines: [{ item: 11, qty: 8 }] },                     // 52,000
+
+  // --- rejected (4) ---
+  { dept: 'Operations', title: 'จัดซื้อ Server Rack เพิ่ม', fy: 2026, quarter: 1, status: PrStatus.REJECTED, rejectReason: 'เกินงบไตรมาส ให้ชะลอไปไตรมาสหน้า', lines: [{ item: 5, qty: 2 }] },
+  { dept: 'Marketing', title: 'จัดซื้อโน้ตบุ๊กทีมครีเอทีฟ', fy: 2026, quarter: 1, status: PrStatus.REJECTED, rejectReason: 'เอกสารไม่ครบ ขาดใบเสนอราคาเปรียบเทียบ', lines: [{ item: 0, qty: 5 }] },
+  { dept: 'HR', title: 'จัดซื้อโต๊ะเพิ่ม', fy: 2026, quarter: 2, status: PrStatus.REJECTED, rejectReason: 'ยังไม่จำเป็นเร่งด่วน เลื่อนไตรมาสหน้า', lines: [{ item: 7, qty: 4 }] },
+  { dept: 'IT', title: 'จัดซื้อ Server Rack ทดแทน', fy: 2026, quarter: 2, status: PrStatus.REJECTED, rejectReason: 'ให้ใช้อุปกรณ์เดิมไปก่อน', lines: [{ item: 5, qty: 1 }] },
+
+  // --- submitted (7) ---
+  { dept: 'Engineering', title: 'จัดซื้อจอเพิ่มทีม QA', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 1, qty: 10 }] },
+  { dept: 'Finance', title: 'จัดซื้อกระดาษไตรมาสหน้า', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 3, qty: 20 }] },
+  { dept: 'Operations', title: 'จัดซื้อเครื่องพิมพ์คลัง', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 4, qty: 6 }] },
+  { dept: 'IT', title: 'จัดซื้อ Network Switch ชั้น 3', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 6, qty: 1 }] },
+  { dept: 'Marketing', title: 'ต่ออายุ License ทีมดีไซน์', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 9, qty: 15 }] },
+  { dept: 'HR', title: 'จัดซื้อเก้าอี้ห้องสัมภาษณ์', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 2, qty: 8 }] },
+  { dept: 'Engineering', title: 'จัดซื้อ UPS ห้อง Lab', fy: 2026, quarter: 2, status: PrStatus.SUBMITTED, lines: [{ item: 11, qty: 12 }] },
+
+  // --- draft (6) ---
+  { dept: 'Engineering', title: 'ร่าง: ปากกาทีม', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 8, qty: 30 }] },
+  { dept: 'Finance', title: 'ร่าง: ไวท์บอร์ดห้องบัญชี', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 10, qty: 5 }] },
+  { dept: 'IT', title: 'ร่าง: โน้ตบุ๊กสำรอง', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 0, qty: 2 }] },
+  { dept: 'Marketing', title: 'ร่าง: กระดาษงานอีเวนต์', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 3, qty: 10 }] },
+  { dept: 'Operations', title: 'ร่าง: โต๊ะคลังเพิ่ม', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 7, qty: 3 }] },
+  { dept: 'HR', title: 'ร่าง: เก้าอี้สำรอง', fy: 2026, quarter: 2, status: PrStatus.DRAFT, lines: [{ item: 2, qty: 4 }] },
+];
