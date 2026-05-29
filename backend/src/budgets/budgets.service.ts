@@ -11,6 +11,7 @@ import { NotificationType } from '../notifications/entities/notification.entity'
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { BudgetQueryDto } from './dto/budget-query.dto';
+import { applyReserve, applyRelease, applyAdjust, applyConsume } from '../common/budget-math';
 
 @Injectable()
 export class BudgetsService {
@@ -159,7 +160,7 @@ export class BudgetsService {
     }
 
     await mgr.update(Budget, budget.id, {
-      reservedAmount: Number(newReserved.toFixed(2)),
+      reservedAmount: applyReserve(Number(budget.reservedAmount), amount),
     });
 
     if (totalCommitted / Number(budget.totalAmount) > 0.8) {
@@ -178,9 +179,8 @@ export class BudgetsService {
     });
     if (!budget) return;
 
-    const newReserved = Math.max(0, Number(budget.reservedAmount) - amount);
     await this.budgetRepository.update(budget.id, {
-      reservedAmount: Number(newReserved.toFixed(2)),
+      reservedAmount: applyRelease(Number(budget.reservedAmount), amount),
     });
   }
 
@@ -201,12 +201,15 @@ export class BudgetsService {
     });
     if (!budget) return;
 
-    const newReserved = Math.max(0, Number(budget.reservedAmount) - reservedToRelease);
-    const newUsed = Number(budget.usedAmount) + usedToAdd;
-
+    const { reserved: newReserved, used: newUsed } = applyConsume(
+      Number(budget.reservedAmount),
+      Number(budget.usedAmount),
+      reservedToRelease,
+      usedToAdd,
+    );
     await mgr.update(Budget, budget.id, {
-      reservedAmount: Number(newReserved.toFixed(2)),
-      usedAmount: Number(newUsed.toFixed(2)),
+      reservedAmount: newReserved,
+      usedAmount: newUsed,
     });
   }
 
@@ -243,7 +246,7 @@ export class BudgetsService {
     }
 
     await mgr.update(Budget, budget.id, {
-      reservedAmount: Number(newReserved.toFixed(2)),
+      reservedAmount: applyAdjust(Number(budget.reservedAmount), delta),
     });
 
     const totalCommitted = newReserved + Number(budget.usedAmount);
