@@ -328,8 +328,97 @@ async function seedReceipts(
   }
 }
 
+// re-derive budget/rating/invariant แบบ aggregate อิสระ (คนละ path กับ simulation ใน seedDemo) แล้ว assert
+// mismatch ใดๆ → throw (fail-fast: npm run seed:demo จะ exit 1)
+export async function verifyDemoSeed(ds: DataSource): Promise<void> {
+  const fail = (msg: string): never => { throw new Error(`verifyDemoSeed FAILED: ${msg}`); };
+
+  const prs = await ds.getRepository(PurchaseRequest).find();
+  const pos = await ds.getRepository(PurchaseOrder).find();
+  const budgets = await ds.getRepository(Budget).find();
+  const vendors = await ds.getRepository(Vendor).find();
+  const ratings = await ds.getRepository(VendorRating).find();
+  const grns = await ds.getRepository(GoodsReceiptNote).find();
+
+  const posByPr = new Map<number, PurchaseOrder[]>();
+  for (const po of pos) {
+    const arr = posByPr.get(po.prId) ?? [];
+    arr.push(po);
+    posByPr.set(po.prId, arr);
+  }
+  const ACTIVE = new Set<PoStatus>([PoStatus.DRAFT, PoStatus.SENT, PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED]);
+
+  // 1) budget reserved/used จากการ classify PR/PO (aggregate)
+  const reservedBy = new Map<string, number>();
+  const usedBy = new Map<string, number>();
+  const add = (m: Map<string, number>, k: string, v: number) => m.set(k, round2((m.get(k) ?? 0) + v));
+  for (const pr of prs) {
+    if (pr.status !== PrStatus.APPROVED) continue;
+    const key = `${pr.departmentId}|${pr.fiscalYear}|${pr.quarter}`;
+    const prPos = posByPr.get(pr.id) ?? [];
+    const completed = prPos.find((p) => p.status === PoStatus.COMPLETED);
+    const active = prPos.find((p) => ACTIVE.has(p.status));
+    if (completed) add(usedBy, key, Number(completed.totalAmount));
+    else if (active) add(reservedBy, key, Number(active.totalAmount));
+    else if (prPos.length === 0) add(reservedBy, key, Number(pr.totalEstimatedAmount));
+    // เหลือ: มีแต่ cancelled → 0
+  }
+  for (const b of budgets) {
+    const key = `${b.departmentId}|${b.fiscalYear}|${b.quarter}`;
+    const expReserved = round2(reservedBy.get(key) ?? 0);
+    const expUsed = round2(usedBy.get(key) ?? 0);
+    if (round2(Number(b.reservedAmount)) !== expReserved) {
+      fail(`budget ${key} reserved=${b.reservedAmount} expected ${expReserved}`);
+    }
+    if (round2(Number(b.usedAmount)) !== expUsed) {
+      fail(`budget ${key} used=${b.usedAmount} expected ${expUsed}`);
+    }
+    if (Number(b.reservedAmount) + Number(b.usedAmount) > Number(b.totalAmount)) {
+      fail(`budget ${key} committed > total (${b.reservedAmount}+${b.usedAmount} > ${b.totalAmount})`);
+    }
+  }
+
+  // 2) vendor.ratingAvg
+  const scoresByVendor = new Map<number, number[]>();
+  for (const r of ratings) {
+    const arr = scoresByVendor.get(r.vendorId) ?? [];
+    arr.push(r.score);
+    scoresByVendor.set(r.vendorId, arr);
+  }
+  for (const v of vendors) {
+    const scores = scoresByVendor.get(v.id);
+    const exp = scores ? round2(scores.reduce((s, n) => s + n, 0) / scores.length) : null;
+    const actual = v.ratingAvg == null ? null : round2(Number(v.ratingAvg));
+    if (exp !== actual) fail(`vendor ${v.id} ratingAvg=${actual} expected ${exp}`);
+  }
+
+  // 3) invariants
+  for (const [prId, prPos] of posByPr) {
+    if (prPos.filter((p) => p.status !== PoStatus.CANCELLED).length > 1) {
+      fail(`PR ${prId} has >1 non-cancelled PO`);
+    }
+  }
+  const grnPoIds = new Set(grns.filter((g) => g.status === GrnStatus.COMPLETE).map((g) => g.poId));
+  for (const po of pos) {
+    if (po.status === PoStatus.COMPLETED && !grnPoIds.has(po.id)) {
+      fail(`completed PO ${po.id} has no COMPLETE GRN`);
+    }
+  }
+  const vendorById = new Map(vendors.map((v) => [v.id, v]));
+  for (const po of pos) {
+    if (ACTIVE.has(po.status) && vendorById.get(po.vendorId)?.isBlacklisted) {
+      fail(`blacklisted vendor ${po.vendorId} has active PO ${po.id}`);
+    }
+  }
+
+  console.log(
+    `✓ verify ok — budgets:${budgets.length} vendors-rated:${scoresByVendor.size} ` +
+      `PR:${prs.length} PO:${pos.length} GRN:${grns.length} ratings:${ratings.length}`,
+  );
+}
+
 // ====== CLI: `npm run seed:demo` ======
-// guard → migrate → truncate → seedDemo → (Task 5 จะเพิ่ม verifyDemoSeed) → destroy
+// guard → migrate → truncate → seedDemo → verifyDemoSeed → destroy
 if (require.main === module) {
   void (async () => {
     if (process.env.DB_NAME === 'procurement_test_db') {
@@ -342,7 +431,8 @@ if (require.main === module) {
     await AppDataSource.runMigrations(); // idempotent — กันกรณี schema ยังไม่ migrate
     await truncateAllTables(AppDataSource);
     await seedDemo(AppDataSource);
-    console.log('✓ Demo seed (master data) complete');
+    await verifyDemoSeed(AppDataSource); // ← เพิ่ม
+    console.log('✓ Demo seed complete + verified');
     await AppDataSource.destroy();
   })().catch((err) => {
     console.error(err);
