@@ -5,6 +5,11 @@ interface PRListParams {
   page?: number
   limit?: number
   status?: string
+  prNumber?: string
+  search?: string
+  requesterId?: number
+  from?: string
+  to?: string
 }
 
 export const purchaseRequestsApi = {
