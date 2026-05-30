@@ -84,7 +84,7 @@ export function PRListPage() {
       ) : (
         <>
           <div className="rounded-md border">
-            <Table className="table-fixed">
+            <Table className="table-fixed min-w-[1000px]">
               <TableHeader className="bg-table-header text-table-header-foreground">
                 <TableRow>
                   <TableHead className="w-[60px] text-center">ลำดับ</TableHead>
