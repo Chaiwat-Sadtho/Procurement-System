@@ -55,6 +55,11 @@ export function PRListPage() {
     setFilters(values)
   }
 
+  const handleClear = () => {
+    setFilters(null)
+    setPage(1)
+  }
+
   return (
     <div>
       <PageHeader
@@ -69,7 +74,7 @@ export function PRListPage() {
         }
       />
 
-      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} />
+      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} onClear={handleClear} />
 
       {filters === null ? (
         <p className="text-center py-12 text-muted-foreground">

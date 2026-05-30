@@ -83,6 +83,14 @@ function renderPage() {
   )
 }
 
+async function searchDateRange() {
+  await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '01012569')
+  const to = screen.getByLabelText(/วันที่สิ้นสุด/i)
+  await userEvent.clear(to)
+  await userEvent.type(to, '31122569')
+  await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+}
+
 describe('PRListPage', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -99,9 +107,7 @@ describe('PRListPage', () => {
     setupMocks({ prData: undefined })
 
     renderPage()
-    await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '2026-01-01')
-    await userEvent.type(screen.getByLabelText(/วันที่สิ้นสุด/i), '2026-12-31')
-    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    await searchDateRange()
 
     const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
     expect(lastCall[0]).toEqual(
@@ -130,9 +136,7 @@ describe('PRListPage', () => {
     setupMocks({ prData: undefined, isLoading: true })
 
     renderPage()
-    await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '2026-01-01')
-    await userEvent.type(screen.getByLabelText(/วันที่สิ้นสุด/i), '2026-12-31')
-    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    await searchDateRange()
 
     expect(screen.getByTestId('pr-list-loading')).toBeInTheDocument()
   })
@@ -143,9 +147,7 @@ describe('PRListPage', () => {
     })
 
     renderPage()
-    await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '2026-01-01')
-    await userEvent.type(screen.getByLabelText(/วันที่สิ้นสุด/i), '2026-12-31')
-    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    await searchDateRange()
 
     expect(screen.getByText('PR-2025-0001')).toBeInTheDocument()
     expect(screen.getByText('Office Supplies')).toBeInTheDocument()
@@ -166,9 +168,7 @@ describe('PRListPage', () => {
     })
 
     renderPage()
-    await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '2026-01-01')
-    await userEvent.type(screen.getByLabelText(/วันที่สิ้นสุด/i), '2026-12-31')
-    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    await searchDateRange()
 
     // page=2, limit=20 → row 0 = 21, row 1 = 22
     expect(screen.getByText('21')).toBeInTheDocument()
@@ -183,5 +183,21 @@ describe('PRListPage', () => {
 
     renderPage()
     expect(screen.getByRole('link', { name: /new pr/i })).toBeInTheDocument()
+  })
+
+  it('ล้าง returns to initial prompt and disables the query', async () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } },
+    })
+
+    renderPage()
+    await searchDateRange()
+    expect(screen.getByText('PR-2025-0001')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
+
+    expect(screen.getByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).toBeInTheDocument()
+    const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
+    expect(lastCall[1]).toEqual({ enabled: false })
   })
 })
