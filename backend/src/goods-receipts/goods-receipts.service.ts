@@ -14,6 +14,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { formatRunningNumber } from '../common/running-number';
 
 const RECEIVABLE_STATUSES = [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED];
 
@@ -60,7 +61,7 @@ export class GoodsReceiptsService {
         select: { id: true, grnNumber: true },
       });
       const nextGrn = latestGrn ? parseInt(latestGrn.grnNumber.slice(-4), 10) + 1 : 1;
-      const grnNumber = `GRN-${year}-${String(nextGrn).padStart(4, '0')}`;
+      const grnNumber = formatRunningNumber('GRN', year, nextGrn);
 
       // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)
       const effectiveByPoItem = new Map<number, number>();

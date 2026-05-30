@@ -15,6 +15,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
+import { formatRunningNumber } from '../common/running-number';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -43,7 +44,7 @@ export class PurchaseRequestsService {
       select: { id: true, prNumber: true },
     });
     const next = latest ? parseInt(latest.prNumber.slice(-4), 10) + 1 : 1;
-    return `PR-${year}-${String(next).padStart(4, '0')}`;
+    return formatRunningNumber('PR', year, next);
   }
 
   async create(requesterId: number, dto: CreatePurchaseRequestDto): Promise<PurchaseRequest> {

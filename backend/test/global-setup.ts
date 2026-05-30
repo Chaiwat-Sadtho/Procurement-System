@@ -1,5 +1,6 @@
 import { AppDataSource } from '../src/data-source';
 import { seedBaseline } from '../src/database/seed';
+import { truncateAllTables } from '../src/common/truncate';
 import { Client } from 'pg';
 
 const TEST_DB = 'procurement_test_db';
@@ -33,13 +34,7 @@ export default async function globalSetup(): Promise<void> {
   await AppDataSource.runMigrations();
 
   // (4) TRUNCATE all tables except migrations, reset identity
-  const tables: Array<{ tablename: string }> = await AppDataSource.query(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'migrations'`,
-  );
-  if (tables.length > 0) {
-    const list = tables.map((t) => `"${t.tablename}"`).join(', ');
-    await AppDataSource.query(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
-  }
+  await truncateAllTables(AppDataSource);
 
   // (5) Re-seed baseline → specs that log in as seed users still pass
   await seedBaseline(AppDataSource);
