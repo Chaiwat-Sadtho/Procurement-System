@@ -20,7 +20,7 @@ import {
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination } from '@/shared/hooks/usePagination'
-import { formatCurrency, formatDate } from '@/shared/lib/utils'
+import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { PRStatusBadge } from '../components/PRStatusBadge'
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
 import type { PRStatus } from '../types'
@@ -84,22 +84,23 @@ export function PRListPage() {
       ) : (
         <>
           <div className="rounded-md border">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader className="bg-table-header text-table-header-foreground">
                 <TableRow>
-                  <TableHead>PR Number</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Requester</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead />
+                  <TableHead className="w-[60px] text-center">ลำดับ</TableHead>
+                  <TableHead className="w-[140px]">PR Number</TableHead>
+                  <TableHead className="min-w-[200px]">Title</TableHead>
+                  <TableHead className="w-[140px]">Requester</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="w-[140px] text-right">Amount</TableHead>
+                  <TableHead className="w-[120px]">Date</TableHead>
+                  <TableHead className="w-[80px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data?.data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       ยังไม่มีข้อมูล
                       {canCreate && (
                         <Button asChild variant="link" className="ml-1 p-0 h-auto">
@@ -109,17 +110,20 @@ export function PRListPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  data?.data.map((pr) => (
+                  data?.data.map((pr, i) => (
                     <TableRow key={pr.id}>
-                      <TableCell className="font-mono text-sm">{pr.prNumber}</TableCell>
-                      <TableCell className="font-medium">{pr.title}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="text-center">{getRowIndex(page, limit, i)}</TableCell>
+                      <TableCell className="font-mono text-sm truncate">{pr.prNumber}</TableCell>
+                      <TableCell className="font-medium truncate">{pr.title}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm truncate">
                         {pr.requester.fullName}
                       </TableCell>
                       <TableCell>
                         <PRStatusBadge status={pr.status as PRStatus} />
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(pr.totalEstimatedAmount)}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {formatCurrency(pr.totalEstimatedAmount)}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(pr.createdAt)}
                       </TableCell>

@@ -30,3 +30,7 @@ export function formatCurrency(amount: number): string {
     minimumFractionDigits: 2,
   }).format(amount)
 }
+
+export function getRowIndex(page: number, limit: number, i: number): number {
+  return (page - 1) * limit + i + 1
+}
