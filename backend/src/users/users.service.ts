@@ -12,11 +12,24 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  findAll(): Promise<User[]> {
-    return this.userRepository.find({
-      relations: { department: true },
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(currentUser: { role: UserRole; departmentId: number | null }): Promise<User[]> {
+    if (currentUser.role === UserRole.PROCUREMENT_OFFICER) {
+      return this.userRepository.find({
+        relations: { department: true },
+        order: { createdAt: 'DESC' },
+      });
+    }
+    if (currentUser.role === UserRole.MANAGER) {
+      if (currentUser.departmentId === null) {
+        throw new ForbiddenException('Manager without department cannot list users');
+      }
+      return this.userRepository.find({
+        where: { departmentId: currentUser.departmentId },
+        relations: { department: true },
+        order: { createdAt: 'DESC' },
+      });
+    }
+    throw new ForbiddenException('Insufficient role to list users');
   }
 
   async updateRole(id: number, dto: UpdateRoleDto, actorId: number): Promise<User> {

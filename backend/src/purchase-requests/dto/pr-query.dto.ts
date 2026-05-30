@@ -38,6 +38,17 @@ export class PrQueryDto {
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({ example: 'PR-2026-0001' })
+  @IsOptional()
+  @IsString()
+  prNumber?: string;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  requesterId?: number;
+
   @ApiPropertyOptional({ default: 'created_at', enum: ['created_at', 'title', 'total_estimated_amount'] })
   @IsOptional()
   @IsString()

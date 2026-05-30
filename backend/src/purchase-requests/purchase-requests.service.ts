@@ -93,7 +93,7 @@ export class PurchaseRequestsService {
     user: { id: number; role: UserRole },
     query: PrQueryDto,
   ): Promise<{ data: PurchaseRequest[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC' } = query;
+    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC', prNumber, requesterId } = query;
 
     const qb = this.prRepository
       .createQueryBuilder('pr')
@@ -118,6 +118,8 @@ export class PurchaseRequestsService {
       qb.andWhere('pr.createdAt <= :to', { to: toEnd });
     }
     if (search) qb.andWhere('pr.title ILIKE :search', { search: `%${search}%` });
+    if (prNumber)    qb.andWhere('pr.prNumber ILIKE :prNumber', { prNumber: `%${prNumber}%` });
+    if (requesterId) qb.andWhere('pr.requesterId = :requesterId', { requesterId });
 
     const sortField =
       sort === 'total_estimated_amount' ? 'pr.totalEstimatedAmount'
