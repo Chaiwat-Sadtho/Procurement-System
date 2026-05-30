@@ -120,10 +120,6 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const contribByBudget = new Map<string, Contribution[]>();
   const ratingsToAvg = new Map<number, number[]>(); // vendorId → scores
 
-  const ACTIVE_PO = new Set<PoStatus>([
-    PoStatus.DRAFT, PoStatus.SENT, PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED,
-  ]);
-
   for (const sc of PR_SCENARIOS) {
     const dId = deptId.get(sc.dept)!;
     const requesterId = empByDept.get(dId) ?? mgrByDept.get(dId)!;
