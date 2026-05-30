@@ -3,13 +3,6 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -22,29 +15,45 @@ import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { PRStatusBadge } from '../components/PRStatusBadge'
+import { PRListFilterForm, type PRListFilterValues } from '../components/PRListFilterForm'
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
 import type { PRStatus } from '../types'
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-]
-
 export function PRListPage() {
   const { data: user } = useCurrentUser()
-  const { page, limit, nextPage, prevPage } = usePagination()
-  const [status, setStatus] = useState<string>('all')
+  const { page, limit, setPage, nextPage, prevPage } = usePagination()
+  const [filters, setFilters] = useState<PRListFilterValues | null>(null)
 
-  const { data, isLoading } = usePurchaseRequests({
-    page,
-    limit,
-    status: status === 'all' ? undefined : status,
-  })
+  const showRequester = user?.role === 'manager' || user?.role === 'procurement_officer'
+
+  const queryParams = filters
+    ? {
+        page,
+        limit,
+        prNumber: filters.prNumber || undefined,
+        search: filters.search || undefined,
+        from: filters.from,
+        to: filters.to,
+        requesterId:
+          filters.requesterId && filters.requesterId !== 'all'
+            ? Number(filters.requesterId)
+            : undefined,
+        status: filters.status && filters.status !== 'all' ? filters.status : undefined,
+      }
+    : undefined
+
+  const { data, isLoading } = usePurchaseRequests(queryParams, { enabled: filters !== null })
 
   const canCreate = user?.role === 'employee'
+  // running number sticks to the page actually returned by the server (meta),
+  // not the local page state which momentarily leads the fetch
+  const displayPage = data?.meta.page ?? page
+  const displayLimit = data?.meta.limit ?? limit
+
+  const handleSubmit = (values: PRListFilterValues) => {
+    setPage(1)
+    setFilters(values)
+  }
 
   return (
     <div>
@@ -60,22 +69,13 @@ export function PRListPage() {
         }
       />
 
-      <div className="flex items-center gap-3 mb-4">
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} />
 
-      {isLoading ? (
+      {filters === null ? (
+        <p className="text-center py-12 text-muted-foreground">
+          กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล
+        </p>
+      ) : isLoading ? (
         <div data-testid="pr-list-loading" className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
@@ -101,18 +101,15 @@ export function PRListPage() {
                 {data?.data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      ยังไม่มีข้อมูล
-                      {canCreate && (
-                        <Button asChild variant="link" className="ml-1 p-0 h-auto">
-                          <Link to="/purchase-requests/new">สร้างใหม่</Link>
-                        </Button>
-                      )}
+                      ไม่พบข้อมูลตามเงื่อนไข
                     </TableCell>
                   </TableRow>
                 ) : (
                   data?.data.map((pr, i) => (
                     <TableRow key={pr.id}>
-                      <TableCell className="text-center">{getRowIndex(page, limit, i)}</TableCell>
+                      <TableCell className="text-center">
+                        {getRowIndex(displayPage, displayLimit, i)}
+                      </TableCell>
                       <TableCell className="font-mono text-sm truncate">{pr.prNumber}</TableCell>
                       <TableCell className="font-medium truncate">{pr.title}</TableCell>
                       <TableCell className="text-muted-foreground text-sm truncate">
@@ -145,12 +142,7 @@ export function PRListPage() {
                 Page {data.meta.page} of {data.meta.totalPages} ({data.meta.total} total)
               </span>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={page <= 1}
-                >
+                <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
                   Previous
                 </Button>
                 <Button
