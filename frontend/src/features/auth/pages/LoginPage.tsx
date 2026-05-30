@@ -77,7 +77,7 @@ export function LoginPage() {
     mutationFn: (data: LoginFormValues) => authApi.login(data),
     onSuccess: (data) => {
       localStorage.setItem('token', data.access_token)
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      queryClient.clear()
       navigate('/dashboard')
     },
   })
