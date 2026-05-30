@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, formatDate, formatDateTime } from './utils'
+import { formatCurrency, formatDate, formatDateTime, getRowIndex } from './utils'
 
 describe('formatCurrency', () => {
   it('formats positive number as THB currency', () => {
@@ -26,5 +26,19 @@ describe('formatDateTime', () => {
     const result = formatDateTime('2025-06-01T10:30:00.000Z')
     expect(result).toMatch(/2568|2025/)
     expect(result).toMatch(/\d{2}:\d{2}/)
+  })
+})
+
+describe('getRowIndex', () => {
+  it('returns 1 for first row on first page', () => {
+    expect(getRowIndex(1, 10, 0)).toBe(1)
+  })
+
+  it('continues running number across pages', () => {
+    expect(getRowIndex(2, 10, 0)).toBe(11)
+  })
+
+  it('handles arbitrary limit + index', () => {
+    expect(getRowIndex(2, 20, 5)).toBe(26)
   })
 })
