@@ -13,18 +13,19 @@ import { UserRole } from './entities/user.entity';
 @ApiTags('Users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.PROCUREMENT_OFFICER)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiOperation({ summary: 'ดู user ทั้งหมด (PO only)' })
+  @ApiOperation({ summary: 'ดู user (PO เห็นทั้งหมด, Manager เห็นเฉพาะแผนกตัวเอง)' })
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@CurrentUser() actor: CurrentUserPayload) {
+    return this.usersService.findAll({ role: actor.role, departmentId: actor.departmentId });
   }
 
   @ApiOperation({ summary: 'เปลี่ยน role (PO only)' })
+  @Roles(UserRole.PROCUREMENT_OFFICER)
   @Patch(':id/role')
   updateRole(
     @Param('id', ParseIntPipe) id: number,
@@ -35,6 +36,7 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: 'activate/deactivate user (PO only)' })
+  @Roles(UserRole.PROCUREMENT_OFFICER)
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,

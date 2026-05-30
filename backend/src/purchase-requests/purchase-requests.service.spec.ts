@@ -330,4 +330,77 @@ describe('PurchaseRequestsService', () => {
       expect(result.department).toEqual({ id: 1, name: 'IT' });
     });
   });
+
+  describe('findAll filters', () => {
+    it('filters by prNumber (ILIKE partial match)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { prNumber: '0001' } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.prNumber ILIKE :prNumber',
+        { prNumber: '%0001%' },
+      );
+    });
+
+    it('filters by requesterId (exact match)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { requesterId: 5 } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.requesterId = :requesterId',
+        { requesterId: 5 },
+      );
+    });
+
+    it('Manager scope + requesterId stack independently in andWhere', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+      mockUserRepo.findOne.mockResolvedValue({ id: 2, departmentId: 1 });
+
+      await service.findAll(
+        { id: 2, role: UserRole.MANAGER },
+        { requesterId: 99 } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.departmentId = :deptId',
+        { deptId: 1 },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.requesterId = :requesterId',
+        { requesterId: 99 },
+      );
+    });
+  });
 });
