@@ -5,11 +5,24 @@ interface UsePurchaseRequestsParams {
   page?: number
   limit?: number
   status?: string
+  prNumber?: string
+  search?: string
+  requesterId?: number
+  from?: string
+  to?: string
 }
 
-export function usePurchaseRequests(params?: UsePurchaseRequestsParams) {
+interface UsePurchaseRequestsOptions {
+  enabled?: boolean
+}
+
+export function usePurchaseRequests(
+  params?: UsePurchaseRequestsParams,
+  { enabled = true }: UsePurchaseRequestsOptions = {},
+) {
   return useQuery({
     queryKey: ['purchase-requests', params],
     queryFn: () => purchaseRequestsApi.list(params),
+    enabled,
   })
 }
