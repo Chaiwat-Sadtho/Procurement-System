@@ -348,51 +348,8 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
   }
   const ACTIVE = new Set<PoStatus>([PoStatus.DRAFT, PoStatus.SENT, PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED]);
 
-  // 1) budget reserved/used จากการ classify PR/PO (aggregate)
-  const reservedBy = new Map<string, number>();
-  const usedBy = new Map<string, number>();
-  const add = (m: Map<string, number>, k: string, v: number) => m.set(k, round2((m.get(k) ?? 0) + v));
-  for (const pr of prs) {
-    if (pr.status !== PrStatus.APPROVED) continue;
-    const key = `${pr.departmentId}|${pr.fiscalYear}|${pr.quarter}`;
-    const prPos = posByPr.get(pr.id) ?? [];
-    const completed = prPos.find((p) => p.status === PoStatus.COMPLETED);
-    const active = prPos.find((p) => ACTIVE.has(p.status));
-    if (completed) add(usedBy, key, Number(completed.totalAmount));
-    else if (active) add(reservedBy, key, Number(active.totalAmount));
-    else if (prPos.length === 0) add(reservedBy, key, Number(pr.totalEstimatedAmount));
-    // เหลือ: มีแต่ cancelled → 0
-  }
-  for (const b of budgets) {
-    const key = `${b.departmentId}|${b.fiscalYear}|${b.quarter}`;
-    const expReserved = round2(reservedBy.get(key) ?? 0);
-    const expUsed = round2(usedBy.get(key) ?? 0);
-    if (round2(Number(b.reservedAmount)) !== expReserved) {
-      fail(`budget ${key} reserved=${b.reservedAmount} expected ${expReserved}`);
-    }
-    if (round2(Number(b.usedAmount)) !== expUsed) {
-      fail(`budget ${key} used=${b.usedAmount} expected ${expUsed}`);
-    }
-    if (Number(b.reservedAmount) + Number(b.usedAmount) > Number(b.totalAmount)) {
-      fail(`budget ${key} committed > total (${b.reservedAmount}+${b.usedAmount} > ${b.totalAmount})`);
-    }
-  }
-
-  // 2) vendor.ratingAvg
-  const scoresByVendor = new Map<number, number[]>();
-  for (const r of ratings) {
-    const arr = scoresByVendor.get(r.vendorId) ?? [];
-    arr.push(r.score);
-    scoresByVendor.set(r.vendorId, arr);
-  }
-  for (const v of vendors) {
-    const scores = scoresByVendor.get(v.id);
-    const exp = scores ? round2(scores.reduce((s, n) => s + n, 0) / scores.length) : null;
-    const actual = v.ratingAvg == null ? null : round2(Number(v.ratingAvg));
-    if (exp !== actual) fail(`vendor ${v.id} ratingAvg=${actual} expected ${exp}`);
-  }
-
-  // 3) invariants
+  // 1) structural invariants — ตรวจ topology ก่อน reconcile งบ เพราะข้อ 2 ใช้ find() ที่สมมติว่า
+  //    PR มี non-cancelled PO ได้ ≤1 ใบ (DB บังคับด้วย UQ_active_po_per_pr — ตรวจซ้ำชั้นสองที่นี่)
   for (const [prId, prPos] of posByPr) {
     if (prPos.filter((p) => p.status !== PoStatus.CANCELLED).length > 1) {
       fail(`PR ${prId} has >1 non-cancelled PO`);
@@ -409,6 +366,61 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     if (ACTIVE.has(po.status) && vendorById.get(po.vendorId)?.isBlacklisted) {
       fail(`blacklisted vendor ${po.vendorId} has active PO ${po.id}`);
     }
+  }
+
+  // 2) budget reserved/used จากการ classify PR/PO (aggregate)
+  // precondition: ทุกยอดเงินเป็นจำนวนเต็ม (CATALOG ราคา×จำนวน) → round2 เป็น no-op และ path นี้
+  // (classify) บวกได้ค่าตรงกับ path replay ใน seedDemo เป๊ะ; ถ้าเพิ่มราคาทศนิยมต้องเทียบแบบ tolerance
+  const reservedBy = new Map<string, number>();
+  const usedBy = new Map<string, number>();
+  const add = (m: Map<string, number>, k: string, v: number) => m.set(k, round2((m.get(k) ?? 0) + v));
+  for (const pr of prs) {
+    if (pr.status !== PrStatus.APPROVED) continue;
+    const key = `${pr.departmentId}|${pr.fiscalYear}|${pr.quarter}`;
+    const prPos = posByPr.get(pr.id) ?? [];
+    const completed = prPos.find((p) => p.status === PoStatus.COMPLETED);
+    const active = prPos.find((p) => ACTIVE.has(p.status));
+    if (completed) add(usedBy, key, Number(completed.totalAmount));
+    else if (active) add(reservedBy, key, Number(active.totalAmount));
+    else if (prPos.length === 0) add(reservedBy, key, Number(pr.totalEstimatedAmount));
+    // เหลือ: มีแต่ cancelled → 0
+  }
+  // ทุก key ที่มี contribution ต้องมี budget row จริง — กัน APPROVED PR ใน period ที่ไม่มีงบ
+  // (seedDemo drop เงียบที่ `if (b)` แล้ว verify จะไม่มีอะไรไปเทียบ = false-negative)
+  const budgetKeys = new Set(budgets.map((b) => `${b.departmentId}|${b.fiscalYear}|${b.quarter}`));
+  for (const key of reservedBy.keys()) {
+    if (!budgetKeys.has(key)) fail(`approved PR reserves budget ${key} but no budget row exists`);
+  }
+  for (const key of usedBy.keys()) {
+    if (!budgetKeys.has(key)) fail(`approved PR uses budget ${key} but no budget row exists`);
+  }
+  for (const b of budgets) {
+    const key = `${b.departmentId}|${b.fiscalYear}|${b.quarter}`;
+    const expReserved = round2(reservedBy.get(key) ?? 0);
+    const expUsed = round2(usedBy.get(key) ?? 0);
+    if (round2(Number(b.reservedAmount)) !== expReserved) {
+      fail(`budget ${key} reserved=${b.reservedAmount} expected ${expReserved}`);
+    }
+    if (round2(Number(b.usedAmount)) !== expUsed) {
+      fail(`budget ${key} used=${b.usedAmount} expected ${expUsed}`);
+    }
+    if (Number(b.reservedAmount) + Number(b.usedAmount) > Number(b.totalAmount)) {
+      fail(`budget ${key} committed > total (${b.reservedAmount}+${b.usedAmount} > ${b.totalAmount})`);
+    }
+  }
+
+  // 3) vendor.ratingAvg
+  const scoresByVendor = new Map<number, number[]>();
+  for (const r of ratings) {
+    const arr = scoresByVendor.get(r.vendorId) ?? [];
+    arr.push(r.score);
+    scoresByVendor.set(r.vendorId, arr);
+  }
+  for (const v of vendors) {
+    const scores = scoresByVendor.get(v.id);
+    const exp = scores ? round2(scores.reduce((s, n) => s + n, 0) / scores.length) : null;
+    const actual = v.ratingAvg == null ? null : round2(Number(v.ratingAvg));
+    if (exp !== actual) fail(`vendor ${v.id} ratingAvg=${actual} expected ${exp}`);
   }
 
   console.log(
