@@ -20,7 +20,7 @@ export class UsersService {
       });
     }
     if (currentUser.role === UserRole.MANAGER) {
-      if (currentUser.departmentId === null) {
+      if (typeof currentUser.departmentId !== 'number') {
         throw new ForbiddenException('Manager without department cannot list users');
       }
       return this.userRepository.find({

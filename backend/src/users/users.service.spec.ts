@@ -87,7 +87,7 @@ describe('UsersService', () => {
     it('PO sees all users', async () => {
       mockRepo.find.mockResolvedValue([{ id: 1, departmentId: 1 }, { id: 2, departmentId: 2 }]);
 
-      const result = await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER, departmentId: null });
+      const result = await service.findAll({ role: UserRole.PROCUREMENT_OFFICER, departmentId: null });
 
       expect(result).toHaveLength(2);
       expect(mockRepo.find).toHaveBeenCalledWith({
@@ -99,7 +99,7 @@ describe('UsersService', () => {
     it('Manager sees only users in same department', async () => {
       mockRepo.find.mockResolvedValue([{ id: 1, departmentId: 1 }]);
 
-      const result = await service.findAll({ id: 5, role: UserRole.MANAGER, departmentId: 1 });
+      const result = await service.findAll({ role: UserRole.MANAGER, departmentId: 1 });
 
       expect(result).toHaveLength(1);
       expect(mockRepo.find).toHaveBeenCalledWith({
@@ -111,7 +111,13 @@ describe('UsersService', () => {
 
     it('Manager without departmentId throws ForbiddenException', async () => {
       await expect(
-        service.findAll({ id: 5, role: UserRole.MANAGER, departmentId: null }),
+        service.findAll({ role: UserRole.MANAGER, departmentId: null }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('non-PO / non-Manager role (employee) throws ForbiddenException', async () => {
+      await expect(
+        service.findAll({ role: UserRole.EMPLOYEE, departmentId: 1 }),
       ).rejects.toThrow(ForbiddenException);
     });
   });
