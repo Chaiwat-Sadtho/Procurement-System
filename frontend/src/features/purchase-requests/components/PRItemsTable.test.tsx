@@ -78,4 +78,11 @@ describe('PRItemsTable', () => {
 
     expect(screen.getByText(`Total: ${formatCurrency(1800)}`)).toBeInTheDocument()
   })
+
+  it('styles the table header with the shared table-header theme (matches PR list)', () => {
+    const { container } = render(<PRItemsTable items={mockItems} totalEstimatedAmount={1800} />)
+    const thead = container.querySelector('thead')
+    expect(thead).toHaveClass('bg-table-header')
+    expect(thead).toHaveClass('text-table-header-foreground')
+  })
 })
