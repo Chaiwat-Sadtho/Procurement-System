@@ -82,4 +82,16 @@ describe('PRListFilterForm', () => {
     expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('')
     expect(onClear).toHaveBeenCalled()
   })
+
+  it('ล้าง button is disabled when the form is pristine', () => {
+    renderForm()
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
+  })
+
+  it('ล้าง button enables after the user changes a field', async () => {
+    renderForm()
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
+    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-2026')
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })

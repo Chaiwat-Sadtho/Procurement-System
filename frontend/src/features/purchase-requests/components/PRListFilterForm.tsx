@@ -65,7 +65,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<PRListFilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues,
@@ -104,7 +104,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
               <DateField key={`from-${resetKey}`} id="from" value={field.value} onChange={field.onChange} />
             )}
           />
-          {errors.from && <p className="text-sm text-destructive">{errors.from.message}</p>}
+          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.from?.message}</p>
         </div>
 
         <div className="space-y-1">
@@ -118,7 +118,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
               <DateField key={`to-${resetKey}`} id="to" value={field.value} onChange={field.onChange} />
             )}
           />
-          {errors.to && <p className="text-sm text-destructive">{errors.to.message}</p>}
+          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.to?.message}</p>
         </div>
       </div>
 
@@ -137,7 +137,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
 
         <div className="space-y-1">
           <Label htmlFor="status">สถานะ</Label>
-          <Select value={statusValue} onValueChange={(v) => setValue('status', v)}>
+          <Select value={statusValue} onValueChange={(v) => setValue('status', v, { shouldDirty: true })}>
             <SelectTrigger id="status">
               <SelectValue />
             </SelectTrigger>
@@ -152,12 +152,20 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
         </div>
       </div>
 
-      {/* Row 3: ล้าง + ค้นหา */}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={handleClear}>
+      {/* Row 3: ล้าง + ค้นหา (grid 4-col ชิดขวา; desktop ปุ่มละ ~1/4, mobile stack เต็มกว้าง) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Button
+          type="button"
+          variant="destructive"
+          className="w-full md:col-start-3"
+          disabled={!isDirty}
+          onClick={handleClear}
+        >
           ล้าง
         </Button>
-        <Button type="submit">ค้นหา</Button>
+        <Button type="submit" className="w-full md:col-start-4">
+          ค้นหา
+        </Button>
       </div>
     </form>
   )
