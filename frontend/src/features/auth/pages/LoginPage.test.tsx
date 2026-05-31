@@ -45,6 +45,13 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
+  it('reserves space for the login error before any submit (no layout shift)', () => {
+    renderLoginPage()
+    const err = screen.getByTestId('login-error')
+    expect(err).toBeInTheDocument()
+    expect(err).toBeEmptyDOMElement()
+  })
+
   it('labels the announcements panel as a named complementary landmark', () => {
     renderLoginPage()
     expect(

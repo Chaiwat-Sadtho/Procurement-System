@@ -165,9 +165,9 @@ export function LoginPage() {
                   </FormItem>
                 )}
               />
-              {mutation.isError && (
-                <p className="text-sm text-destructive">Invalid email or password</p>
-              )}
+              <p data-testid="login-error" className="min-h-[1.25rem] text-sm text-destructive">
+                {mutation.isError ? 'Invalid email or password' : ''}
+              </p>
               <Button type="submit" className="w-full" disabled={mutation.isPending}>
                 {mutation.isPending ? 'Signing in...' : 'Sign In'}
               </Button>

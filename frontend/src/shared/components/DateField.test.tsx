@@ -48,4 +48,29 @@ describe('DateField', () => {
     await userEvent.click(within(grid).getByText('15'))
     expect(onChange).toHaveBeenLastCalledWith('2026-12-15')
   })
+
+  it('พิมพ์เดือนเกิน 12 จนครบ → แจ้งเตือนกรอกวันที่ให้ถูกต้อง + emit ว่าง', async () => {
+    const onChange = vi.fn()
+    render(<DateField id="d" value="" onChange={onChange} />)
+    await userEvent.type(screen.getByPlaceholderText('วว/ดด/ปปปป'), '01132569')
+    expect(screen.getByText('กรุณากรอกวันที่ให้ถูกต้อง')).toBeInTheDocument()
+    expect(onChange).toHaveBeenLastCalledWith('')
+  })
+
+  it('พิมพ์วันที่ครบและถูกต้อง → ไม่แจ้งเตือน', async () => {
+    render(<DateField id="d" value="" onChange={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText('วว/ดด/ปปปป'), '15032569')
+    expect(screen.queryByText('กรุณากรอกวันที่ให้ถูกต้อง')).not.toBeInTheDocument()
+  })
+
+  it('พิมพ์ยังไม่ครบ (เดือนเกินแต่ยังไม่ครบ 8 หลัก) → ยังไม่แจ้งเตือน (ไม่ nag ระหว่างพิมพ์)', async () => {
+    render(<DateField id="d" value="" onChange={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText('วว/ดด/ปปปป'), '0113')
+    expect(screen.queryByText('กรุณากรอกวันที่ให้ถูกต้อง')).not.toBeInTheDocument()
+  })
+
+  it('แสดงข้อความ error จาก form (prop) เมื่อผู้ใช้ยังไม่ได้พิมพ์ผิดเอง', () => {
+    render(<DateField id="d" value="" onChange={vi.fn()} error="กรุณาเลือกวันที่เริ่มต้น" />)
+    expect(screen.getByText('กรุณาเลือกวันที่เริ่มต้น')).toBeInTheDocument()
+  })
 })
