@@ -152,19 +152,19 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
         </div>
       </div>
 
-      {/* Row 3: ล้าง + ค้นหา (grid 4-col ชิดขวา; desktop ปุ่มละ ~1/4, mobile stack เต็มกว้าง) */}
+      {/* Row 3: ค้นหา + ล้าง (grid 4-col ชิดขวา; ค้นหา col 3, ล้าง col 4; mobile stack เต็มกว้าง) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Button type="submit" className="w-full md:col-start-3">
+          ค้นหา
+        </Button>
         <Button
           type="button"
           variant="destructive"
-          className="w-full md:col-start-3"
+          className="w-full md:col-start-4"
           disabled={!isDirty}
           onClick={handleClear}
         >
           ล้าง
-        </Button>
-        <Button type="submit" className="w-full md:col-start-4">
-          ค้นหา
         </Button>
       </div>
     </form>
