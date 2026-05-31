@@ -16,8 +16,9 @@ const mockUser: User = {
   fullName: 'Test User',
   role: UserRole.EMPLOYEE,
   isActive: true,
-  departmentId: null,
-  department: null,
+  // department column is nullable in DB but the entity types it non-null (tracked debt) — represent a user without a department
+  departmentId: null as unknown as number,
+  department: null as unknown as User['department'],
   createdAt: new Date(),
   updatedAt: new Date(),
 };
