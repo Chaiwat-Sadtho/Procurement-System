@@ -83,6 +83,14 @@ describe('PRListFilterForm', () => {
     expect(onClear).toHaveBeenCalled()
   })
 
+  it('ล้าง รีเซ็ตวันที่สิ้นสุด (default วันนี้) ให้เป็นค่าว่าง ไม่ใช่กลับไปเป็นวันนี้', async () => {
+    renderForm()
+    // ทำให้ form dirty เพื่อเปิดปุ่มล้าง แล้วกดล้าง — to ต้องว่าง ไม่ใช่ default วันนี้
+    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-1')
+    await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
+    expect(screen.getByLabelText(/วันที่สิ้นสุด/i)).toHaveValue('')
+  })
+
   it('ล้าง button is disabled when the form is pristine', () => {
     renderForm()
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()

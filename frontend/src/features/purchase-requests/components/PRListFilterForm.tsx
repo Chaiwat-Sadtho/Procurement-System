@@ -74,7 +74,8 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
   const statusValue = watch('status') ?? 'all'
 
   function handleClear() {
-    reset(defaultValues)
+    // ล้าง = กลับเป็นค่าว่างทั้งหมด (รวม to ที่ default = วันนี้) ไม่ใช่ reset กลับ default
+    reset({ ...defaultValues, to: '' })
     setResetKey((k) => k + 1) // remount DateField → ล้าง buffer ที่พิมพ์ค้าง
     onClear?.()
   }
@@ -101,10 +102,15 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
             name="from"
             control={control}
             render={({ field }) => (
-              <DateField key={`from-${resetKey}`} id="from" value={field.value} onChange={field.onChange} />
+              <DateField
+                key={`from-${resetKey}`}
+                id="from"
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.from?.message}
+              />
             )}
           />
-          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.from?.message}</p>
         </div>
 
         <div className="space-y-1">
@@ -115,10 +121,15 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
             name="to"
             control={control}
             render={({ field }) => (
-              <DateField key={`to-${resetKey}`} id="to" value={field.value} onChange={field.onChange} />
+              <DateField
+                key={`to-${resetKey}`}
+                id="to"
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.to?.message}
+              />
             )}
           />
-          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.to?.message}</p>
         </div>
       </div>
 
