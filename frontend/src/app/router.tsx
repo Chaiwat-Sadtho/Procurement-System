@@ -3,6 +3,7 @@ import { AppLayout } from '@/shared/components/AppLayout'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
+import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -36,7 +37,7 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: 'purchase-requests/:id', element: <ComingSoon title="Purchase Request Detail" /> },
+      { path: 'purchase-requests/:id', element: <PRDetailPage /> },
       {
         path: 'purchase-requests/:id/edit',
         element: (
