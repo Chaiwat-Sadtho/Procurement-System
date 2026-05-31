@@ -147,15 +147,12 @@ const FormMessage = React.forwardRef<
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : children
 
-  if (!body) {
-    return null
-  }
-
+  // จองพื้นที่ไว้เสมอ (แม้ยังไม่มี error) เพื่อกัน layout ขยับตอนข้อความ error โผล่
   return (
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
+      className={cn("min-h-[1.25rem] text-sm font-medium text-destructive", className)}
       {...props}
     >
       {body}
