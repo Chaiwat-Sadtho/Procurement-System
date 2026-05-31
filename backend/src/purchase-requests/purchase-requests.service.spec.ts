@@ -402,5 +402,27 @@ describe('PurchaseRequestsService', () => {
         { requesterId: 99 },
       );
     });
+
+    it('filters by requesterName (CONCAT_WS of requester name ILIKE)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { requesterName: 'สมชาย' } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "CONCAT_WS(' ', requester.firstName, requester.middleName, requester.lastName) ILIKE :requesterName",
+        { requesterName: '%สมชาย%' },
+      );
+    });
   });
 });
