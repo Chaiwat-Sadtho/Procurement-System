@@ -34,10 +34,7 @@ export function PRListPage() {
         search: filters.search || undefined,
         from: filters.from,
         to: filters.to,
-        requesterId:
-          filters.requesterId && filters.requesterId !== 'all'
-            ? Number(filters.requesterId)
-            : undefined,
+        requesterName: filters.requesterName?.trim() || undefined,
         status: filters.status && filters.status !== 'all' ? filters.status : undefined,
       }
     : undefined
@@ -55,6 +52,11 @@ export function PRListPage() {
     setFilters(values)
   }
 
+  const handleClear = () => {
+    setFilters(null)
+    setPage(1)
+  }
+
   return (
     <div>
       <PageHeader
@@ -69,7 +71,7 @@ export function PRListPage() {
         }
       />
 
-      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} />
+      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} onClear={handleClear} />
 
       {filters === null ? (
         <p className="text-center py-12 text-muted-foreground">

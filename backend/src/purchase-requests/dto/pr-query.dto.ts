@@ -49,6 +49,11 @@ export class PrQueryDto {
   @Type(() => Number)
   requesterId?: number;
 
+  @ApiPropertyOptional({ example: 'สมชาย' })
+  @IsOptional()
+  @IsString()
+  requesterName?: string;
+
   @ApiPropertyOptional({ default: 'created_at', enum: ['created_at', 'title', 'total_estimated_amount'] })
   @IsOptional()
   @IsString()

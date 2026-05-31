@@ -288,4 +288,32 @@ describe('Purchase Requests (e2e)', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
     expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
   });
+
+  // Gap-closer: requesterName must run on real Postgres to prove TypeORM maps
+  // requester.firstName -> first_name *inside* CONCAT_WS (a mock-qb unit test cannot).
+  // A mapping failure would 500 (column does not exist), so .expect(200) is itself the mapping proof.
+  // employee in this suite = firstName 'PR', lastName 'Employee', middle null => CONCAT_WS = 'PR Employee'.
+  it('GET /api/v1/purchase-requests?requesterName= — filters by requester full name (CONCAT_WS ILIKE, real DB)', async () => {
+    const full = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'PR Employee' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(full.body.meta.total).toBeGreaterThanOrEqual(1);
+
+    const partial = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'Employee' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(partial.body.meta.total).toBeGreaterThanOrEqual(1);
+
+    // negative control: a name nobody has must return 0 — proves the WHERE actually discriminates
+    const none = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'NoSuchRequesterZZZ' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(none.body.meta.total).toBe(0);
+  });
 });

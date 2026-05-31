@@ -1,4 +1,5 @@
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
@@ -11,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { DateField } from '@/shared/components/DateField'
 import { RequiredMark } from '@/shared/components/RequiredMark'
-import { useUsers } from '@/features/users/hooks/useUsers'
+import { dateToIso } from '@/shared/lib/buddhistDate'
 
 const filterSchema = z
   .object({
@@ -20,7 +22,7 @@ const filterSchema = z
     search: z.string().optional(),
     from: z.string().min(1, 'กรุณาเลือกวันที่เริ่มต้น'),
     to: z.string().min(1, 'กรุณาเลือกวันที่สิ้นสุด'),
-    requesterId: z.string().optional(),
+    requesterName: z.string().optional(),
     status: z.string().optional(),
   })
   .refine((d) => !d.from || !d.to || d.from <= d.to, {
@@ -41,31 +43,41 @@ const STATUS_OPTIONS = [
 interface PRListFilterFormProps {
   showRequester: boolean
   onSubmit: (values: PRListFilterValues) => void
+  onClear?: () => void
 }
 
-export function PRListFilterForm({ showRequester, onSubmit }: PRListFilterFormProps) {
-  const { data: users } = useUsers({ enabled: showRequester })
+export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFilterFormProps) {
+  const [resetKey, setResetKey] = useState(0)
+
+  const defaultValues: PRListFilterValues = {
+    prNumber: '',
+    search: '',
+    from: '',
+    to: dateToIso(new Date()), // วันสิ้นสุด default = วันนี้ (#6)
+    requesterName: '',
+    status: 'all',
+  }
 
   const {
     register,
     handleSubmit,
+    control,
+    reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<PRListFilterValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: {
-      prNumber: '',
-      search: '',
-      from: '',
-      to: '',
-      requesterId: 'all',
-      status: 'all',
-    },
+    defaultValues,
   })
 
-  const requesterValue = watch('requesterId') ?? 'all'
   const statusValue = watch('status') ?? 'all'
+
+  function handleClear() {
+    reset(defaultValues)
+    setResetKey((k) => k + 1) // remount DateField → ล้าง buffer ที่พิมพ์ค้าง
+    onClear?.()
+  }
 
   return (
     <form onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-4 mb-4">
@@ -85,16 +97,28 @@ export function PRListFilterForm({ showRequester, onSubmit }: PRListFilterFormPr
           <Label htmlFor="from">
             วันที่เริ่มต้น<RequiredMark />
           </Label>
-          <Input id="from" type="date" {...register('from')} />
-          {errors.from && <p className="text-sm text-destructive">{errors.from.message}</p>}
+          <Controller
+            name="from"
+            control={control}
+            render={({ field }) => (
+              <DateField key={`from-${resetKey}`} id="from" value={field.value} onChange={field.onChange} />
+            )}
+          />
+          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.from?.message}</p>
         </div>
 
         <div className="space-y-1">
           <Label htmlFor="to">
             วันที่สิ้นสุด<RequiredMark />
           </Label>
-          <Input id="to" type="date" {...register('to')} />
-          {errors.to && <p className="text-sm text-destructive">{errors.to.message}</p>}
+          <Controller
+            name="to"
+            control={control}
+            render={({ field }) => (
+              <DateField key={`to-${resetKey}`} id="to" value={field.value} onChange={field.onChange} />
+            )}
+          />
+          <p className="text-sm text-destructive min-h-[1.25rem]">{errors.to?.message}</p>
         </div>
       </div>
 
@@ -102,29 +126,18 @@ export function PRListFilterForm({ showRequester, onSubmit }: PRListFilterFormPr
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {showRequester && (
           <div className="space-y-1">
-            <Label htmlFor="requesterId">ผู้ขอ</Label>
-            <Select
-              value={requesterValue}
-              onValueChange={(v) => setValue('requesterId', v)}
-            >
-              <SelectTrigger id="requesterId">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">ทั้งหมด</SelectItem>
-                {users?.map((u) => (
-                  <SelectItem key={u.id} value={String(u.id)}>
-                    {u.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="requesterName">ผู้ขอ</Label>
+            <Input
+              id="requesterName"
+              placeholder="ค้นหาด้วยชื่อผู้ขอ"
+              {...register('requesterName')}
+            />
           </div>
         )}
 
         <div className="space-y-1">
           <Label htmlFor="status">สถานะ</Label>
-          <Select value={statusValue} onValueChange={(v) => setValue('status', v)}>
+          <Select value={statusValue} onValueChange={(v) => setValue('status', v, { shouldDirty: true })}>
             <SelectTrigger id="status">
               <SelectValue />
             </SelectTrigger>
@@ -139,9 +152,20 @@ export function PRListFilterForm({ showRequester, onSubmit }: PRListFilterFormPr
         </div>
       </div>
 
-      {/* Row 3: submit */}
-      <div className="flex justify-end">
-        <Button type="submit">ค้นหา</Button>
+      {/* Row 3: ค้นหา + ล้าง (grid 4-col ชิดขวา; ค้นหา col 3, ล้าง col 4; mobile stack เต็มกว้าง) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Button type="submit" className="w-full md:col-start-3">
+          ค้นหา
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          className="w-full md:col-start-4"
+          disabled={!isDirty}
+          onClick={handleClear}
+        >
+          ล้าง
+        </Button>
       </div>
     </form>
   )

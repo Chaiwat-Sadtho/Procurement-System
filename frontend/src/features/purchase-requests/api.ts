@@ -7,7 +7,7 @@ interface PRListParams {
   status?: string
   prNumber?: string
   search?: string
-  requesterId?: number
+  requesterName?: string
   from?: string
   to?: string
 }

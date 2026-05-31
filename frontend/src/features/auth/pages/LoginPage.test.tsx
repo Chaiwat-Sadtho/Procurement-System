@@ -22,13 +22,14 @@ function renderLoginPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  const utils = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>
     </QueryClientProvider>,
   )
+  return { ...utils, queryClient }
 }
 
 describe('LoginPage', () => {
@@ -129,5 +130,20 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/password is required/i)).toBeInTheDocument()
     })
+  })
+
+  it('clears all cached queries on successful login (no stale data across accounts)', async () => {
+    const { authApi } = await import('@/features/auth/api')
+    vi.mocked(authApi.login).mockResolvedValueOnce({ access_token: 'test-token' })
+
+    const { queryClient } = renderLoginPage()
+    const clearSpy = vi.spyOn(queryClient, 'clear')
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com')
+    await user.type(screen.getByLabelText(/password/i), 'password123')
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => expect(clearSpy).toHaveBeenCalled())
   })
 })
