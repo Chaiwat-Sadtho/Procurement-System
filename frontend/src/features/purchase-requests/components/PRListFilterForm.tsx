@@ -13,9 +13,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { DateField } from '@/shared/components/DateField'
-import { Combobox, type ComboboxOption } from '@/shared/components/Combobox'
 import { RequiredMark } from '@/shared/components/RequiredMark'
-import { useUsers } from '@/features/users/hooks/useUsers'
 import { dateToIso } from '@/shared/lib/buddhistDate'
 
 const filterSchema = z
@@ -24,7 +22,7 @@ const filterSchema = z
     search: z.string().optional(),
     from: z.string().min(1, 'กรุณาเลือกวันที่เริ่มต้น'),
     to: z.string().min(1, 'กรุณาเลือกวันที่สิ้นสุด'),
-    requesterId: z.string().optional(),
+    requesterName: z.string().optional(),
     status: z.string().optional(),
   })
   .refine((d) => !d.from || !d.to || d.from <= d.to, {
@@ -49,7 +47,6 @@ interface PRListFilterFormProps {
 }
 
 export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFilterFormProps) {
-  const { data: users } = useUsers({ enabled: showRequester })
   const [resetKey, setResetKey] = useState(0)
 
   const defaultValues: PRListFilterValues = {
@@ -57,7 +54,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
     search: '',
     from: '',
     to: dateToIso(new Date()), // วันสิ้นสุด default = วันนี้ (#6)
-    requesterId: 'all',
+    requesterName: '',
     status: 'all',
   }
 
@@ -75,11 +72,6 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
   })
 
   const statusValue = watch('status') ?? 'all'
-
-  const requesterOptions: ComboboxOption[] = [
-    { value: 'all', label: 'ทั้งหมด' },
-    ...(users?.map((u) => ({ value: String(u.id), label: u.fullName })) ?? []),
-  ]
 
   function handleClear() {
     reset(defaultValues)
@@ -134,20 +126,11 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {showRequester && (
           <div className="space-y-1">
-            <Label htmlFor="requesterId">ผู้ขอ</Label>
-            <Controller
-              name="requesterId"
-              control={control}
-              render={({ field }) => (
-                <Combobox
-                  id="requesterId"
-                  value={field.value ?? 'all'}
-                  onChange={field.onChange}
-                  options={requesterOptions}
-                  placeholder="ทั้งหมด"
-                  searchPlaceholder="ค้นหาด้วยชื่อ..."
-                />
-              )}
+            <Label htmlFor="requesterName">ผู้ขอ</Label>
+            <Input
+              id="requesterName"
+              placeholder="ค้นหาด้วยชื่อผู้ขอ"
+              {...register('requesterName')}
             />
           </div>
         )}

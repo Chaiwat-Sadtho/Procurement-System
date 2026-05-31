@@ -14,13 +14,8 @@ vi.mock('@/shared/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(),
 }))
 
-vi.mock('@/features/users/hooks/useUsers', () => ({
-  useUsers: vi.fn(),
-}))
-
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { useUsers } from '@/features/users/hooks/useUsers'
 import type { User } from '@/shared/types'
 
 const mockPR: PurchaseRequest = {
@@ -69,7 +64,6 @@ function setupMocks({
 }) {
   vi.mocked(useCurrentUser).mockReturnValue({ data: user, isLoading: false } as ReturnType<typeof useCurrentUser>)
   vi.mocked(usePurchaseRequests).mockReturnValue({ data: prData, isLoading } as ReturnType<typeof usePurchaseRequests>)
-  vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
 }
 
 function renderPage() {
@@ -116,20 +110,16 @@ describe('PRListPage', () => {
     expect(lastCall[1]).toEqual({ enabled: true })
   })
 
-  it('Employee: form has no Requester field, useUsers not enabled', () => {
+  it('Employee: form has no Requester field', () => {
     setupMocks({ user: { ...baseUser, role: 'employee' }, prData: undefined })
-
     renderPage()
     expect(screen.queryByLabelText(/ผู้ขอ/i)).not.toBeInTheDocument()
-    expect(vi.mocked(useUsers)).toHaveBeenCalledWith({ enabled: false })
   })
 
-  it('Manager: form has Requester field + useUsers enabled', () => {
+  it('Manager: form has Requester field', () => {
     setupMocks({ user: { ...baseUser, role: 'manager' }, prData: undefined })
-
     renderPage()
     expect(screen.getByLabelText(/ผู้ขอ/i)).toBeInTheDocument()
-    expect(vi.mocked(useUsers)).toHaveBeenCalledWith({ enabled: true })
   })
 
   it('shows loading skeleton after submit', async () => {

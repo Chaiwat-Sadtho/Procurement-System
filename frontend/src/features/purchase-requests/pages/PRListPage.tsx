@@ -34,10 +34,7 @@ export function PRListPage() {
         search: filters.search || undefined,
         from: filters.from,
         to: filters.to,
-        requesterId:
-          filters.requesterId && filters.requesterId !== 'all'
-            ? Number(filters.requesterId)
-            : undefined,
+        requesterName: filters.requesterName?.trim() || undefined,
         status: filters.status && filters.status !== 'all' ? filters.status : undefined,
       }
     : undefined

@@ -1,23 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PRListFilterForm } from './PRListFilterForm'
-
-vi.mock('@/features/users/hooks/useUsers', () => ({
-  useUsers: vi.fn(),
-}))
-
-import { useUsers } from '@/features/users/hooks/useUsers'
 
 function renderForm(props: Partial<React.ComponentProps<typeof PRListFilterForm>> = {}) {
   const onSubmit = vi.fn()
   const onClear = vi.fn()
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const utils = render(
-    <QueryClientProvider client={queryClient}>
-      <PRListFilterForm showRequester={false} onSubmit={onSubmit} onClear={onClear} {...props} />
-    </QueryClientProvider>,
+    <PRListFilterForm showRequester={false} onSubmit={onSubmit} onClear={onClear} {...props} />,
   )
   return { ...utils, onSubmit, onClear }
 }
@@ -32,7 +22,6 @@ async function setRange(fromDigits: string, toDigits: string) {
 
 describe('PRListFilterForm', () => {
   it('shows required errors when both dates empty', async () => {
-    vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
     const { onSubmit } = renderForm()
 
     await userEvent.clear(screen.getByLabelText(/วันที่สิ้นสุด/i)) // ลบ default วันนี้
@@ -44,7 +33,6 @@ describe('PRListFilterForm', () => {
   })
 
   it('shows error when from > to', async () => {
-    vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
     const { onSubmit } = renderForm()
 
     await setRange('30062569', '01062569') // 30/06 > 01/06
@@ -55,7 +43,6 @@ describe('PRListFilterForm', () => {
   })
 
   it('calls onSubmit with ISO values when valid', async () => {
-    vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
     const { onSubmit } = renderForm()
 
     await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-2026')
@@ -67,36 +54,24 @@ describe('PRListFilterForm', () => {
     )
   })
 
-  it('hides Requester field and skips useUsers when showRequester=false', () => {
-    vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
+  it('hides Requester field when showRequester=false', () => {
     renderForm({ showRequester: false })
-
     expect(screen.queryByLabelText(/ผู้ขอ/i)).not.toBeInTheDocument()
-    expect(useUsers).toHaveBeenCalledWith({ enabled: false })
   })
 
-  it('Requester combobox: search by name and submit requesterId', async () => {
-    vi.mocked(useUsers).mockReturnValue({
-      data: [
-        { id: 5, fullName: 'Alice', email: 'a@x.com', firstName: 'Alice', middleName: null, lastName: 'A', role: 'employee', isActive: true, departmentId: 1, createdAt: '', updatedAt: '' },
-        { id: 6, fullName: 'Bob', email: 'b@x.com', firstName: 'Bob', middleName: null, lastName: 'B', role: 'employee', isActive: true, departmentId: 1, createdAt: '', updatedAt: '' },
-      ],
-    } as ReturnType<typeof useUsers>)
+  it('Requester free-text: shows Input when showRequester and submits requesterName', async () => {
     const { onSubmit } = renderForm({ showRequester: true })
 
-    expect(useUsers).toHaveBeenCalledWith({ enabled: true })
-    await userEvent.click(screen.getByLabelText(/ผู้ขอ/i))
-    await userEvent.type(screen.getByPlaceholderText(/ค้นหาด้วยชื่อ/i), 'Bob')
-    await userEvent.click(screen.getByText('Bob'))
-
+    await userEvent.type(screen.getByLabelText(/ผู้ขอ/i), 'สมชาย')
     await setRange('01012569', '31122569')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ requesterId: '6' }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ requesterName: 'สมชาย' }),
+    )
   })
 
   it('ล้าง resets fields and calls onClear', async () => {
-    vi.mocked(useUsers).mockReturnValue({ data: undefined } as ReturnType<typeof useUsers>)
     const { onClear } = renderForm()
 
     await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-XYZ')
