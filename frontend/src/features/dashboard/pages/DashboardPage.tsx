@@ -34,13 +34,12 @@ export function DashboardPage() {
 
       <StatCards stats={stats} isLoading={statsLoading} role={role} />
 
-      {isEmployee && <AttentionList stats={stats} />}
+      {isEmployee && <AttentionList />}
+
+      {isPO && <StatusChart stats={stats} isLoading={statsLoading} />}
 
       {(isPO || isManager) && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {isPO && <StatusChart stats={stats} isLoading={statsLoading} />}
-          <BudgetSummary scope={isManager ? { departmentId: user?.departmentId ?? undefined } : {}} />
-        </div>
+        <BudgetSummary scope={isManager ? { departmentId: user?.departmentId ?? undefined } : {}} />
       )}
 
       <RecentPRsTable />

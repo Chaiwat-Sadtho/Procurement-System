@@ -32,4 +32,9 @@ describe('StatusChart', () => {
     render(<StatusChart stats={undefined} isLoading />)
     expect(screen.getByTestId('status-chart-loading')).toBeInTheDocument()
   })
+
+  it('centers the donut + legend within the card', () => {
+    render(<StatusChart stats={stats} isLoading={false} />)
+    expect(screen.getByTestId('status-chart-body')).toHaveClass('justify-center')
+  })
 })

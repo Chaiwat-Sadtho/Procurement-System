@@ -25,16 +25,16 @@ export function StatusChart({ stats, isLoading }: StatusChartProps) {
         {isLoading || !stats ? (
           <Skeleton data-testid="status-chart-loading" className="h-48 w-full" />
         ) : (
-          <div className="flex items-center gap-6">
-            <div className="h-40 w-40">
+          <div data-testid="status-chart-body" className="flex items-center justify-center gap-8">
+            <div className="h-52 w-52">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={SEGMENTS.map((s) => ({ name: s.label, value: stats[s.key] }))}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={45}
-                    outerRadius={70}
+                    innerRadius={60}
+                    outerRadius={95}
                   >
                     {SEGMENTS.map((s) => (
                       <Cell key={s.key} fill={s.color} />
