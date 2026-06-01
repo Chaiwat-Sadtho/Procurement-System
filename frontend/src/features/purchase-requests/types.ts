@@ -58,3 +58,11 @@ export interface CreatePRRequest {
 export type UpdatePRRequest = Partial<CreatePRRequest>
 
 export type PRListResponse = PaginatedResponse<PurchaseRequest>
+
+export interface PrStatsResponse {
+  total: number
+  draft: number
+  submitted: number
+  approved: number
+  rejected: number
+}
