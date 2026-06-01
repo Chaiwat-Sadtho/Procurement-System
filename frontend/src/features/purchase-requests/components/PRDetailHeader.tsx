@@ -30,7 +30,7 @@ export function PRDetailHeader({ pr, actions }: PRDetailHeaderProps) {
         >
           <ArrowLeft className="h-4 w-4" /> กลับไปรายการ
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
               <span className="font-mono text-sm text-muted-foreground">{pr.prNumber}</span>
