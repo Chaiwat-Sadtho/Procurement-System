@@ -30,7 +30,7 @@ describe('RecentPRsTable', () => {
   })
 
   it('renders empty state when no data', () => {
-    vi.mocked(useRecentPRs).mockReturnValue({ data: [], isLoading: false } as ReturnType<typeof useRecentPRs>)
+    vi.mocked(useRecentPRs).mockReturnValue({ data: [] as PurchaseRequest[], isLoading: false } as ReturnType<typeof useRecentPRs>)
     renderTable()
     expect(screen.getByText(/ยังไม่มีข้อมูล/)).toBeInTheDocument()
   })

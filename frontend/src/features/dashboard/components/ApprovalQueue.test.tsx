@@ -30,7 +30,7 @@ describe('ApprovalQueue', () => {
   })
 
   it('shows empty state when no submitted PRs', () => {
-    vi.mocked(useApprovalQueue).mockReturnValue({ data: [], isLoading: false } as ReturnType<typeof useApprovalQueue>)
+    vi.mocked(useApprovalQueue).mockReturnValue({ data: [] as PurchaseRequest[], isLoading: false } as ReturnType<typeof useApprovalQueue>)
     renderQueue()
     expect(screen.getByText('ไม่มีรายการรออนุมัติ')).toBeInTheDocument()
   })

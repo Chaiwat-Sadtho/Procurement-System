@@ -27,7 +27,7 @@ describe('BudgetSummary', () => {
   })
 
   it('shows empty state when no budgets', () => {
-    vi.mocked(useBudgets).mockReturnValue({ data: [], isLoading: false } as ReturnType<typeof useBudgets>)
+    vi.mocked(useBudgets).mockReturnValue({ data: [] as DashboardBudget[], isLoading: false } as ReturnType<typeof useBudgets>)
     render(<BudgetSummary scope={{}} />)
     expect(screen.getByText(/ยังไม่มีงบสำหรับปีนี้/)).toBeInTheDocument()
   })
