@@ -104,10 +104,11 @@ export function PRForm(props: PRFormProps) {
   return (
     <Form {...form}>
       <form
-        className="mx-auto max-w-2xl space-y-6"
+        className="mx-auto max-w-4xl space-y-6"
         onSubmit={form.handleSubmit((v) => onSave(v, 'draft'))}
       >
-        <FormField
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <FormField
           control={form.control}
           name="title"
           render={({ field }) => (
@@ -163,7 +164,8 @@ export function PRForm(props: PRFormProps) {
               <FormMessage />
             </FormItem>
           )}
-        />
+          />
+        </div>
 
         <PRItemsField form={form} />
 
