@@ -1,0 +1,142 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import type { PurchaseRequest } from '../types'
+import { createDefaultValues, prToFormValues } from '../lib/prFormSchema'
+
+vi.mock('../hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
+import { usePRMutations } from '../hooks/usePRMutations'
+import { toast } from 'sonner'
+import { PRForm } from './PRForm'
+
+function makeMutations(over: Record<string, unknown> = {}) {
+  const m = {
+    createMutation: { mutateAsync: vi.fn(), isPending: false },
+    updateMutation: { mutateAsync: vi.fn(), isPending: false },
+    submitMutation: { mutateAsync: vi.fn(), isPending: false },
+    deleteMutation: { mutateAsync: vi.fn(), isPending: false },
+    ...over,
+  }
+  vi.mocked(usePRMutations).mockReturnValue(m as unknown as ReturnType<typeof usePRMutations>)
+  return m
+}
+
+function renderForm(props: Partial<React.ComponentProps<typeof PRForm>> = {}) {
+  return render(
+    <MemoryRouter>
+      <PRForm mode="create" defaultValues={createDefaultValues()} {...props} />
+    </MemoryRouter>,
+  )
+}
+
+async function fillRequired() {
+  await userEvent.type(screen.getByLabelText(/ชื่อเรื่อง/), 'จัดซื้อกระดาษ')
+  await userEvent.type(screen.getByLabelText(/วันที่ต้องการ/), '01072569') // -> 2026-07-01
+  await userEvent.type(screen.getByLabelText(/ชื่อรายการ/), 'กระดาษ A4')
+  await userEvent.clear(screen.getByLabelText(/จำนวน/))
+  await userEvent.type(screen.getByLabelText(/จำนวน/), '10')
+  await userEvent.type(screen.getByLabelText(/^หน่วย/), 'รีม')
+  await userEvent.clear(screen.getByLabelText(/ราคาต่อหน่วย/))
+  await userEvent.type(screen.getByLabelText(/ราคาต่อหน่วย/), '120')
+}
+
+describe('PRForm — create', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('saves a draft with the mapped payload and navigates to detail', async () => {
+    const m = makeMutations()
+    m.createMutation.mutateAsync.mockResolvedValue({ id: 42 } as PurchaseRequest)
+    renderForm()
+    await fillRequired()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึกร่าง' }))
+    await waitFor(() =>
+      expect(m.createMutation.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'จัดซื้อกระดาษ',
+          requiredDate: '2026-07-01',
+          quarter: null,
+          items: [expect.objectContaining({ itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', estimatedUnitPrice: 120 })],
+        }),
+      ),
+    )
+    expect(m.submitMutation.mutateAsync).not.toHaveBeenCalled()
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42')
+    expect(toast.success).toHaveBeenCalledWith('บันทึกร่างแล้ว')
+  })
+
+  it('save + submit: creates then submits then navigates', async () => {
+    const m = makeMutations()
+    m.createMutation.mutateAsync.mockResolvedValue({ id: 42 } as PurchaseRequest)
+    m.submitMutation.mutateAsync.mockResolvedValue({ id: 42 } as PurchaseRequest)
+    renderForm()
+    await fillRequired()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' }))
+    await waitFor(() => expect(m.submitMutation.mutateAsync).toHaveBeenCalledWith(42))
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42')
+    expect(toast.success).toHaveBeenCalledWith('ส่งคำขอซื้อแล้ว')
+  })
+
+  it('create ok but submit fails: still navigates to detail + error toast (no duplicate create)', async () => {
+    const m = makeMutations()
+    m.createMutation.mutateAsync.mockResolvedValue({ id: 42 } as PurchaseRequest)
+    m.submitMutation.mutateAsync.mockRejectedValue(new Error('boom'))
+    renderForm()
+    await fillRequired()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+    expect(m.createMutation.mutateAsync).toHaveBeenCalledTimes(1)
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42')
+  })
+
+  it('blocks save when required fields are empty', async () => {
+    const m = makeMutations()
+    renderForm()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึกร่าง' }))
+    expect(await screen.findByText('กรุณาระบุชื่อเรื่อง')).toBeInTheDocument()
+    expect(m.createMutation.mutateAsync).not.toHaveBeenCalled()
+  })
+})
+
+describe('PRForm — edit', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  const pr = {
+    id: 3, title: 'ของเดิม', requiredDate: '2026-08-15', quarter: 2,
+    items: [{ id: 1, prId: 3, itemName: 'หมึก', description: null, quantity: 5, unit: 'กล่อง', estimatedUnitPrice: 300, estimatedTotalPrice: 1500 }],
+  } as unknown as PurchaseRequest
+
+  it('updates with payload that omits quarter and navigates', async () => {
+    const m = makeMutations()
+    m.updateMutation.mutateAsync.mockResolvedValue(pr)
+    renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
+    const title = screen.getByLabelText(/ชื่อเรื่อง/)
+    await userEvent.clear(title)
+    await userEvent.type(title, 'แก้ชื่อ')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึกร่าง' }))
+    await waitFor(() =>
+      expect(m.updateMutation.mutateAsync).toHaveBeenCalledWith({
+        id: 3,
+        data: {
+          title: 'แก้ชื่อ',
+          requiredDate: '2026-08-15',
+          items: [{ itemName: 'หมึก', quantity: 5, unit: 'กล่อง', estimatedUnitPrice: 300 }],
+        },
+      }),
+    )
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/3')
+  })
+
+  it('disables the period selector in edit mode', () => {
+    makeMutations()
+    renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
+    expect(screen.getByLabelText(/งบประมาณ|ช่วงเวลา|ไตรมาส/)).toBeDisabled()
+  })
+})
