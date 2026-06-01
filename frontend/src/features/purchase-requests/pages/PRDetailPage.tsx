@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { getApiErrorMessage } from '@/shared/lib/getApiErrorMessage'
 import { usePurchaseRequest } from '../hooks/usePurchaseRequest'
+import { usePRMutations } from '../hooks/usePRMutations'
 import { PRDetailHeader } from '../components/PRDetailHeader'
 import { PRItemsTable } from '../components/PRItemsTable'
 import { PRActions } from '../components/PRActions'
@@ -14,15 +15,18 @@ import { RejectReasonDialog } from '../components/RejectReasonDialog'
 
 export function PRDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const prId = Number(id)
   const validId = Number.isInteger(prId) && prId > 0
 
   const { data: pr, isLoading, isError, submitMutation, approveMutation, rejectMutation } =
     usePurchaseRequest(validId ? prId : 0)
   const { data: user } = useCurrentUser()
+  const { deleteMutation } = usePRMutations()
 
   const [confirmAction, setConfirmAction] = useState<'submit' | 'approve' | null>(null)
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (!validId || isError) {
     return (
@@ -100,6 +104,8 @@ export function PRDetailPage() {
               onSubmit={() => setConfirmAction('submit')}
               onApprove={() => setConfirmAction('approve')}
               onReject={() => setRejectOpen(true)}
+              onEdit={() => navigate(`/purchase-requests/${pr.id}/edit`)}
+              onDelete={() => setDeleteOpen(true)}
             />
           ) : undefined
         }
@@ -128,6 +134,25 @@ export function PRDetailPage() {
         onOpenChange={setRejectOpen}
         onConfirm={handleReject}
         isPending={rejectMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="ลบใบร่างคำขอซื้อ"
+        description="การลบไม่สามารถย้อนกลับได้ ต้องการลบใบร่างนี้หรือไม่"
+        confirmLabel="ยืนยันลบ"
+        variant="destructive"
+        isPending={deleteMutation.isPending}
+        onConfirm={() =>
+          deleteMutation.mutate(pr.id, {
+            onSuccess: () => {
+              toast.success('ลบใบร่างแล้ว')
+              navigate('/purchase-requests')
+            },
+            onError: (e) => toast.error(getApiErrorMessage(e)),
+          })
+        }
       />
     </div>
   )

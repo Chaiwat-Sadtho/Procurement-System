@@ -5,11 +5,19 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import type { PurchaseRequest } from '../types'
 import type { User } from '@/shared/types'
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 vi.mock('../hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
+vi.mock('../hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { usePurchaseRequest } from '../hooks/usePurchaseRequest'
+import { usePRMutations } from '../hooks/usePRMutations'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { toast } from 'sonner'
 import { PRDetailPage } from './PRDetailPage'
@@ -78,6 +86,17 @@ function mockHook(overrides: Partial<Record<string, unknown>> = {}) {
   return { submitMutation, approveMutation, rejectMutation }
 }
 
+function setMutations() {
+  const deleteMutation = { mutate: vi.fn(), isPending: false }
+  vi.mocked(usePRMutations).mockReturnValue({
+    createMutation: { mutateAsync: vi.fn(), isPending: false },
+    updateMutation: { mutateAsync: vi.fn(), isPending: false },
+    submitMutation: { mutateAsync: vi.fn(), isPending: false },
+    deleteMutation,
+  } as unknown as ReturnType<typeof usePRMutations>)
+  return { deleteMutation }
+}
+
 function setUser(user: User | undefined = managerUser) {
   vi.mocked(useCurrentUser).mockReturnValue({ data: user } as ReturnType<typeof useCurrentUser>)
 }
@@ -94,7 +113,10 @@ function renderPage(id = '1') {
 }
 
 describe('PRDetailPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setMutations()
+  })
 
   it('shows loading skeleton while fetching', () => {
     mockHook({ data: undefined, isLoading: true })
@@ -175,5 +197,27 @@ describe('PRDetailPage', () => {
     setUser({ ...managerUser, id: 10, role: 'employee' })
     renderPage()
     expect(screen.getByRole('button', { name: 'ส่งขออนุมัติ' })).toBeInTheDocument()
+  })
+
+  it('navigates to the edit route when แก้ไข is clicked', async () => {
+    mockHook({ data: { ...mockPR, id: 3, status: 'draft', requesterId: 10 } })
+    setMutations()
+    setUser({ ...managerUser, id: 10, role: 'employee' })
+    renderPage('3')
+    await userEvent.click(screen.getByRole('button', { name: 'แก้ไข' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/3/edit')
+  })
+
+  it('deletes the draft after confirming and navigates to the list', async () => {
+    mockHook({ data: { ...mockPR, id: 3, status: 'draft', requesterId: 10 } })
+    const { deleteMutation } = setMutations()
+    deleteMutation.mutate.mockImplementation((_id: number, opts: { onSuccess: () => void }) => opts.onSuccess())
+    setUser({ ...managerUser, id: 10, role: 'employee' })
+    renderPage('3')
+    await userEvent.click(screen.getByRole('button', { name: 'ลบร่าง' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันลบ' }))
+    expect(deleteMutation.mutate).toHaveBeenCalledWith(3, expect.anything())
+    expect(toast.success).toHaveBeenCalledWith('ลบใบร่างแล้ว')
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests')
   })
 })

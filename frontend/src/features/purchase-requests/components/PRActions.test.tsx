@@ -45,7 +45,13 @@ const noop = () => {}
 function renderActions(
   pr: Partial<PurchaseRequest>,
   user: Partial<User>,
-  handlers: Partial<{ onSubmit: () => void; onApprove: () => void; onReject: () => void }> = {},
+  handlers: Partial<{
+    onSubmit: () => void
+    onApprove: () => void
+    onReject: () => void
+    onEdit: () => void
+    onDelete: () => void
+  }> = {},
 ) {
   return render(
     <PRActions
@@ -54,6 +60,8 @@ function renderActions(
       onSubmit={handlers.onSubmit ?? noop}
       onApprove={handlers.onApprove ?? noop}
       onReject={handlers.onReject ?? noop}
+      onEdit={handlers.onEdit ?? noop}
+      onDelete={handlers.onDelete ?? noop}
     />,
   )
 }
@@ -112,5 +120,26 @@ describe('PRActions gating', () => {
     await userEvent.click(screen.getByRole('button', { name: 'ปฏิเสธ' }))
     expect(onApprove).toHaveBeenCalledOnce()
     expect(onReject).toHaveBeenCalledOnce()
+  })
+
+  it('shows แก้ไข and ลบร่าง for the owner of a draft and fires handlers', async () => {
+    const onEdit = vi.fn()
+    const onDelete = vi.fn()
+    renderActions({ status: 'draft', requesterId: 10 }, { role: 'employee', id: 10 }, { onEdit, onDelete })
+    await userEvent.click(screen.getByRole('button', { name: 'แก้ไข' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ลบร่าง' }))
+    expect(onEdit).toHaveBeenCalledOnce()
+    expect(onDelete).toHaveBeenCalledOnce()
+  })
+
+  it('hides แก้ไข/ลบร่าง for a non-draft PR', () => {
+    renderActions({ status: 'submitted', requesterId: 10 }, { role: 'employee', id: 10 })
+    expect(screen.queryByRole('button', { name: 'แก้ไข' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ลบร่าง' })).not.toBeInTheDocument()
+  })
+
+  it('hides แก้ไข/ลบร่าง for a non-owner', () => {
+    renderActions({ status: 'draft', requesterId: 10 }, { role: 'employee', id: 99 })
+    expect(screen.queryByRole('button', { name: 'แก้ไข' })).not.toBeInTheDocument()
   })
 })
