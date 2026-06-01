@@ -54,4 +54,16 @@ describe('usePRMutations', () => {
     await result.current.deleteMutation.mutateAsync(4)
     await waitFor(() => expect(purchaseRequestsApi.remove).toHaveBeenCalledWith(4))
   })
+
+  it('delete drops the stale detail-cache entry for that id', async () => {
+    vi.mocked(purchaseRequestsApi.remove).mockResolvedValue(undefined)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    qc.setQueryData(['purchase-request', 4], { id: 4 } as PurchaseRequest)
+    function localWrapper({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    }
+    const { result } = renderHook(() => usePRMutations(), { wrapper: localWrapper })
+    await result.current.deleteMutation.mutateAsync(4)
+    await waitFor(() => expect(qc.getQueryData(['purchase-request', 4])).toBeUndefined())
+  })
 })

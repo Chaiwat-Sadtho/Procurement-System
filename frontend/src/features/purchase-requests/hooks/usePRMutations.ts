@@ -31,7 +31,12 @@ export function usePRMutations() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => purchaseRequestsApi.remove(id),
-    onSuccess: invalidateList,
+    onSuccess: (_res, id) => {
+      // record no longer exists -> drop its detail cache entry so a Back-nav
+      // within staleTime can't render the deleted PR from a stale cache
+      queryClient.removeQueries({ queryKey: ['purchase-request', id] })
+      invalidateList()
+    },
   })
 
   return { createMutation, updateMutation, submitMutation, deleteMutation }
