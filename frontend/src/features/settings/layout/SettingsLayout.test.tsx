@@ -33,4 +33,11 @@ describe('SettingsLayout', () => {
     renderAt('/settings')
     expect(screen.getByText('Profile Content')).toBeInTheDocument()
   })
+
+  it('exposes the tab strip as a labelled navigation landmark (finding H)', () => {
+    renderAt('/settings/profile')
+    expect(
+      screen.getByRole('navigation', { name: /settings sections/i }),
+    ).toBeInTheDocument()
+  })
 })

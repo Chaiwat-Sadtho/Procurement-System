@@ -40,22 +40,32 @@ export function ProfilePage() {
     resolver: zodResolver(schema),
     defaultValues: { firstName: '', middleName: '', lastName: '' },
   })
+  const { isDirty } = form.formState
 
   useEffect(() => {
-    if (user) {
+    // sync from server only when there are no unsaved edits — a background
+    // refetch (refetchOnWindowFocus) must not clobber what the user is typing
+    if (user && !isDirty) {
       form.reset({
-        firstName: user.firstName,
+        firstName: user.firstName ?? '',
         middleName: user.middleName ?? '',
-        lastName: user.lastName,
+        lastName: user.lastName ?? '',
       })
     }
-  }, [user, form])
+  }, [user, isDirty, form])
 
   const mutation = useMutation({
     mutationFn: (data: Parameters<typeof settingsApi.updateProfile>[0]) =>
       settingsApi.updateProfile(data),
     onSuccess: (updated: User) => {
       queryClient.setQueryData(['currentUser'], updated)
+      // re-sync to the saved values so the form is clean again — Save disables
+      // itself and a second click cannot fire a duplicate request
+      form.reset({
+        firstName: updated.firstName ?? '',
+        middleName: updated.middleName ?? '',
+        lastName: updated.lastName ?? '',
+      })
       toast.success('บันทึกโปรไฟล์เรียบร้อย')
     },
     onError: () => {
@@ -64,10 +74,11 @@ export function ProfilePage() {
   })
 
   function onSubmit(values: ProfileFormValues) {
+    const middleName = values.middleName.trim()
     mutation.mutate({
-      firstName: values.firstName,
-      middleName: values.middleName.trim() === '' ? null : values.middleName,
-      lastName: values.lastName,
+      firstName: values.firstName.trim(),
+      middleName: middleName === '' ? null : middleName,
+      lastName: values.lastName.trim(),
     })
   }
 
@@ -96,19 +107,34 @@ export function ProfilePage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="middleName"
@@ -122,21 +148,8 @@ export function ProfilePage() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving...' : 'Save'}
+            <Button type="submit" disabled={mutation.isPending || !isDirty}>
+              Save
             </Button>
           </form>
         </Form>

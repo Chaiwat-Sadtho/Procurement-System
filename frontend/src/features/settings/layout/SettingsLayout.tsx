@@ -11,7 +11,7 @@ export function SettingsLayout() {
   return (
     <div>
       <PageHeader title="Settings" description="จัดการโปรไฟล์และความปลอดภัยของบัญชี" />
-      <div className="flex gap-2 border-b mb-6">
+      <nav aria-label="Settings sections" className="flex gap-2 border-b mb-6">
         {tabs.map((tab) => (
           <NavLink
             key={tab.path}
@@ -28,7 +28,7 @@ export function SettingsLayout() {
             {tab.label}
           </NavLink>
         ))}
-      </div>
+      </nav>
       <Outlet />
     </div>
   )

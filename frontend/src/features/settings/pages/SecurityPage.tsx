@@ -42,12 +42,14 @@ type SecurityFormValues = z.infer<typeof schema>
 export function SecurityPage() {
   const form = useForm<SecurityFormValues>({
     resolver: zodResolver(schema),
+    mode: 'onChange',
     defaultValues: {
       currentPassword: '',
       newPassword: '',
       confirmNewPassword: '',
     },
   })
+  const { isDirty, isValid } = form.formState
 
   const mutation = useMutation({
     mutationFn: (data: Parameters<typeof settingsApi.changePassword>[0]) =>
@@ -87,7 +89,11 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>Current Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      autoComplete="current-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -100,7 +106,11 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,14 +123,21 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Changing...' : 'Change Password'}
+            <Button
+              type="submit"
+              disabled={mutation.isPending || !isDirty || !isValid}
+            >
+              Change Password
             </Button>
           </form>
         </Form>

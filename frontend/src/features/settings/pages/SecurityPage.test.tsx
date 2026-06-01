@@ -119,4 +119,51 @@ describe('SecurityPage', () => {
       expect(toast.error).toHaveBeenCalledWith('รหัสผ่านปัจจุบันไม่ถูกต้อง')
     })
   })
+
+  it('sets autocomplete tokens on password inputs for password managers (finding G)', () => {
+    renderSecurityPage()
+    expect(screen.getByLabelText(/current password/i)).toHaveAttribute(
+      'autocomplete',
+      'current-password',
+    )
+    expect(screen.getByLabelText(/^new password/i)).toHaveAttribute(
+      'autocomplete',
+      'new-password',
+    )
+    expect(screen.getByLabelText(/confirm new password/i)).toHaveAttribute(
+      'autocomplete',
+      'new-password',
+    )
+  })
+
+  it('shows a generic error toast for non-401 failures (finding N)', async () => {
+    vi.mocked(settingsApi.changePassword).mockRejectedValueOnce(
+      new AxiosError('Server error', 'ERR_BAD_RESPONSE', undefined, undefined, {
+        data: { message: 'Internal server error' },
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: {},
+        config: {} as never,
+      } as never),
+    )
+    const user = userEvent.setup()
+    renderSecurityPage()
+    await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
+    await user.click(screen.getByRole('button', { name: /change password/i }))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('เปลี่ยนรหัสผ่านไม่สำเร็จ')
+    })
+  })
+
+  it('keeps Change Password disabled until every field is valid (round 2 UX)', async () => {
+    const user = userEvent.setup()
+    renderSecurityPage()
+    const button = screen.getByRole('button', { name: /change password/i })
+    expect(button).toBeDisabled()
+
+    await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
+
+    await waitFor(() => expect(button).toBeEnabled())
+  })
 })

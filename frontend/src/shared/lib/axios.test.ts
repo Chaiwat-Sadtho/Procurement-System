@@ -21,6 +21,10 @@ describe('isUnauthorizedRedirect', () => {
     expect(isUnauthorizedRedirect(axiosErr(401, '/auth/login'))).toBe(false)
   })
 
+  it('returns false for a 401 from the change-password request — wrong current password handled inline', () => {
+    expect(isUnauthorizedRedirect(axiosErr(401, '/auth/me/password'))).toBe(false)
+  })
+
   it('returns false for non-401 errors', () => {
     expect(isUnauthorizedRedirect(axiosErr(500, '/purchase-requests'))).toBe(false)
   })
