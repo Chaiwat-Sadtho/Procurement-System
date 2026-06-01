@@ -233,4 +233,23 @@ describe('ProfilePage', () => {
       expect(toast.error).toHaveBeenCalledWith('บันทึกโปรไฟล์ไม่สำเร็จ')
     })
   })
+
+  it('disables Save after a successful save to block double submit (round 2 UX)', async () => {
+    vi.mocked(settingsApi.updateProfile).mockResolvedValueOnce({
+      ...mockUser,
+      firstName: 'Somsak',
+      fullName: 'Somsak Jaidee',
+    })
+    const user = userEvent.setup()
+    renderProfilePage()
+
+    await user.clear(screen.getByLabelText(/first name/i))
+    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
+    const saveButton = screen.getByRole('button', { name: /save/i })
+    expect(saveButton).toBeEnabled()
+
+    await user.click(saveButton)
+
+    await waitFor(() => expect(saveButton).toBeDisabled())
+  })
 })

@@ -155,4 +155,15 @@ describe('SecurityPage', () => {
       expect(toast.error).toHaveBeenCalledWith('เปลี่ยนรหัสผ่านไม่สำเร็จ')
     })
   })
+
+  it('keeps Change Password disabled until every field is valid (round 2 UX)', async () => {
+    const user = userEvent.setup()
+    renderSecurityPage()
+    const button = screen.getByRole('button', { name: /change password/i })
+    expect(button).toBeDisabled()
+
+    await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
+
+    await waitFor(() => expect(button).toBeEnabled())
+  })
 })

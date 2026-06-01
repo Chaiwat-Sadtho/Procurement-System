@@ -42,12 +42,14 @@ type SecurityFormValues = z.infer<typeof schema>
 export function SecurityPage() {
   const form = useForm<SecurityFormValues>({
     resolver: zodResolver(schema),
+    mode: 'onChange',
     defaultValues: {
       currentPassword: '',
       newPassword: '',
       confirmNewPassword: '',
     },
   })
+  const { isDirty, isValid } = form.formState
 
   const mutation = useMutation({
     mutationFn: (data: Parameters<typeof settingsApi.changePassword>[0]) =>
@@ -131,8 +133,11 @@ export function SecurityPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Changing...' : 'Change Password'}
+            <Button
+              type="submit"
+              disabled={mutation.isPending || !isDirty || !isValid}
+            >
+              Change Password
             </Button>
           </form>
         </Form>

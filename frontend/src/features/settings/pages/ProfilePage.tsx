@@ -59,6 +59,13 @@ export function ProfilePage() {
       settingsApi.updateProfile(data),
     onSuccess: (updated: User) => {
       queryClient.setQueryData(['currentUser'], updated)
+      // re-sync to the saved values so the form is clean again — Save disables
+      // itself and a second click cannot fire a duplicate request
+      form.reset({
+        firstName: updated.firstName ?? '',
+        middleName: updated.middleName ?? '',
+        lastName: updated.lastName ?? '',
+      })
       toast.success('บันทึกโปรไฟล์เรียบร้อย')
     },
     onError: () => {
@@ -142,7 +149,7 @@ export function ProfilePage() {
               )}
             />
             <Button type="submit" disabled={mutation.isPending || !isDirty}>
-              {mutation.isPending ? 'Saving...' : 'Save'}
+              Save
             </Button>
           </form>
         </Form>
