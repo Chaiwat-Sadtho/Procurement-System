@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { label: 'Goods Receipts', path: '/goods-receipts', allowedRoles: ['manager', 'procurement_officer'] },
   { label: 'Budgets', path: '/budgets', allowedRoles: ['manager', 'procurement_officer'] },
   { label: 'Users', path: '/users', allowedRoles: ['procurement_officer'] },
+  { label: 'Settings', path: '/settings', allowedRoles: ['employee', 'manager', 'procurement_officer'] },
 ]
 
 // Shared nav body used by both the desktop Sidebar and the mobile drawer.

@@ -5,6 +5,9 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
+import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
+import { ProfilePage } from '@/features/settings/pages/ProfilePage'
+import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -166,6 +169,15 @@ export const router = createBrowserRouter([
             <ComingSoon title="Users" />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'settings',
+        element: <SettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="/settings/profile" replace /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'security', element: <SecurityPage /> },
+        ],
       },
       {
         path: '*',
