@@ -42,11 +42,12 @@ const STATUS_OPTIONS = [
 
 interface PRListFilterFormProps {
   showRequester: boolean
+  initialStatus?: string
   onSubmit: (values: PRListFilterValues) => void
   onClear?: () => void
 }
 
-export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFilterFormProps) {
+export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onClear }: PRListFilterFormProps) {
   const [resetKey, setResetKey] = useState(0)
 
   const defaultValues: PRListFilterValues = {
@@ -55,7 +56,7 @@ export function PRListFilterForm({ showRequester, onSubmit, onClear }: PRListFil
     from: '',
     to: dateToIso(new Date()), // วันสิ้นสุด default = วันนี้ (#6)
     requesterName: '',
-    status: 'all',
+    status: initialStatus ?? 'all',
   }
 
   const {

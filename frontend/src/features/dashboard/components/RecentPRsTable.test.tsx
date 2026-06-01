@@ -40,4 +40,11 @@ describe('RecentPRsTable', () => {
     renderTable()
     expect(screen.getByTestId('recent-prs-loading')).toBeInTheDocument()
   })
+
+  it('header uses shared table-header color (consistent with PRList)', () => {
+    vi.mocked(useRecentPRs).mockReturnValue({ data: [pr], isLoading: false } as ReturnType<typeof useRecentPRs>)
+    renderTable()
+    const thead = screen.getByText('PR Number').closest('thead')
+    expect(thead).toHaveClass('bg-table-header')
+  })
 })

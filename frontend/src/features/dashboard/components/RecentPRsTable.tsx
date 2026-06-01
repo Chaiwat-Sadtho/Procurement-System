@@ -24,7 +24,7 @@ export function RecentPRsTable() {
       ) : (
         <div className="rounded-md border">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-table-header text-table-header-foreground">
               <TableRow>
                 <TableHead>PR Number</TableHead>
                 <TableHead>Title</TableHead>
