@@ -2,7 +2,7 @@ import {
   Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, Like, DataSource, QueryFailedError } from 'typeorm';
+import { Repository, Like, DataSource, QueryFailedError, SelectQueryBuilder } from 'typeorm';
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -89,6 +89,21 @@ export class PurchaseRequestsService {
     }
   }
 
+  // role-scope กลาง: ใช้ทั้ง findAll และ stats เพื่อกัน scope เพี้ยนคนละทาง
+  private async applyRoleScope(
+    qb: SelectQueryBuilder<PurchaseRequest>,
+    user: { id: number; role: UserRole },
+  ): Promise<void> {
+    if (user.role === UserRole.EMPLOYEE) {
+      qb.andWhere('pr.requesterId = :userId', { userId: user.id });
+    } else if (user.role === UserRole.MANAGER) {
+      const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!fullUser) throw new NotFoundException('User not found');
+      qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
+    }
+    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
+  }
+
   async findAll(
     user: { id: number; role: UserRole },
     query: PrQueryDto,
@@ -101,14 +116,7 @@ export class PurchaseRequestsService {
       .leftJoinAndSelect('pr.requester', 'requester')
       .leftJoinAndSelect('pr.approver', 'approver');
 
-    if (user.role === UserRole.EMPLOYEE) {
-      qb.andWhere('pr.requesterId = :userId', { userId: user.id });
-    } else if (user.role === UserRole.MANAGER) {
-      const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
-      if (!fullUser) throw new NotFoundException('User not found');
-      qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
-    }
-    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
+    await this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
     if (from) qb.andWhere('pr.createdAt >= :from', { from: new Date(from) });
