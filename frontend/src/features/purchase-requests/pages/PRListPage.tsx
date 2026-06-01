@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -26,7 +26,13 @@ import type { PRStatus, PurchaseRequest } from '../types'
 export function PRListPage() {
   const { data: user } = useCurrentUser()
   const { page, limit, setPage, nextPage, prevPage } = usePagination()
-  const [filters, setFilters] = useState<PRListFilterValues | null>(null)
+  const [searchParams] = useSearchParams()
+  const urlStatus = searchParams.get('status') ?? undefined
+  const [filters, setFilters] = useState<PRListFilterValues | null>(
+    urlStatus
+      ? { prNumber: '', search: '', from: '', to: '', requesterName: '', status: urlStatus }
+      : null,
+  )
   const { deleteMutation } = usePRMutations()
   const [deleteTarget, setDeleteTarget] = useState<PurchaseRequest | null>(null)
 
@@ -41,8 +47,8 @@ export function PRListPage() {
         limit,
         prNumber: filters.prNumber || undefined,
         search: filters.search || undefined,
-        from: filters.from,
-        to: filters.to,
+        from: filters.from || undefined,
+        to: filters.to || undefined,
         requesterName: filters.requesterName?.trim() || undefined,
         status: filters.status && filters.status !== 'all' ? filters.status : undefined,
       }
@@ -80,7 +86,7 @@ export function PRListPage() {
         }
       />
 
-      <PRListFilterForm showRequester={showRequester} onSubmit={handleSubmit} onClear={handleClear} />
+      <PRListFilterForm showRequester={showRequester} initialStatus={urlStatus} onSubmit={handleSubmit} onClear={handleClear} />
 
       {filters === null ? (
         <p className="text-center py-12 text-muted-foreground">

@@ -144,6 +144,23 @@ describe('PRListPage', () => {
     expect(vi.mocked(usePurchaseRequests).mock.calls[0][1]).toEqual({ enabled: false })
   })
 
+  it('initializes filter from URL ?status= and fetches immediately (no manual submit)', () => {
+    setupMocks({ prData: undefined })
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+          <PRListPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const firstCall = vi.mocked(usePurchaseRequests).mock.calls[0]
+    expect(firstCall[0]).toEqual(expect.objectContaining({ status: 'draft' }))
+    expect(firstCall[1]).toEqual({ enabled: true })
+  })
+
   it('after submit with valid dates: usePurchaseRequests called with filter params', async () => {
     setupMocks({ prData: undefined })
 
