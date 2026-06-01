@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -40,16 +41,16 @@ const PERIOD_OPTIONS: { value: PRFormValues['period']; label: string }[] = [
   { value: '4', label: 'ไตรมาส 4' },
 ]
 
-interface PRFormProps {
-  mode: 'create' | 'edit'
-  defaultValues: PRFormValues
-  prId?: number
-}
+type PRFormProps =
+  | { mode: 'create'; defaultValues: PRFormValues }
+  | { mode: 'edit'; prId: number; defaultValues: PRFormValues }
 
-export function PRForm({ mode, defaultValues, prId }: PRFormProps) {
+export function PRForm(props: PRFormProps) {
+  const { mode, defaultValues } = props
   const navigate = useNavigate()
   const isEdit = mode === 'edit'
   const { createMutation, updateMutation, submitMutation } = usePRMutations()
+  const inFlight = useRef(false)
 
   const form = useForm<PRFormValues>({
     resolver: zodResolver(prFormSchema),
@@ -60,11 +61,16 @@ export function PRForm({ mode, defaultValues, prId }: PRFormProps) {
     createMutation.isPending || updateMutation.isPending || submitMutation.isPending
 
   async function onSave(values: PRFormValues, intent: 'draft' | 'submit') {
+    // Synchronous in-flight guard: react-query's isPending updates after render,
+    // so a fast second click can slip through before it flips. This ref locks
+    // synchronously to prevent a duplicate submit.
+    if (inFlight.current) return
+    inFlight.current = true
     try {
       let savedId: number
-      if (isEdit && prId != null) {
-        await updateMutation.mutateAsync({ id: prId, data: toUpdatePayload(values) })
-        savedId = prId
+      if (props.mode === 'edit') {
+        await updateMutation.mutateAsync({ id: props.prId, data: toUpdatePayload(values) })
+        savedId = props.prId
       } else {
         const created = await createMutation.mutateAsync(toCreatePayload(values))
         savedId = created.id
@@ -90,6 +96,8 @@ export function PRForm({ mode, defaultValues, prId }: PRFormProps) {
       navigate(`/purchase-requests/${savedId}`)
     } catch (e) {
       toast.error(getApiErrorMessage(e))
+    } finally {
+      inFlight.current = false
     }
   }
 

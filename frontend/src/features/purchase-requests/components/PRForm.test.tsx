@@ -29,10 +29,15 @@ function makeMutations(over: Record<string, unknown> = {}) {
   return m
 }
 
-function renderForm(props: Partial<React.ComponentProps<typeof PRForm>> = {}) {
+function renderForm(
+  props: React.ComponentProps<typeof PRForm> = {
+    mode: 'create',
+    defaultValues: createDefaultValues(),
+  },
+) {
   return render(
     <MemoryRouter>
-      <PRForm mode="create" defaultValues={createDefaultValues()} {...props} />
+      <PRForm {...props} />
     </MemoryRouter>,
   )
 }
@@ -70,6 +75,26 @@ describe('PRForm — create', () => {
     expect(m.submitMutation.mutateAsync).not.toHaveBeenCalled()
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42')
     expect(toast.success).toHaveBeenCalledWith('บันทึกร่างแล้ว')
+  })
+
+  it('double-click on save fires create only once (synchronous in-flight guard)', async () => {
+    const m = makeMutations()
+    let resolveCreate!: (v: PurchaseRequest) => void
+    const deferred = new Promise<PurchaseRequest>((r) => {
+      resolveCreate = r
+    })
+    m.createMutation.mutateAsync.mockReturnValue(deferred)
+    renderForm()
+    await fillRequired()
+    const saveBtn = screen.getByRole('button', { name: 'บันทึกร่าง' })
+    // Two clicks without awaiting resolution between them: first call is still
+    // in-flight when the second click happens.
+    await userEvent.click(saveBtn)
+    await userEvent.click(saveBtn)
+    await waitFor(() => expect(m.createMutation.mutateAsync).toHaveBeenCalledTimes(1))
+    // resolve the deferred so the in-flight promise settles (avoids act warnings)
+    resolveCreate({ id: 42 } as PurchaseRequest)
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42'))
   })
 
   it('save + submit: creates then submits then navigates', async () => {
