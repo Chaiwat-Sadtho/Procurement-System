@@ -16,7 +16,7 @@ export interface User {
   role: Role
   isActive: boolean
   departmentId: number | null
-  department?: Department
+  department?: Department | null
   createdAt: string
   updatedAt: string
 }
