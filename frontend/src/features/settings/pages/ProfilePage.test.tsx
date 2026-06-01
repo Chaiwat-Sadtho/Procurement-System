@@ -22,6 +22,7 @@ vi.mock('sonner', () => ({
 
 import { settingsApi } from '@/features/settings/api'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
+import { toast } from 'sonner'
 
 const mockUser: User = {
   id: 1,
@@ -41,11 +42,12 @@ function renderProfilePage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  const utils = render(
     <QueryClientProvider client={queryClient}>
       <ProfilePage />
     </QueryClientProvider>,
   )
+  return { ...utils, queryClient }
 }
 
 describe('ProfilePage', () => {
@@ -173,6 +175,62 @@ describe('ProfilePage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
+    })
+  })
+
+  it('pushes the updated user into the currentUser cache (finding J)', async () => {
+    const updated: User = {
+      ...mockUser,
+      firstName: 'Somsak',
+      fullName: 'Somsak Jaidee',
+    }
+    vi.mocked(settingsApi.updateProfile).mockResolvedValueOnce(updated)
+    const user = userEvent.setup()
+    const { queryClient } = renderProfilePage()
+
+    await user.clear(screen.getByLabelText(/first name/i))
+    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
+    await user.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['currentUser'])).toEqual(updated)
+    })
+  })
+
+  it('shows validation error when last name is cleared (finding K)', async () => {
+    const user = userEvent.setup()
+    renderProfilePage()
+    await user.clear(screen.getByLabelText(/last name/i))
+    await user.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/last name is required/i)).toBeInTheDocument()
+    })
+  })
+
+  it('renders the department name when the user has a department (finding L)', () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      data: {
+        ...mockUser,
+        department: { id: 1, name: 'Finance', createdAt: '2025-01-01T00:00:00Z' },
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useCurrentUser>)
+    renderProfilePage()
+    expect(screen.getByText('Finance')).toBeInTheDocument()
+  })
+
+  it('shows an error toast when the profile update fails (finding M)', async () => {
+    vi.mocked(settingsApi.updateProfile).mockRejectedValueOnce(new Error('boom'))
+    const user = userEvent.setup()
+    renderProfilePage()
+
+    await user.clear(screen.getByLabelText(/first name/i))
+    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
+    await user.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('บันทึกโปรไฟล์ไม่สำเร็จ')
     })
   })
 })
