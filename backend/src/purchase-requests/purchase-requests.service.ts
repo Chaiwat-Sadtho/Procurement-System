@@ -16,6 +16,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
 import { formatRunningNumber } from '../common/running-number';
+import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -146,6 +147,17 @@ export class PurchaseRequestsService {
 
     const [data, total] = await qb.getManyAndCount();
     return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async stats(user: { id: number; role: UserRole }): Promise<PrStatsResponse> {
+    const qb = this.prRepository
+      .createQueryBuilder('pr')
+      .select('pr.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('pr.status');
+    await this.applyRoleScope(qb, user);
+    const rows = await qb.getRawMany<{ status: PrStatus; count: string }>();
+    return mapStatsRows(rows);
   }
 
   async findOne(
