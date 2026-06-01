@@ -17,12 +17,18 @@ export function PRActions({ pr, user, onSubmit, onApprove, onReject }: PRActions
   if (!canSubmit && !canDecide) return null
 
   return (
-    <div className="flex gap-2">
-      {canSubmit && <Button onClick={onSubmit}>ส่งขออนุมัติ</Button>}
+    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+      {canSubmit && (
+        <Button className="w-full sm:w-auto" onClick={onSubmit}>
+          ส่งขออนุมัติ
+        </Button>
+      )}
       {canDecide && (
         <>
-          <Button onClick={onApprove}>อนุมัติ</Button>
-          <Button variant="destructive" onClick={onReject}>
+          <Button className="w-full sm:w-auto" onClick={onApprove}>
+            อนุมัติ
+          </Button>
+          <Button variant="destructive" className="w-full sm:w-auto" onClick={onReject}>
             ปฏิเสธ
           </Button>
         </>
