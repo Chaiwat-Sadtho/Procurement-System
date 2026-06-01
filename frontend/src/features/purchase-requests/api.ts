@@ -35,4 +35,7 @@ export const purchaseRequestsApi = {
     api
       .post<PurchaseRequest>(`/purchase-requests/${id}/reject`, { reason })
       .then((r) => r.data),
+
+  remove: (id: number): Promise<void> =>
+    api.delete(`/purchase-requests/${id}`).then(() => undefined),
 }
