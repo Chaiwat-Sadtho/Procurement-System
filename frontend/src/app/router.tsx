@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
@@ -31,7 +32,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard', element: <ComingSoon title="Dashboard" /> },
+      { path: 'dashboard', element: <DashboardPage /> },
       { path: 'purchase-requests', element: <PRListPage /> },
       {
         path: 'purchase-requests/new',
