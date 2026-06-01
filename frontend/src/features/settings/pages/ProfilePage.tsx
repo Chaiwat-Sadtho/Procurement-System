@@ -40,16 +40,19 @@ export function ProfilePage() {
     resolver: zodResolver(schema),
     defaultValues: { firstName: '', middleName: '', lastName: '' },
   })
+  const { isDirty } = form.formState
 
   useEffect(() => {
-    if (user) {
+    // sync from server only when there are no unsaved edits — a background
+    // refetch (refetchOnWindowFocus) must not clobber what the user is typing
+    if (user && !isDirty) {
       form.reset({
-        firstName: user.firstName,
+        firstName: user.firstName ?? '',
         middleName: user.middleName ?? '',
-        lastName: user.lastName,
+        lastName: user.lastName ?? '',
       })
     }
-  }, [user, form])
+  }, [user, isDirty, form])
 
   const mutation = useMutation({
     mutationFn: (data: Parameters<typeof settingsApi.updateProfile>[0]) =>
@@ -64,10 +67,11 @@ export function ProfilePage() {
   })
 
   function onSubmit(values: ProfileFormValues) {
+    const middleName = values.middleName.trim()
     mutation.mutate({
-      firstName: values.firstName,
-      middleName: values.middleName.trim() === '' ? null : values.middleName,
-      lastName: values.lastName,
+      firstName: values.firstName.trim(),
+      middleName: middleName === '' ? null : middleName,
+      lastName: values.lastName.trim(),
     })
   }
 
@@ -135,7 +139,7 @@ export function ProfilePage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || !isDirty}>
               {mutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </form>
