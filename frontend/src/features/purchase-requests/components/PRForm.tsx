@@ -87,10 +87,10 @@ export function PRForm(props: PRFormProps) {
       }
 
       toast.success(
-        isEdit
-          ? 'บันทึกการแก้ไขแล้ว'
-          : intent === 'submit'
-            ? 'ส่งคำขอซื้อแล้ว'
+        intent === 'submit'
+          ? 'ส่งคำขอซื้อแล้ว'
+          : isEdit
+            ? 'บันทึกการแก้ไขแล้ว'
             : 'บันทึกร่างแล้ว',
       )
       navigate(`/purchase-requests/${savedId}`)

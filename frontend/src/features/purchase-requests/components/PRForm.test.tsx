@@ -164,4 +164,16 @@ describe('PRForm — edit', () => {
     renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
     expect(screen.getByLabelText(/งบประมาณ|ช่วงเวลา|ไตรมาส/)).toBeDisabled()
   })
+
+  it('edit + submit: updates then submits and shows the submitted toast (not the saved-edits one)', async () => {
+    const m = makeMutations()
+    m.updateMutation.mutateAsync.mockResolvedValue(pr)
+    m.submitMutation.mutateAsync.mockResolvedValue(pr)
+    renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' }))
+    await waitFor(() => expect(m.submitMutation.mutateAsync).toHaveBeenCalledWith(3))
+    expect(toast.success).toHaveBeenCalledWith('ส่งคำขอซื้อแล้ว')
+    expect(toast.success).not.toHaveBeenCalledWith('บันทึกการแก้ไขแล้ว')
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/3')
+  })
 })
