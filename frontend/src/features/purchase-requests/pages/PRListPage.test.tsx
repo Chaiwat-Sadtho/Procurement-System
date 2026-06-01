@@ -14,8 +14,18 @@ vi.mock('@/shared/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(),
 }))
 
+vi.mock('../hooks/usePRMutations', () => ({
+  usePRMutations: vi.fn(),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
+
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
+import { usePRMutations } from '../hooks/usePRMutations'
+import { toast } from 'sonner'
 import type { User } from '@/shared/types'
 
 const mockPR: PurchaseRequest = {
@@ -53,6 +63,32 @@ const baseUser: User = {
   updatedAt: '2025-01-01T00:00:00Z',
 }
 
+const employeeUser: User = { ...baseUser, id: 7, role: 'employee' }
+
+type PRListData = {
+  data: PurchaseRequest[]
+  meta: { page: number; limit: number; total: number; totalPages: number }
+}
+
+const draftRow: PurchaseRequest = {
+  ...mockPR,
+  id: 3,
+  prNumber: 'PR-2025-0003',
+  status: 'draft',
+  requesterId: employeeUser.id,
+  requester: { id: employeeUser.id, fullName: 'Employee Owner', email: employeeUser.email },
+}
+
+const draftListData: PRListData = {
+  data: [draftRow],
+  meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+}
+
+const submittedListData: PRListData = {
+  data: [{ ...draftRow, status: 'submitted' }],
+  meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+}
+
 function setupMocks({
   user = baseUser,
   prData,
@@ -64,6 +100,14 @@ function setupMocks({
 }) {
   vi.mocked(useCurrentUser).mockReturnValue({ data: user, isLoading: false } as ReturnType<typeof useCurrentUser>)
   vi.mocked(usePurchaseRequests).mockReturnValue({ data: prData, isLoading } as ReturnType<typeof usePurchaseRequests>)
+}
+
+function setMutations() {
+  const deleteMutation = { mutate: vi.fn(), isPending: false }
+  vi.mocked(usePRMutations).mockReturnValue({
+    deleteMutation,
+  } as unknown as ReturnType<typeof usePRMutations>)
+  return { deleteMutation }
 }
 
 function renderPage() {
@@ -86,7 +130,10 @@ async function searchDateRange() {
 }
 
 describe('PRListPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setMutations()
+  })
 
   it('initial state: form visible + prompt message + usePurchaseRequests called with enabled=false', () => {
     setupMocks({ prData: undefined })
@@ -189,5 +236,38 @@ describe('PRListPage', () => {
     expect(screen.getByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).toBeInTheDocument()
     const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
     expect(lastCall[1]).toEqual({ enabled: false })
+  })
+
+  it('shows Edit/Delete on a draft row for the employee owner', async () => {
+    setupMocks({ user: employeeUser, prData: draftListData })
+    renderPage()
+    await searchDateRange()
+    expect(screen.getByRole('link', { name: 'แก้ไข' })).toHaveAttribute(
+      'href',
+      '/purchase-requests/3/edit',
+    )
+    expect(screen.getByRole('button', { name: 'ลบ' })).toBeInTheDocument()
+  })
+
+  it('hides Edit/Delete on a non-draft row', async () => {
+    setupMocks({ user: employeeUser, prData: submittedListData })
+    renderPage()
+    await searchDateRange()
+    expect(screen.queryByRole('link', { name: 'แก้ไข' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ลบ' })).not.toBeInTheDocument()
+  })
+
+  it('deletes a draft row after confirming', async () => {
+    setupMocks({ user: employeeUser, prData: draftListData })
+    const { deleteMutation } = setMutations()
+    deleteMutation.mutate.mockImplementation((_id: number, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
+    renderPage()
+    await searchDateRange()
+    await userEvent.click(screen.getByRole('button', { name: 'ลบ' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันลบ' }))
+    expect(deleteMutation.mutate).toHaveBeenCalledWith(3, expect.anything())
+    expect(toast.success).toHaveBeenCalledWith('ลบใบร่างแล้ว')
   })
 })

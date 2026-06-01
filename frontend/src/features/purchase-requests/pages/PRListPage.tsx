@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
@@ -10,19 +11,27 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
+import { getApiErrorMessage } from '@/shared/lib/getApiErrorMessage'
 import { PRStatusBadge } from '../components/PRStatusBadge'
 import { PRListFilterForm, type PRListFilterValues } from '../components/PRListFilterForm'
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
-import type { PRStatus } from '../types'
+import { usePRMutations } from '../hooks/usePRMutations'
+import type { PRStatus, PurchaseRequest } from '../types'
 
 export function PRListPage() {
   const { data: user } = useCurrentUser()
   const { page, limit, setPage, nextPage, prevPage } = usePagination()
   const [filters, setFilters] = useState<PRListFilterValues | null>(null)
+  const { deleteMutation } = usePRMutations()
+  const [deleteTarget, setDeleteTarget] = useState<PurchaseRequest | null>(null)
+
+  const canManageRow = (pr: PurchaseRequest) =>
+    user?.role === 'employee' && user.id === pr.requesterId && pr.status === 'draft'
 
   const showRequester = user?.role === 'manager' || user?.role === 'procurement_officer'
 
@@ -130,6 +139,20 @@ export function PRListPage() {
                         <Button asChild variant="ghost" size="sm">
                           <Link to={`/purchase-requests/${pr.id}`}>View</Link>
                         </Button>
+                        {canManageRow(pr) && (
+                          <>
+                            <Button asChild variant="ghost" size="sm">
+                              <Link to={`/purchase-requests/${pr.id}/edit`}>แก้ไข</Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteTarget(pr)}
+                            >
+                              ลบ
+                            </Button>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -160,6 +183,26 @@ export function PRListPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="ลบใบร่างคำขอซื้อ"
+        description={`ต้องการลบ ${deleteTarget?.prNumber ?? ''} หรือไม่ (ย้อนกลับไม่ได้)`}
+        confirmLabel="ยืนยันลบ"
+        variant="destructive"
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return
+          deleteMutation.mutate(deleteTarget.id, {
+            onSuccess: () => {
+              toast.success('ลบใบร่างแล้ว')
+              setDeleteTarget(null)
+            },
+            onError: (e) => toast.error(getApiErrorMessage(e)),
+          })
+        }}
+      />
     </div>
   )
 }
