@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
+import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -33,7 +34,7 @@ export const router = createBrowserRouter([
         path: 'purchase-requests/new',
         element: (
           <ProtectedRoute allowedRoles={['employee']}>
-            <ComingSoon title="New Purchase Request" />
+            <PRFormPage />
           </ProtectedRoute>
         ),
       },
@@ -42,7 +43,7 @@ export const router = createBrowserRouter([
         path: 'purchase-requests/:id/edit',
         element: (
           <ProtectedRoute allowedRoles={['employee']}>
-            <ComingSoon title="Edit Purchase Request" />
+            <PRFormPage />
           </ProtectedRoute>
         ),
       },
