@@ -68,4 +68,13 @@ describe('MultiSelectCombobox', () => {
     await userEvent.click(screen.getByRole('combobox'))
     expect(await screen.findByText('ไม่พบหมวดหมู่')).toBeInTheDocument()
   })
+
+  it('wires combobox a11y: aria-haspopup=listbox + aria-controls to the list id', async () => {
+    render(<MultiSelectCombobox id="cats" value={[]} onChange={vi.fn()} options={options} />)
+    const trigger = screen.getByRole('combobox')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(trigger).toHaveAttribute('aria-controls', 'cats-listbox')
+    await userEvent.click(trigger)
+    expect(document.getElementById('cats-listbox')).toBeInTheDocument()
+  })
 })

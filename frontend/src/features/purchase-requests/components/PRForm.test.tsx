@@ -121,12 +121,20 @@ describe('PRForm — create', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/42')
   })
 
-  it('blocks save when required fields are empty', async () => {
+  it('keeps both save buttons disabled while required fields are empty', () => {
     const m = makeMutations()
     renderForm()
-    await userEvent.click(screen.getByRole('button', { name: 'บันทึกร่าง' }))
-    expect(await screen.findByText('กรุณาระบุชื่อเรื่อง')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'บันทึกร่าง' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeDisabled()
     expect(m.createMutation.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('enables the save buttons once required fields are valid', async () => {
+    makeMutations()
+    renderForm()
+    await fillRequired()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึกร่าง' })).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled()
   })
 })
 
@@ -165,11 +173,21 @@ describe('PRForm — edit', () => {
     expect(screen.getByLabelText(/งบประมาณ|ช่วงเวลา|ไตรมาส/)).toBeDisabled()
   })
 
+  it('draft save is disabled on a pristine prefilled draft, but submit-for-approval stays enabled (state change, not a no-op)', async () => {
+    makeMutations()
+    renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
+    // submit-for-approval gates on validity only -> enabled on an unchanged valid draft
+    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled())
+    // draft re-save of an unchanged form is a no-op -> disabled until something changes
+    expect(screen.getByRole('button', { name: 'บันทึกร่าง' })).toBeDisabled()
+  })
+
   it('edit + submit: updates then submits and shows the submitted toast (not the saved-edits one)', async () => {
     const m = makeMutations()
     m.updateMutation.mutateAsync.mockResolvedValue(pr)
     m.submitMutation.mutateAsync.mockResolvedValue(pr)
     renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' }))
     await waitFor(() => expect(m.submitMutation.mutateAsync).toHaveBeenCalledWith(3))
     expect(toast.success).toHaveBeenCalledWith('ส่งคำขอซื้อแล้ว')
