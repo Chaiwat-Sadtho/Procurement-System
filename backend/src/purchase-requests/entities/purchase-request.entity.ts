@@ -68,13 +68,13 @@ export class PurchaseRequest {
 
   @ManyToOne(() => User, { eager: false, nullable: true })
   @JoinColumn({ name: 'approved_by' })
-  approver: User;
+  approver: User | null;
 
   @Column({ name: 'approved_by', nullable: true })
-  approvedBy: number;
+  approvedBy: number | null;
 
   @Column({ name: 'approved_at', type: 'timestamp', nullable: true })
-  approvedAt: Date;
+  approvedAt: Date | null;
 
   @ApiProperty({ nullable: true })
   @Column({ name: 'fiscal_year', type: 'integer', nullable: true })
@@ -82,7 +82,7 @@ export class PurchaseRequest {
 
   @ApiProperty()
   @Column({ name: 'reject_reason', type: 'text', nullable: true })
-  rejectReason: string;
+  rejectReason: string | null;
 
   @OneToMany(() => PurchaseRequestItem, (item) => item.purchaseRequest, {
     cascade: true,

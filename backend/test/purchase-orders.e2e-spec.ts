@@ -152,6 +152,16 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     poItemId = res.body.items[0].id;
   });
 
+  it('PO item returns prItemId = null when no prItemId supplied (nullable FK)', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const adHoc = res.body.items.find((i: { prItemId: number | null }) => i.prItemId === null);
+    expect(adHoc).toBeDefined();
+    expect(adHoc.prItemId).toBeNull();
+  });
+
   it('POST /api/v1/purchase-orders — rejects PO with non-approved PR', async () => {
     // สร้าง draft PR ใหม่ (ไม่ approve)
     const draftPrRes = await request(app.getHttpServer())

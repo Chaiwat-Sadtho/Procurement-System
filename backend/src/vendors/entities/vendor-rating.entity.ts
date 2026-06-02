@@ -25,7 +25,7 @@ export class VendorRating {
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  comment: string;
+  comment: string | null;
 
   @Column({ name: 'rated_by' })
   ratedBy: number;

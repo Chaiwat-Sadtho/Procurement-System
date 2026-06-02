@@ -131,6 +131,16 @@ describe('Purchase Requests (e2e)', () => {
     prId = res.body.id;
   });
 
+  it('draft PR returns approvedAt/approvedBy/rejectReason = null', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-requests/${prId}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(200);
+    expect(res.body.approvedAt).toBeNull();
+    expect(res.body.approvedBy).toBeNull();
+    expect(res.body.rejectReason).toBeNull();
+  });
+
   it('POST /api/v1/purchase-requests — rejects empty items array', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/purchase-requests')
