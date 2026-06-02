@@ -35,10 +35,10 @@ export class PurchaseRequest {
 
   @ManyToOne(() => Department, { eager: false, nullable: true })
   @JoinColumn({ name: 'department_id' })
-  department: Department;
+  department: Department | null;
 
   @Column({ name: 'department_id', nullable: true })
-  departmentId: number;
+  departmentId: number | null;
 
   @ApiProperty()
   @Column({ length: 255 })

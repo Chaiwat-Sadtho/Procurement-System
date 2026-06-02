@@ -104,6 +104,11 @@ export class PurchaseOrdersService {
       items,
     });
 
+    if (pr.departmentId == null) {
+      throw new BadRequestException('PR ที่เชื่อมโยงไม่มีแผนก');
+    }
+    const prDepartmentId: number = pr.departmentId;
+
     // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
     // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
     const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
@@ -112,7 +117,7 @@ export class PurchaseOrdersService {
     try {
       savedPo = await this.dataSource.transaction(async (manager) => {
         await this.budgetsService.adjustReservedAmount(
-          pr.departmentId,
+          prDepartmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
           pr.quarter,
           reserveDelta,
@@ -287,7 +292,7 @@ export class PurchaseOrdersService {
           quarter: true, totalEstimatedAmount: true, status: true,
         },
       });
-      if (pr && pr.status === PrStatus.APPROVED) {
+      if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {
         await this.budgetsService.releaseReservedAmount(
           pr.departmentId,
           pr.fiscalYear ?? new Date().getFullYear(),

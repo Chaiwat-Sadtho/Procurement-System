@@ -95,6 +95,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const mgrByDept = new Map<number, number>();      // deptId → userId (MANAGER คนแรก)
   let procurementId = 0;
   for (const u of allUsers) {
+    if (u.departmentId == null) continue;
     if (u.role === UserRole.EMPLOYEE && !empByDept.has(u.departmentId)) empByDept.set(u.departmentId, u.id);
     if (u.role === UserRole.MANAGER && !mgrByDept.has(u.departmentId)) mgrByDept.set(u.departmentId, u.id);
     if (u.role === UserRole.PROCUREMENT_OFFICER && !procurementId) procurementId = u.id;

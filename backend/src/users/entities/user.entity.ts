@@ -20,10 +20,10 @@ export class User {
 
   @ManyToOne(() => Department, { nullable: true, eager: false })
   @JoinColumn({ name: 'department_id' })
-  department: Department;
+  department: Department | null;
 
   @Column({ name: 'department_id', nullable: true })
-  departmentId: number;
+  departmentId: number | null;
 
   @ApiProperty()
   @Column({ unique: true })

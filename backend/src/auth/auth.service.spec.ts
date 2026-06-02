@@ -17,7 +17,7 @@ const mockUser: User = {
   role: UserRole.EMPLOYEE,
   isActive: true,
   departmentId: 1,
-  department: null as unknown as User['department'],
+  department: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
