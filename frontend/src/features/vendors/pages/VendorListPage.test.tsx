@@ -55,8 +55,8 @@ function setup({
   isError?: boolean
 }) {
   const refetch = vi.fn()
-  vi.mocked(useVendors).mockReturnValue({ data, isLoading, isError, refetch } as ReturnType<typeof useVendors>)
-  vi.mocked(useVendorCategories).mockReturnValue({ data: [] } as ReturnType<typeof useVendorCategories>)
+  vi.mocked(useVendors).mockReturnValue({ data, isLoading, isError, refetch } as unknown as ReturnType<typeof useVendors>)
+  vi.mocked(useVendorCategories).mockReturnValue({ data: [] } as unknown as ReturnType<typeof useVendorCategories>)
   return { refetch }
 }
 

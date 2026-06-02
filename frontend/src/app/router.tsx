@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
+import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -55,7 +56,7 @@ export const router = createBrowserRouter([
         path: 'vendors',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Vendors" />
+            <VendorListPage />
           </ProtectedRoute>
         ),
       },
