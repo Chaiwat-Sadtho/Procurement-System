@@ -31,7 +31,7 @@ describe('Purchase Requests Stats (e2e)', () => {
     return deptId;
   }
 
-  async function registerEmployee(email: string, departmentId?: number): Promise<string> {
+  async function registerEmployee(email: string, departmentId: number): Promise<string> {
     await http().post('/api/v1/auth/register')
       .send({ email, password: 'Password123', firstName: 'S', lastName: 'T', departmentId }).expect(201);
     return login(email);
