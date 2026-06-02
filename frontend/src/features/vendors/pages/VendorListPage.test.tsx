@@ -96,6 +96,12 @@ describe('VendorListPage', () => {
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
   })
 
+  it('shows the empty row defensively when data is undefined (not loading, not error)', () => {
+    setup({ data: undefined })
+    renderPage()
+    expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
+  })
+
   it('renders the table (table-fixed + bg-table-header) with vendor fields', () => {
     setup({ data: listData([mockVendor]) })
     renderPage()
