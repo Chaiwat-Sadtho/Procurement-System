@@ -6,6 +6,8 @@ import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
 import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
+import { VendorDetailPage } from '@/features/vendors/pages/VendorDetailPage'
+import { VendorFormPage } from '@/features/vendors/pages/VendorFormPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -64,7 +66,7 @@ export const router = createBrowserRouter([
         path: 'vendors/new',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="New Vendor" />
+            <VendorFormPage />
           </ProtectedRoute>
         ),
       },
@@ -72,7 +74,7 @@ export const router = createBrowserRouter([
         path: 'vendors/:id',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Vendor Detail" />
+            <VendorDetailPage />
           </ProtectedRoute>
         ),
       },
@@ -80,7 +82,7 @@ export const router = createBrowserRouter([
         path: 'vendors/:id/edit',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="Edit Vendor" />
+            <VendorFormPage />
           </ProtectedRoute>
         ),
       },
