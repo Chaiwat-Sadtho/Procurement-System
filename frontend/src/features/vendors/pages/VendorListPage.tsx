@@ -21,6 +21,7 @@ import {
 } from '../components/VendorListFilterForm'
 import { useVendors } from '../hooks/useVendors'
 import { useVendorCategories } from '../hooks/useVendorCategories'
+import { PageSizeSelect } from '@/shared/components/PageSizeSelect'
 import { formatRating, toCategoryIdParam, toIsBlacklistedParam } from '../lib/vendorFilters'
 
 const DEFAULT_FILTERS: VendorListFilterValues = {
@@ -31,7 +32,7 @@ const DEFAULT_FILTERS: VendorListFilterValues = {
 
 export function VendorListPage() {
   const navigate = useNavigate()
-  const { page, limit, setPage, nextPage, prevPage } = usePagination()
+  const { page, limit, setPage, nextPage, prevPage, setLimit } = usePagination()
   const [filters, setFilters] = useState<VendorListFilterValues>(DEFAULT_FILTERS)
 
   const { data: categories } = useVendorCategories()
@@ -157,23 +158,28 @@ export function VendorListPage() {
             </Table>
           </div>
 
-          {data && data.meta.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+          {data && data.meta.total > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
               <span className="text-sm text-muted-foreground">
                 หน้า {data.meta.page} จาก {data.meta.totalPages} ({data.meta.total} รายการ)
               </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
-                  ก่อนหน้า
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={page >= data.meta.totalPages}
-                >
-                  ถัดไป
-                </Button>
+              <div className="flex items-center gap-4">
+                <PageSizeSelect value={limit} onChange={setLimit} />
+                {data.meta.totalPages > 1 && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
+                      ก่อนหน้า
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={nextPage}
+                      disabled={page >= data.meta.totalPages}
+                    >
+                      ถัดไป
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}

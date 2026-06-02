@@ -78,7 +78,7 @@ describe('VendorListPage', () => {
     setup({ data: undefined })
     renderPage()
     const firstCall = vi.mocked(useVendors).mock.calls[0]
-    expect(firstCall[0]).toEqual(expect.objectContaining({ page: 1, limit: 20 }))
+    expect(firstCall[0]).toEqual(expect.objectContaining({ page: 1, limit: 5 }))
     expect(firstCall[0]?.isBlacklisted).toBeUndefined()
     expect(firstCall[0]?.categoryId).toBeUndefined()
     expect(firstCall[1]).toEqual({ enabled: true })
@@ -197,5 +197,30 @@ describe('VendorListPage', () => {
     renderPage()
     expect(screen.getByRole('button', { name: /ก่อนหน้า/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /ถัดไป/i })).toBeEnabled()
+  })
+
+  it('shows the footer with PageSizeSelect even when there is only one page', () => {
+    setup({ data: listData([mockVendor], { total: 1, totalPages: 1 }) })
+    renderPage()
+    expect(screen.getByLabelText('จำนวนแถวต่อหน้า')).toBeInTheDocument()
+    // one page -> no prev/next buttons
+    expect(screen.queryByRole('button', { name: /ก่อนหน้า/i })).not.toBeInTheDocument()
+  })
+
+  it('changes page size: limit flows to the query and page resets to 1', async () => {
+    // start at ?page=3 to prove the reset really happens (page=1 start would be vacuous)
+    setup({ data: listData([mockVendor], { total: 30, totalPages: 6, page: 3 }) })
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={['/?page=3']}>
+          <VendorListPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByLabelText('จำนวนแถวต่อหน้า'))
+    await userEvent.click(await screen.findByRole('option', { name: '20' }))
+    const lastCall = vi.mocked(useVendors).mock.calls.at(-1)!
+    expect(lastCall[0]).toEqual(expect.objectContaining({ limit: 20, page: 1 }))
   })
 })
