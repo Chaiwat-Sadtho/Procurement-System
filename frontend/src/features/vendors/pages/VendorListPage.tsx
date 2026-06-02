@@ -100,14 +100,14 @@ export function VendorListPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.data.length === 0 ? (
+                {!data || data.data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       ไม่พบข้อมูลตามเงื่อนไข
                     </TableCell>
                   </TableRow>
                 ) : (
-                  data?.data.map((v, i) => (
+                  data.data.map((v, i) => (
                     <TableRow
                       key={v.id}
                       tabIndex={0}
