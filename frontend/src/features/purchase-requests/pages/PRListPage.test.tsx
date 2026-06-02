@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { PRListPage } from './PRListPage'
 import type { PurchaseRequest } from '../types'
 
@@ -321,5 +321,33 @@ describe('PRListPage', () => {
     await userEvent.click(await screen.findByRole('option', { name: '20' }))
     const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
     expect(lastCall[0]).toEqual(expect.objectContaining({ limit: 20, page: 1, status: 'draft' }))
+  })
+
+  // co-locates the Task-4 "preserve ?status=" requirement at the page level:
+  // proves the merge-safe URL write keeps ?status= when only the page size changes
+  // (a merge-unsafe regression that wiped the URL would still leave the query green
+  // via component state, so assert the actual URL here)
+  it('preserves ?status= in the URL when the page size changes (merge-safe)', async () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 5, total: 30, totalPages: 6 } },
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    function LocationProbe() {
+      const { search } = useLocation()
+      return <div data-testid="loc-search">{search}</div>
+    }
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+          <PRListPage />
+          <LocationProbe />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByLabelText('จำนวนแถวต่อหน้า'))
+    await userEvent.click(await screen.findByRole('option', { name: '20' }))
+    const loc = screen.getByTestId('loc-search')
+    expect(loc).toHaveTextContent('status=draft')
+    expect(loc).toHaveTextContent('limit=20')
   })
 })
