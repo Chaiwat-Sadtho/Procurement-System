@@ -110,6 +110,39 @@ describe('usePagination', () => {
     expect(result.current.page).toBe(1)
   })
 
+  it('setParams applies a merge-safe mutation: sets given keys, preserves the rest', async () => {
+    function Probe() {
+      const { setParams } = usePagination()
+      const [params] = useSearchParams()
+      return (
+        <div>
+          <span data-testid="page">{params.get('page') ?? ''}</span>
+          <span data-testid="limit">{params.get('limit') ?? ''}</span>
+          <span data-testid="status">{params.get('status') ?? ''}</span>
+          <button
+            onClick={() =>
+              setParams((p) => {
+                p.set('page', '1')
+                p.set('status', 'approved')
+              })
+            }
+          >
+            apply
+          </button>
+        </div>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/?status=draft&page=2&limit=20']}>
+        <Probe />
+      </MemoryRouter>,
+    )
+    await userEvent.click(screen.getByText('apply'))
+    expect(screen.getByTestId('page')).toHaveTextContent('1')
+    expect(screen.getByTestId('status')).toHaveTextContent('approved')
+    expect(screen.getByTestId('limit')).toHaveTextContent('20') // unrelated key preserved
+  })
+
   it('setPage clamps values below 1 to 1', () => {
     const { result } = renderHook(() => usePagination(), {
       wrapper: wrapperWith(['/?page=3&limit=5']),

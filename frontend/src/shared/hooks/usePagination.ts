@@ -44,5 +44,17 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
     update({ page: 1, limit: n })
   }
 
-  return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit }
+  // generic merge-safe write for callers that need to set page/limit together with
+  // their own params (e.g. a status filter) in a SINGLE navigation — routing every
+  // URL write through this one setSearchParams instance avoids two writers
+  // clobbering each other when they fire in the same tick.
+  function setParams(mutate: (params: URLSearchParams) => void) {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      mutate(params)
+      return params
+    })
+  }
+
+  return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit, setParams }
 }

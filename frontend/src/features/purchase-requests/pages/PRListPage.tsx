@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
@@ -26,7 +26,7 @@ import type { PRStatus, PurchaseRequest } from '../types'
 
 export function PRListPage() {
   const { data: user } = useCurrentUser()
-  const { page, limit, setPage, nextPage, prevPage, setLimit } = usePagination()
+  const { page, limit, nextPage, prevPage, setLimit, setParams } = usePagination()
   const [searchParams] = useSearchParams()
   const urlStatus = searchParams.get('status') ?? undefined
   const [filters, setFilters] = useState<PRListFilterValues | null>(
@@ -63,14 +63,35 @@ export function PRListPage() {
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 
+  // Keep the URL ?status= in sync with the committed filter so a reload/deep-link
+  // restores what the user is viewing, not the stale value they arrived with.
+  // Driven by an effect (not the submit handler): RHF's handleSubmit runs its
+  // callback in an async microtask outside React's batching, where react-router's
+  // navigate is a no-op — only setState survives there. The effect runs post-commit
+  // in React's normal flow, so the write lands. It is idempotent (writes only when
+  // the desired status differs from the URL), which both prevents a render loop and
+  // is StrictMode-safe: the double-invoked mount effect is a no-op when the URL
+  // already matches, so a deep-linked page is preserved. Page resets to 1 on a real
+  // status change since the result set changes; merge-safe write keeps limit.
+  const desiredStatus =
+    filters && filters.status && filters.status !== 'all' ? filters.status : undefined
+  useEffect(() => {
+    if (desiredStatus === urlStatus) return
+    setParams((params) => {
+      params.set('page', '1')
+      if (desiredStatus) params.set('status', desiredStatus)
+      else params.delete('status')
+    })
+    // setParams is stable enough; re-run when the committed status or URL changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desiredStatus, urlStatus])
+
   const handleSubmit = (values: PRListFilterValues) => {
-    setPage(1)
     setFilters(values)
   }
 
   const handleClear = () => {
     setFilters(null)
-    setPage(1)
   }
 
   return (

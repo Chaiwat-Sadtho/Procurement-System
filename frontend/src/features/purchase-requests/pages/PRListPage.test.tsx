@@ -1,5 +1,6 @@
+import { StrictMode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
@@ -349,5 +350,87 @@ describe('PRListPage', () => {
     const loc = screen.getByTestId('loc-search')
     expect(loc).toHaveTextContent('status=draft')
     expect(loc).toHaveTextContent('limit=20')
+  })
+
+  // half-persist fix: changing the status filter + submitting must rewrite ?status=
+  // in the URL, else a reload/deep-link silently restores the stale URL status.
+  it('syncs the chosen status into the URL on submit (reload/deep-link safe)', async () => {
+    setupMocks({ prData: undefined })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    function LocationProbe() {
+      const { search } = useLocation()
+      return <div data-testid="loc-search">{search}</div>
+    }
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft&page=3']}>
+          <PRListPage />
+          <LocationProbe />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    // fill required dates first (opening the Select portal before typing steals
+    // focus from the date inputs and the form fails validation)
+    await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '01012569')
+    const to = screen.getByLabelText(/วันที่สิ้นสุด/i)
+    await userEvent.clear(to)
+    await userEvent.type(to, '31122569')
+    await userEvent.click(screen.getByLabelText('สถานะ'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Approved' }))
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    // status synced + page reset to 1 (the effect writes after the async submit settles)
+    await waitFor(() => {
+      expect(screen.getByTestId('loc-search')).toHaveTextContent('status=approved')
+    })
+    expect(screen.getByTestId('loc-search')).toHaveTextContent('page=1')
+  })
+
+  // StrictMode double-invokes effects on mount; the status-sync effect must be a
+  // no-op when the URL already matches, else a deep-linked ?page= is wiped to 1.
+  it('preserves a deep-linked page on mount under StrictMode (no spurious sync)', () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 3, limit: 5, total: 30, totalPages: 6 } },
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    function LocationProbe() {
+      const { search } = useLocation()
+      return <div data-testid="loc-search">{search}</div>
+    }
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/purchase-requests?status=draft&page=3']}>
+            <PRListPage />
+            <LocationProbe />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    )
+    expect(screen.getByTestId('loc-search')).toHaveTextContent('page=3')
+    expect(vi.mocked(usePurchaseRequests).mock.calls[0][0]).toEqual(
+      expect.objectContaining({ status: 'draft', page: 3 }),
+    )
+  })
+
+  it('removes ?status= from the URL on clear', async () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 5, total: 1, totalPages: 1 } },
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    function LocationProbe() {
+      const { search } = useLocation()
+      return <div data-testid="loc-search">{search}</div>
+    }
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+          <PRListPage />
+          <LocationProbe />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await searchDateRange()
+    await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
+    expect(screen.getByTestId('loc-search')).not.toHaveTextContent('status=')
   })
 })
