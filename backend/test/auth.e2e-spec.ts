@@ -46,6 +46,7 @@ describe('Auth (e2e)', () => {
         firstName: 'John',
         middleName: 'Michael',
         lastName: 'Doe',
+        departmentId: 1,
       })
       .expect(201);
 

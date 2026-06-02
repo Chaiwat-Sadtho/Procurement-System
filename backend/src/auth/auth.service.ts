@@ -1,8 +1,8 @@
 import {
-  Injectable, ConflictException, UnauthorizedException,
+  Injectable, BadRequestException, ConflictException, UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, QueryFailedError } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
@@ -26,6 +26,9 @@ export class AuthService {
     if (existing) {
       throw new ConflictException('Email already registered');
     }
+    if (dto.departmentId == null) {
+      throw new BadRequestException('departmentId is required');
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = this.userRepository.create({
@@ -36,8 +39,15 @@ export class AuthService {
       lastName: dto.lastName,
       departmentId: dto.departmentId,
     });
-    const saved = await this.userRepository.save(user);
-    return this.signToken(saved);
+    try {
+      const saved = await this.userRepository.save(user);
+      return this.signToken(saved);
+    } catch (err) {
+      if (err instanceof QueryFailedError && (err as { code?: string }).code === '23503') {
+        throw new BadRequestException(`Department ${dto.departmentId} not found`);
+      }
+      throw err;
+    }
   }
 
   async login(dto: LoginDto) {

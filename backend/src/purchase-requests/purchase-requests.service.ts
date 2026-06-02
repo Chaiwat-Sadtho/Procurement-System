@@ -51,6 +51,9 @@ export class PurchaseRequestsService {
   async create(requesterId: number, dto: CreatePurchaseRequestDto): Promise<PurchaseRequest> {
     const requester = await this.userRepository.findOne({ where: { id: requesterId } });
     if (!requester) throw new NotFoundException('User not found');
+    if (requester.departmentId == null) {
+      throw new BadRequestException('ผู้ใช้ต้องสังกัดแผนกก่อนสร้างใบขอซื้อ');
+    }
 
     const prNumber = await this.generatePrNumber();
 

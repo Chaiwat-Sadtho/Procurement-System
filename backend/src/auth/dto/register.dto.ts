@@ -26,9 +26,8 @@ export class RegisterDto {
   @IsString()
   lastName?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ example: 1 })
   @IsInt()
   @IsPositive()
-  departmentId?: number;
+  departmentId: number;
 }

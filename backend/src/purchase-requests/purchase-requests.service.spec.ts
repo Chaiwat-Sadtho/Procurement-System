@@ -174,6 +174,13 @@ describe('PurchaseRequestsService', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('throws BadRequest when requester has no department', async () => {
+      mockUserRepo.findOne.mockResolvedValue({ ...mockUser, departmentId: null });
+      await expect(
+        service.create(1, { title: 'x', requiredDate: '2026-01-01', items: [] } as never),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('submit', () => {

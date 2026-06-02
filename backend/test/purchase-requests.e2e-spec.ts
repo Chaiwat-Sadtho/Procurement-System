@@ -107,6 +107,7 @@ describe('Purchase Requests (e2e)', () => {
         password: 'Password123',
         firstName: 'Other',
         lastName: 'Employee',
+        departmentId: deptId,
       })
       .expect(201);
     otherEmployeeToken = otherRes.body.access_token;
