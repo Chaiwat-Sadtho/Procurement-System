@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
+import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
@@ -17,7 +18,7 @@ export function VendorDetailPage() {
   const vendorId = Number(id)
   const validId = Number.isInteger(vendorId) && vendorId > 0
 
-  const { data: vendor, isLoading, isError, blacklistMutation, unblacklistMutation } =
+  const { data: vendor, isLoading, isError, refetch, blacklistMutation, unblacklistMutation } =
     useVendor(validId ? vendorId : 0)
   const { data: user } = useCurrentUser()
 
@@ -28,7 +29,12 @@ export function VendorDetailPage() {
     return (
       <Alert variant="destructive">
         <AlertTitle>ไม่พบผู้ขายรายนี้ หรือคุณไม่มีสิทธิ์เข้าถึง</AlertTitle>
-        <AlertDescription>
+        <AlertDescription className="flex flex-col items-start gap-3">
+          {isError && (
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              ลองใหม่
+            </Button>
+          )}
           <Link to="/vendors" className="underline">
             กลับไปรายการ
           </Link>

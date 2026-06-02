@@ -130,4 +130,44 @@ describe('VendorForm — edit', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/vendors/3')
     expect(toast.success).toHaveBeenCalledWith('บันทึกแล้ว')
   })
+
+  it('keeps บันทึก disabled on a pristine prefilled form and enables it after an edit (no-op-save guard)', async () => {
+    makeMutations()
+    renderForm({ mode: 'edit', vendorId: 3, defaultValues: vendorToFormValues(vendor) })
+    // prefilled + valid but not yet dirty -> !isDirty keeps save disabled (a no-op save cannot fire)
+    expect(screen.getByRole('button', { name: 'บันทึก' })).toBeDisabled()
+    await userEvent.type(screen.getByLabelText(/ชื่อผู้ขาย/), 'X')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก' })).toBeEnabled())
+  })
+
+  it('shows an error toast and does not navigate when update fails', async () => {
+    const m = makeMutations()
+    m.updateMutation.mutateAsync.mockRejectedValue(new Error('boom'))
+    renderForm({ mode: 'edit', vendorId: 3, defaultValues: vendorToFormValues(vendor) })
+    const name = screen.getByLabelText(/ชื่อผู้ขาย/)
+    await userEvent.clear(name)
+    await userEvent.type(name, 'NewCo')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('double-click on save fires update only once (in-flight guard)', async () => {
+    const m = makeMutations()
+    let resolveUpdate!: (v: Vendor) => void
+    const deferred = new Promise<Vendor>((r) => {
+      resolveUpdate = r
+    })
+    m.updateMutation.mutateAsync.mockReturnValue(deferred)
+    renderForm({ mode: 'edit', vendorId: 3, defaultValues: vendorToFormValues(vendor) })
+    const name = screen.getByLabelText(/ชื่อผู้ขาย/)
+    await userEvent.clear(name)
+    await userEvent.type(name, 'NewCo')
+    const saveBtn = screen.getByRole('button', { name: 'บันทึก' })
+    await userEvent.click(saveBtn)
+    await userEvent.click(saveBtn)
+    await waitFor(() => expect(m.updateMutation.mutateAsync).toHaveBeenCalledTimes(1))
+    resolveUpdate(vendor)
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/vendors/3'))
+  })
 })

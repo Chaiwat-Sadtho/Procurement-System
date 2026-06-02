@@ -155,4 +155,42 @@ describe('VendorDetailPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'ยืนยันแบล็คลิสต์' }))
     expect(toast.error).toHaveBeenCalledWith('เกิดข้อผิดพลาด')
   })
+
+  it('shows a success toast when unblacklist succeeds', async () => {
+    const { unblacklistMutation } = mockHook({ data: { ...mockVendor, isBlacklisted: true } })
+    unblacklistMutation.mutate.mockImplementation((_v: undefined, opts: { onSuccess: () => void }) => opts.onSuccess())
+    setUser()
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'ยกเลิกแบล็คลิสต์' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยัน' }))
+    expect(toast.success).toHaveBeenCalledWith('ยกเลิกแบล็คลิสต์แล้ว')
+  })
+
+  it('shows an error toast when unblacklist fails', async () => {
+    const { unblacklistMutation } = mockHook({ data: { ...mockVendor, isBlacklisted: true } })
+    unblacklistMutation.mutate.mockImplementation((_v: undefined, opts: { onError: (e: unknown) => void }) =>
+      opts.onError(new Error('x')),
+    )
+    setUser()
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'ยกเลิกแบล็คลิสต์' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยัน' }))
+    expect(toast.error).toHaveBeenCalledWith('เกิดข้อผิดพลาด')
+  })
+
+  it('error state: the ลองใหม่ button calls refetch', async () => {
+    const refetch = vi.fn()
+    mockHook({ data: undefined, isError: true, refetch })
+    setUser()
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'ลองใหม่' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('invalid id state: shows no ลองใหม่ button (query is disabled, nothing to retry)', () => {
+    mockHook({ data: undefined })
+    setUser()
+    renderPage('abc')
+    expect(screen.queryByRole('button', { name: 'ลองใหม่' })).not.toBeInTheDocument()
+  })
 })
