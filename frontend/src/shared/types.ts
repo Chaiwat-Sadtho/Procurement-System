@@ -31,6 +31,17 @@ export interface PaginatedResponse<T> {
   }
 }
 
+/** Query params shared by every paginated list endpoint. */
+export interface PaginationParams {
+  page?: number
+  limit?: number
+}
+
+/** Options for list-query hooks that can be conditionally disabled. */
+export interface QueryEnabledOptions {
+  enabled?: boolean
+}
+
 export interface ApiError {
   message: string
   statusCode: number

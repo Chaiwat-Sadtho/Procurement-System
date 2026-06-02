@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import type { PaginationParams, QueryEnabledOptions } from '@/shared/types'
 import { purchaseRequestsApi } from '../api'
 
-interface UsePurchaseRequestsParams {
-  page?: number
-  limit?: number
+interface UsePurchaseRequestsParams extends PaginationParams {
   status?: string
   prNumber?: string
   search?: string
@@ -12,13 +11,9 @@ interface UsePurchaseRequestsParams {
   to?: string
 }
 
-interface UsePurchaseRequestsOptions {
-  enabled?: boolean
-}
-
 export function usePurchaseRequests(
   params?: UsePurchaseRequestsParams,
-  { enabled = true }: UsePurchaseRequestsOptions = {},
+  { enabled = true }: QueryEnabledOptions = {},
 ) {
   return useQuery({
     queryKey: ['purchase-requests', params],
