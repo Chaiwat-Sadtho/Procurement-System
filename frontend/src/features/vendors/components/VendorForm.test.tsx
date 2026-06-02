@@ -57,6 +57,17 @@ describe('VendorForm — create', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก' })).toBeEnabled())
   })
 
+  it('disables ยกเลิก and keeps บันทึก disabled while a save is in flight (isPending)', async () => {
+    // a mutation in flight must lock both buttons: ยกเลิก is gated purely on isPending,
+    // and บันทึก must stay disabled even once the form is dirty+valid (guards the `|| isPending` clause)
+    makeMutations({ createMutation: { mutateAsync: vi.fn(), isPending: true } })
+    renderForm()
+    expect(screen.getByRole('button', { name: 'ยกเลิก' })).toBeDisabled()
+    await userEvent.type(screen.getByLabelText(/ชื่อผู้ขาย/), 'ACME')
+    await waitFor(() => expect(screen.getByLabelText(/ชื่อผู้ขาย/)).toHaveValue('ACME'))
+    expect(screen.getByRole('button', { name: 'บันทึก' })).toBeDisabled()
+  })
+
   it('creates with the mapped payload (blank optionals to null) and navigates', async () => {
     const m = makeMutations()
     m.createMutation.mutateAsync.mockResolvedValue({ id: 42 } as Vendor)

@@ -67,4 +67,11 @@ describe('VendorFormPage', () => {
     renderAt('/vendors/3/edit')
     expect(screen.getByText('ไม่พบผู้ขาย')).toBeInTheDocument()
   })
+
+  it('edit mode shows not-found when the query settles with no vendor and no error', () => {
+    // covers the `!vendor` operand of `isError || !vendor` (query resolved empty, not erroring)
+    setVendor({ data: undefined, isLoading: false, isError: false })
+    renderAt('/vendors/3/edit')
+    expect(screen.getByText('ไม่พบผู้ขาย')).toBeInTheDocument()
+  })
 })
