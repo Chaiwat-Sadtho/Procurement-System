@@ -1,20 +1,48 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
-export function usePagination(initialPage = 1, initialLimit = 20) {
-  const [page, setPage] = useState(initialPage)
-  const [limit] = useState(initialLimit)
+export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const
+
+export function usePagination(initialPage = 1, initialLimit = 5) {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const rawPage = Number(searchParams.get('page'))
+  const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : initialPage
+
+  const rawLimit = Number(searchParams.get('limit'))
+  const limit = (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawLimit)
+    ? rawLimit
+    : initialLimit
+
+  // merge-safe: clone prev params so unrelated keys (e.g. ?status=) are preserved
+  function update(next: { page?: number; limit?: number }) {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (next.page !== undefined) params.set('page', String(next.page))
+      if (next.limit !== undefined) params.set('limit', String(next.limit))
+      return params
+    })
+  }
+
+  function setPage(p: number) {
+    update({ page: Math.max(1, p) })
+  }
 
   function nextPage() {
-    setPage((p) => p + 1)
+    update({ page: page + 1 })
   }
 
   function prevPage() {
-    setPage((p) => Math.max(1, p - 1))
+    update({ page: Math.max(1, page - 1) })
   }
 
   function goToPage(p: number) {
-    setPage(Math.max(1, p))
+    update({ page: Math.max(1, p) })
   }
 
-  return { page, limit, nextPage, prevPage, goToPage, setPage }
+  // changing page size resets page=1 (avoid landing on a page that no longer exists)
+  function setLimit(n: number) {
+    update({ page: 1, limit: n })
+  }
+
+  return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit }
 }
