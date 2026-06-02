@@ -139,7 +139,7 @@ export class GoodsReceiptsService {
           where: { id: po.prId },
           select: { id: true, departmentId: true, fiscalYear: true, quarter: true, totalEstimatedAmount: true },
         });
-        if (prData) {
+        if (prData && prData.departmentId != null) {
           // P5-5: ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
           await this.budgetsService.consumeAmount(
             prData.departmentId,
@@ -153,7 +153,7 @@ export class GoodsReceiptsService {
           // ไม่ควรเกิด — PO ทุกตัวมาจาก PR จริง (UQ_active_po_per_pr). ถ้าเกิด = ข้อมูลเพี้ยน
           // และ reserved budget จะค้างไม่ถูก release จึง log ไว้ debug (ไม่ throw เพื่อไม่ rollback GRN ที่ถูกต้อง)
           this.logger.warn(
-            `PO ${po.id} completed but PR ${po.prId} not found — reserved budget not consumed`,
+            `PO ${po.id} completed but PR ${po.prId} has no department/not found — budget not consumed`,
           );
         }
       }

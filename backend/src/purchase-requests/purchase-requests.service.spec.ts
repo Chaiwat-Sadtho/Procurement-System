@@ -174,6 +174,13 @@ describe('PurchaseRequestsService', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('throws BadRequest when requester has no department', async () => {
+      mockUserRepo.findOne.mockResolvedValue({ ...mockUser, departmentId: null });
+      await expect(
+        service.create(1, { title: 'x', requiredDate: '2026-01-01', items: [] } as never),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('submit', () => {
@@ -275,6 +282,14 @@ describe('PurchaseRequestsService', () => {
         service.reject(1, 2, { reason: 'No budget' }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws BadRequest when rejecting a PR with null department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      await expect(
+        service.reject(1, 2, { reason: 'No budget' }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('remove', () => {
@@ -328,6 +343,30 @@ describe('PurchaseRequestsService', () => {
         }),
       );
       expect(result.department).toEqual({ id: 1, name: 'IT' });
+    });
+  });
+
+  describe('null department guards', () => {
+    it('approve throws BadRequest when PR has null department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      await expect(service.approve(1, 2)).rejects.toThrow(BadRequestException);
+    });
+
+    it('findAll (manager) throws Forbidden when manager has null department', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+      mockUserRepo.findOne.mockResolvedValue({ id: 2, role: UserRole.MANAGER, departmentId: null });
+      await expect(
+        service.findAll({ id: 2, role: UserRole.MANAGER }, {} as never),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

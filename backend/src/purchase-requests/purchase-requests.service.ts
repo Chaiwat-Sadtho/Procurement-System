@@ -51,6 +51,9 @@ export class PurchaseRequestsService {
   async create(requesterId: number, dto: CreatePurchaseRequestDto): Promise<PurchaseRequest> {
     const requester = await this.userRepository.findOne({ where: { id: requesterId } });
     if (!requester) throw new NotFoundException('User not found');
+    if (requester.departmentId == null) {
+      throw new BadRequestException('ผู้ใช้ต้องสังกัดแผนกก่อนสร้างใบขอซื้อ');
+    }
 
     const prNumber = await this.generatePrNumber();
 
@@ -100,6 +103,9 @@ export class PurchaseRequestsService {
     } else if (user.role === UserRole.MANAGER) {
       const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
       if (!fullUser) throw new NotFoundException('User not found');
+      if (fullUser.departmentId == null) {
+        throw new ForbiddenException('ผู้ใช้ระดับ manager ต้องสังกัดแผนก');
+      }
       qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
     }
     // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
@@ -177,7 +183,7 @@ export class PurchaseRequestsService {
     if (user.role === UserRole.MANAGER) {
       const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
       if (!fullUser) throw new NotFoundException('User not found');
-      if (pr.departmentId !== fullUser.departmentId) {
+      if (fullUser.departmentId == null || pr.departmentId !== fullUser.departmentId) {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
     }
@@ -246,6 +252,7 @@ export class PurchaseRequestsService {
     }).catch(() => {});
 
     void (async () => {
+      if (pr.departmentId == null) return;
       const managers = await this.userRepository.find({
         where: { departmentId: pr.departmentId, role: UserRole.MANAGER, isActive: true },
       });
@@ -273,9 +280,14 @@ export class PurchaseRequestsService {
       throw new BadRequestException('Only submitted PRs can be approved');
     }
 
+    if (pr.departmentId == null) {
+      throw new BadRequestException('ใบขอซื้อนี้ไม่มีแผนก ไม่สามารถอนุมัติได้');
+    }
+    const prDepartmentId: number = pr.departmentId;
+
     const manager = await this.userRepository.findOne({ where: { id: managerId } });
     if (!manager) throw new NotFoundException('Manager not found');
-    if (pr.departmentId !== manager.departmentId) {
+    if (prDepartmentId !== manager.departmentId) {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
 
@@ -290,7 +302,7 @@ export class PurchaseRequestsService {
       const saved = await txManager.save(PurchaseRequest, pr);
 
       await this.budgetsService.reserveAmount(
-        pr.departmentId,
+        prDepartmentId,
         fiscalYear,
         pr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
         Number(pr.totalEstimatedAmount),
@@ -330,6 +342,9 @@ export class PurchaseRequestsService {
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
     if (pr.status !== PrStatus.SUBMITTED) {
       throw new BadRequestException('Only submitted PRs can be rejected');
+    }
+    if (pr.departmentId == null) {
+      throw new BadRequestException('ใบขอซื้อนี้ไม่มีแผนก ไม่สามารถปฏิเสธได้');
     }
 
     const manager = await this.userRepository.findOne({ where: { id: managerId } });

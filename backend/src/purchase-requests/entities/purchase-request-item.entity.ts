@@ -21,7 +21,7 @@ export class PurchaseRequestItem {
 
   @ApiProperty()
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @ApiProperty()
   @Column({ type: 'decimal', precision: 10, scale: 2 })

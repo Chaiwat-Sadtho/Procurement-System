@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
@@ -16,9 +16,8 @@ const mockUser: User = {
   fullName: 'Test User',
   role: UserRole.EMPLOYEE,
   isActive: true,
-  // department column is nullable in DB but the entity types it non-null (tracked debt) — represent a user without a department
-  departmentId: null as unknown as number,
-  department: null as unknown as User['department'],
+  departmentId: 1,
+  department: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -59,7 +58,8 @@ describe('AuthService', () => {
       const result = await service.register({
         email: 'test@test.com',
         password: 'password123',
-      });
+        departmentId: 1,
+      } as never);
 
       expect(result).toHaveProperty('access_token');
       expect(mockUserRepository.save).toHaveBeenCalled();
@@ -69,8 +69,15 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
       await expect(
-        service.register({ email: 'test@test.com', password: 'password123' }),
+        service.register({ email: 'test@test.com', password: 'password123' } as never),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws BadRequest when departmentId missing', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.register({ email: 'x@test.com', password: 'password123' } as never),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

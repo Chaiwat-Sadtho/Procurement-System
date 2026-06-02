@@ -46,7 +46,7 @@ export class GoodsReceiptNote {
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes: string | null;
 
   @OneToMany(() => GoodsReceiptItem, (item) => item.goodsReceiptNote, { cascade: true })
   items: GoodsReceiptItem[];

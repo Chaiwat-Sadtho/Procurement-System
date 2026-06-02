@@ -107,6 +107,7 @@ describe('Purchase Requests (e2e)', () => {
         password: 'Password123',
         firstName: 'Other',
         lastName: 'Employee',
+        departmentId: deptId,
       })
       .expect(201);
     otherEmployeeToken = otherRes.body.access_token;
@@ -129,6 +130,16 @@ describe('Purchase Requests (e2e)', () => {
     expect(res.body.items).toHaveLength(1);
 
     prId = res.body.id;
+  });
+
+  it('draft PR returns approvedAt/approvedBy/rejectReason = null', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-requests/${prId}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(200);
+    expect(res.body.approvedAt).toBeNull();
+    expect(res.body.approvedBy).toBeNull();
+    expect(res.body.rejectReason).toBeNull();
   });
 
   it('POST /api/v1/purchase-requests — rejects empty items array', async () => {

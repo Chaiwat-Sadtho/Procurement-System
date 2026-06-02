@@ -18,10 +18,10 @@ export class PurchaseOrderItem {
 
   @ManyToOne(() => PurchaseRequestItem, { nullable: true, eager: false })
   @JoinColumn({ name: 'pr_item_id' })
-  prItem: PurchaseRequestItem;
+  prItem: PurchaseRequestItem | null;
 
   @Column({ name: 'pr_item_id', nullable: true })
-  prItemId: number;
+  prItemId: number | null;
 
   @ApiProperty()
   @Column({ name: 'item_name', length: 255 })
