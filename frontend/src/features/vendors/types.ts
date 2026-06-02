@@ -29,3 +29,12 @@ export interface VendorListParams {
 }
 
 export type VendorListResponse = PaginatedResponse<Vendor>
+
+export interface VendorPayload {
+  name: string
+  taxId: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  categoryIds: number[]
+}
