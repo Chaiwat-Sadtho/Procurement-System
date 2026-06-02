@@ -48,6 +48,13 @@ describe('VendorActions', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('employee sees no buttons (read-only)', () => {
+    // gate is negative (role !== procurement_officer) → every non-PO role must render nothing.
+    // covering employee too guards against an accidental `=== manager` style regression.
+    const { container } = renderActions({}, { role: 'employee' })
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('PO + active vendor → edit + blacklist (destructive)', () => {
     renderActions({ isBlacklisted: false }, { role: 'procurement_officer' })
     expect(screen.getByRole('button', { name: 'แก้ไข' })).toBeInTheDocument()
