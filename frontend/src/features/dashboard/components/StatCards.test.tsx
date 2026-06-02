@@ -23,4 +23,17 @@ describe('StatCards', () => {
     expect(screen.getByText('Total')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
   })
+
+  it('procurement_officer: shows Total + Pending cards', () => {
+    render(<StatCards stats={stats} isLoading={false} role="procurement_officer" />)
+    expect(screen.getByText('Total')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.queryByText('Draft')).not.toBeInTheDocument()
+  })
+
+  it('undefined role: falls back to employee cards', () => {
+    render(<StatCards stats={stats} isLoading={false} role={undefined} />)
+    expect(screen.getByText('Draft')).toBeInTheDocument()
+    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+  })
 })
