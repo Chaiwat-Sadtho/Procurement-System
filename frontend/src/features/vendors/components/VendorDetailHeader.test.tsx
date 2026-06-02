@@ -37,6 +37,8 @@ describe('VendorDetailHeader', () => {
     expect(screen.getByText('4.5')).toBeInTheDocument()
     expect(screen.getByText('Hardware')).toBeInTheDocument()
     expect(screen.getByText('Software')).toBeInTheDocument()
+    // blacklist badge wired with isBlacklisted={false} → active state badge
+    expect(screen.getByText('ปกติ')).toBeInTheDocument()
   })
 
   it('renders an em dash for null taxId / email / phone / address and empty categories', () => {
@@ -47,6 +49,8 @@ describe('VendorDetailHeader', () => {
 
   it('shows the blacklist alert with the reason when blacklisted', () => {
     renderHeader({ isBlacklisted: true, blacklistReason: 'ส่งของไม่ตรงสเปค 3 ครั้ง' })
+    // blacklist badge wired with isBlacklisted={true} → blacklisted state badge (distinct from the alert title)
+    expect(screen.getByText('แบล็คลิสต์')).toBeInTheDocument()
     expect(screen.getByText('เหตุผลที่แบล็คลิสต์')).toBeInTheDocument()
     expect(screen.getByText('ส่งของไม่ตรงสเปค 3 ครั้ง')).toBeInTheDocument()
   })

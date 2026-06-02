@@ -24,4 +24,18 @@ describe('BlacklistReasonDialog', () => {
     render(<BlacklistReasonDialog open onOpenChange={() => {}} onConfirm={() => {}} isPending />)
     expect(screen.getByRole('button', { name: 'ยืนยันแบล็คลิสต์' })).toBeDisabled()
   })
+
+  it('resets the reason field after the dialog is closed and reopened', async () => {
+    // spec line: "reset เมื่อปิด" — guard the reset-on-close useEffect so removing it fails here
+    const { rerender } = render(
+      <BlacklistReasonDialog open onOpenChange={() => {}} onConfirm={() => {}} />,
+    )
+    await userEvent.type(screen.getByLabelText('เหตุผล'), 'ของไม่ตรงสเปค')
+    expect(screen.getByLabelText('เหตุผล')).toHaveValue('ของไม่ตรงสเปค')
+
+    rerender(<BlacklistReasonDialog open={false} onOpenChange={() => {}} onConfirm={() => {}} />)
+    rerender(<BlacklistReasonDialog open onOpenChange={() => {}} onConfirm={() => {}} />)
+
+    expect(screen.getByLabelText('เหตุผล')).toHaveValue('')
+  })
 })
