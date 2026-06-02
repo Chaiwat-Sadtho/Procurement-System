@@ -33,6 +33,12 @@ describe('StatusChart', () => {
     expect(screen.getByTestId('status-chart-loading')).toBeInTheDocument()
   })
 
+  it('shows skeleton when stats is missing even if not loading', () => {
+    render(<StatusChart stats={undefined} isLoading={false} />)
+    expect(screen.getByTestId('status-chart-loading')).toBeInTheDocument()
+    expect(screen.queryByTestId('status-chart-body')).not.toBeInTheDocument()
+  })
+
   it('centers the donut + legend within the card', () => {
     render(<StatusChart stats={stats} isLoading={false} />)
     expect(screen.getByTestId('status-chart-body')).toHaveClass('justify-center')

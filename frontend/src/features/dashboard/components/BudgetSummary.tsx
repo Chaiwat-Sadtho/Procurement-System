@@ -81,7 +81,7 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div data-testid="budget-summary-loading" className="space-y-3">
           {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
         </div>
       ) : sorted.length === 0 ? (

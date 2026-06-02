@@ -82,4 +82,12 @@ describe('BudgetSummary', () => {
     expect(screen.getAllByTestId('budget-row')).toHaveLength(4)
     expect(screen.queryByText('Dept 1')).not.toBeInTheDocument()
   })
+
+  it('shows skeletons while loading', () => {
+    mockBudgets([], true)
+    render(<BudgetSummary scope={{}} />)
+    expect(screen.getByTestId('budget-summary-loading')).toBeInTheDocument()
+    expect(screen.queryByTestId('budget-row')).not.toBeInTheDocument()
+    expect(screen.queryByText(/ยังไม่มีงบ/)).not.toBeInTheDocument()
+  })
 })
