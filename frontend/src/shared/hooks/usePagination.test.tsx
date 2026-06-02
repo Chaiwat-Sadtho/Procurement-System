@@ -81,4 +81,40 @@ describe('usePagination', () => {
     expect(screen.getByTestId('limit')).toHaveTextContent('10')
     expect(screen.getByTestId('status')).toHaveTextContent('draft')
   })
+
+  // spec edge-case table: ?page=0 / ?page=-3 / non-integer all fall back to 1
+  it.each(['/?page=0', '/?page=-3', '/?page=2.5', '/?page=abc'])(
+    'falls back to page 1 for invalid page param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.page).toBe(1)
+    },
+  )
+
+  // limit must be one of the allowed options, else fall back to default 5
+  it.each(['/?limit=7', '/?limit=0', '/?limit=abc', '/?limit=100'])(
+    'falls back to limit 5 for invalid limit param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.limit).toBe(5)
+    },
+  )
+
+  it('goToPage navigates to the given page and clamps below 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=2&limit=5']),
+    })
+    act(() => result.current.goToPage(4))
+    expect(result.current.page).toBe(4)
+    act(() => result.current.goToPage(0))
+    expect(result.current.page).toBe(1)
+  })
+
+  it('setPage clamps values below 1 to 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=3&limit=5']),
+    })
+    act(() => result.current.setPage(-2))
+    expect(result.current.page).toBe(1)
+  })
 })
