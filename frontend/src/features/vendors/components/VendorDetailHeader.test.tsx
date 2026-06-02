@@ -55,6 +55,14 @@ describe('VendorDetailHeader', () => {
     expect(screen.getByText('ส่งของไม่ตรงสเปค 3 ครั้ง')).toBeInTheDocument()
   })
 
+  it('shows the blacklist badge but no reason alert when blacklisted without a reason', () => {
+    // guards the `&& vendor.blacklistReason` clause: a blacklisted vendor with a null reason
+    // must still flag the badge yet render no (empty) reason alert
+    renderHeader({ isBlacklisted: true, blacklistReason: null })
+    expect(screen.getByText('แบล็คลิสต์')).toBeInTheDocument()
+    expect(screen.queryByText('เหตุผลที่แบล็คลิสต์')).not.toBeInTheDocument()
+  })
+
   it('renders the actions slot', () => {
     renderHeader({}, <button>ACTION</button>)
     expect(screen.getByRole('button', { name: 'ACTION' })).toBeInTheDocument()
