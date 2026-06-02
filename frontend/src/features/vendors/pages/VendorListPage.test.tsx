@@ -8,6 +8,7 @@ import type { Vendor, VendorListResponse } from '../types'
 
 vi.mock('../hooks/useVendors', () => ({ useVendors: vi.fn() }))
 vi.mock('../hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
+vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 
 // vi.mock is hoisted above the module body, so the factory can't read a plain
 // `const mockNavigate` (temporal dead zone). Use vi.hoisted to lift it safely.
@@ -19,6 +20,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 import { useVendors } from '../hooks/useVendors'
 import { useVendorCategories } from '../hooks/useVendorCategories'
+import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
+import type { User } from '@/shared/types'
 
 const mockVendor: Vendor = {
   id: 1,
@@ -57,6 +60,7 @@ function setup({
   const refetch = vi.fn()
   vi.mocked(useVendors).mockReturnValue({ data, isLoading, isError, refetch } as unknown as ReturnType<typeof useVendors>)
   vi.mocked(useVendorCategories).mockReturnValue({ data: [] } as unknown as ReturnType<typeof useVendorCategories>)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
   return { refetch }
 }
 
@@ -222,5 +226,24 @@ describe('VendorListPage', () => {
     await userEvent.click(await screen.findByRole('option', { name: '20' }))
     const lastCall = vi.mocked(useVendors).mock.calls.at(-1)!
     expect(lastCall[0]).toEqual(expect.objectContaining({ limit: 20, page: 1 }))
+  })
+
+  const poUser = { id: 1, role: 'procurement_officer' } as User
+  const managerUser = { id: 2, role: 'manager' } as User
+
+  it('shows the เพิ่มผู้ขาย button for a procurement officer and navigates to new', async () => {
+    setup({ data: listData([mockVendor]) })
+    vi.mocked(useCurrentUser).mockReturnValue({ data: poUser } as ReturnType<typeof useCurrentUser>)
+    renderPage()
+    const addBtn = screen.getByRole('button', { name: 'เพิ่มผู้ขาย' })
+    await userEvent.click(addBtn)
+    expect(mockNavigate).toHaveBeenCalledWith('/vendors/new')
+  })
+
+  it('hides the เพิ่มผู้ขาย button for a manager', () => {
+    setup({ data: listData([mockVendor]) })
+    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<typeof useCurrentUser>)
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'เพิ่มผู้ขาย' })).not.toBeInTheDocument()
   })
 })

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -36,6 +37,8 @@ export function VendorListPage() {
   const [filters, setFilters] = useState<VendorListFilterValues>(DEFAULT_FILTERS)
 
   const { data: categories } = useVendorCategories()
+  const { data: user } = useCurrentUser()
+  const canCreate = user?.role === 'procurement_officer'
 
   const queryParams = {
     page,
@@ -64,7 +67,15 @@ export function VendorListPage() {
 
   return (
     <div>
-      <PageHeader title="ผู้ขาย" description="ค้นหาและเรียกดูรายชื่อผู้ขาย" />
+      <PageHeader
+        title="ผู้ขาย"
+        description="ค้นหาและเรียกดูรายชื่อผู้ขาย"
+        action={
+          canCreate ? (
+            <Button onClick={() => navigate('/vendors/new')}>เพิ่มผู้ขาย</Button>
+          ) : undefined
+        }
+      />
 
       <VendorListFilterForm
         categories={categories ?? []}
