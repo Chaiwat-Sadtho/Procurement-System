@@ -343,6 +343,9 @@ export class PurchaseRequestsService {
     if (pr.status !== PrStatus.SUBMITTED) {
       throw new BadRequestException('Only submitted PRs can be rejected');
     }
+    if (pr.departmentId == null) {
+      throw new BadRequestException('ใบขอซื้อนี้ไม่มีแผนก ไม่สามารถปฏิเสธได้');
+    }
 
     const manager = await this.userRepository.findOne({ where: { id: managerId } });
     if (!manager) throw new NotFoundException('Manager not found');

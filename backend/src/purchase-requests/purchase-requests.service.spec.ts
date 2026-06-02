@@ -282,6 +282,14 @@ describe('PurchaseRequestsService', () => {
         service.reject(1, 2, { reason: 'No budget' }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws BadRequest when rejecting a PR with null department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      await expect(
+        service.reject(1, 2, { reason: 'No budget' }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('remove', () => {
