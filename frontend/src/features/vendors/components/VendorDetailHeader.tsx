@@ -33,8 +33,8 @@ export function VendorDetailHeader({ vendor, actions }: VendorDetailHeaderProps)
           <ArrowLeft className="h-4 w-4" /> กลับไปรายการ
         </Link>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{vendor.name}</h1>
+          <div className="flex min-w-0 items-start gap-3">
+            <h1 className="min-w-0 break-words text-2xl font-semibold">{vendor.name}</h1>
             <VendorBlacklistBadge isBlacklisted={vendor.isBlacklisted} />
           </div>
           {actions}

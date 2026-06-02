@@ -55,10 +55,12 @@ export function PRForm(props: PRFormProps) {
   const form = useForm<PRFormValues>({
     resolver: zodResolver(prFormSchema),
     defaultValues,
+    mode: 'onChange',
   })
 
   const isPending =
     createMutation.isPending || updateMutation.isPending || submitMutation.isPending
+  const { isDirty, isValid } = form.formState
 
   async function onSave(values: PRFormValues, intent: 'draft' | 'submit') {
     // Synchronous in-flight guard: react-query's isPending updates after render,
@@ -179,13 +181,20 @@ export function PRForm(props: PRFormProps) {
           >
             ยกเลิก
           </Button>
-          <Button type="submit" variant="secondary" className="w-full sm:w-auto" disabled={isPending}>
+          {/* draft save is a no-op on an unchanged form -> gate on isDirty too (matches VendorForm + form-submit preference) */}
+          <Button
+            type="submit"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            disabled={!isDirty || !isValid || isPending}
+          >
             บันทึกร่าง
           </Button>
+          {/* submit-for-approval changes state (draft -> pending) so it stays usable on an unchanged valid draft: gate on validity only, not isDirty */}
           <Button
             type="button"
             className="w-full sm:w-auto"
-            disabled={isPending}
+            disabled={!isValid || isPending}
             onClick={form.handleSubmit((v) => onSave(v, 'submit'))}
           >
             บันทึก + ส่งอนุมัติ

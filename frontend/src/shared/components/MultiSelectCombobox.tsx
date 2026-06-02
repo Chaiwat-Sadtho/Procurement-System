@@ -48,6 +48,7 @@ export function MultiSelectCombobox({
   }
 
   const selectedOptions = options.filter((o) => value.includes(o.value))
+  const listboxId = id ? `${id}-listbox` : undefined
 
   return (
     <div className="space-y-2">
@@ -58,7 +59,9 @@ export function MultiSelectCombobox({
             type="button"
             variant="outline"
             role="combobox"
+            aria-haspopup="listbox"
             aria-expanded={open}
+            aria-controls={listboxId}
             className="w-full justify-between font-normal"
           >
             <span className={cn(value.length === 0 && 'text-muted-foreground')}>
@@ -67,7 +70,7 @@ export function MultiSelectCombobox({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent id={listboxId} className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command>
             <CommandInput placeholder={searchPlaceholder} />
             <CommandList>
