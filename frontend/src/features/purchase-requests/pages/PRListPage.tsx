@@ -13,6 +13,7 @@ import {
 } from '@/shared/components/ui/table'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { PageSizeSelect } from '@/shared/components/PageSizeSelect'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
@@ -25,7 +26,7 @@ import type { PRStatus, PurchaseRequest } from '../types'
 
 export function PRListPage() {
   const { data: user } = useCurrentUser()
-  const { page, limit, setPage, nextPage, prevPage } = usePagination()
+  const { page, limit, setPage, nextPage, prevPage, setLimit } = usePagination()
   const [searchParams] = useSearchParams()
   const urlStatus = searchParams.get('status') ?? undefined
   const [filters, setFilters] = useState<PRListFilterValues | null>(
@@ -167,23 +168,28 @@ export function PRListPage() {
             </Table>
           </div>
 
-          {data && data.meta.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+          {data && data.meta.total > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
               <span className="text-sm text-muted-foreground">
                 Page {data.meta.page} of {data.meta.totalPages} ({data.meta.total} total)
               </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={page >= data.meta.totalPages}
-                >
-                  Next
-                </Button>
+              <div className="flex items-center gap-4">
+                <PageSizeSelect value={limit} onChange={setLimit} />
+                {data.meta.totalPages > 1 && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={nextPage}
+                      disabled={page >= data.meta.totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}

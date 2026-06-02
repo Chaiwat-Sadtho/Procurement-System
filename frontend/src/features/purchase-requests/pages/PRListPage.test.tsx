@@ -287,4 +287,39 @@ describe('PRListPage', () => {
     expect(deleteMutation.mutate).toHaveBeenCalledWith(3, expect.anything())
     expect(toast.success).toHaveBeenCalledWith('ลบใบร่างแล้ว')
   })
+
+  it('shows the footer with PageSizeSelect when results exist (status from URL)', () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 5, total: 1, totalPages: 1 } },
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+          <PRListPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByLabelText('จำนวนแถวต่อหน้า')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /previous/i })).not.toBeInTheDocument()
+  })
+
+  it('changes page size: limit flows to the query and page resets to 1', async () => {
+    // start at &page=3 to prove the reset (status=draft to enable the query)
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 3, limit: 5, total: 30, totalPages: 6 } },
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/purchase-requests?status=draft&page=3']}>
+          <PRListPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByLabelText('จำนวนแถวต่อหน้า'))
+    await userEvent.click(await screen.findByRole('option', { name: '20' }))
+    const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
+    expect(lastCall[0]).toEqual(expect.objectContaining({ limit: 20, page: 1, status: 'draft' }))
+  })
 })
