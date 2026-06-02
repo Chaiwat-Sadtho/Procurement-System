@@ -91,6 +91,24 @@ describe('usePagination', () => {
     },
   )
 
+  // robustness: scientific notation / hex / beyond-safe-integer must NOT slip
+  // through to the query (Number('1e21') is a finite integer → would reach the API)
+  it.each(['/?page=1e21', '/?page=0x10', '/?page=99999999999999999999', '/?page= 3'])(
+    'falls back to page 1 for unsafe or non-decimal page param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.page).toBe(1)
+    },
+  )
+
+  it.each(['/?limit=0x14', '/?limit=2e1'])(
+    'falls back to limit 5 for non-decimal limit param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.limit).toBe(5)
+    },
+  )
+
   // limit must be one of the allowed options, else fall back to default 5
   it.each(['/?limit=7', '/?limit=0', '/?limit=abc', '/?limit=100'])(
     'falls back to limit 5 for invalid limit param %s',

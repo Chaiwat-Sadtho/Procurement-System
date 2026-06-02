@@ -2,16 +2,26 @@ import { useSearchParams } from 'react-router-dom'
 
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const
 
+// Strictly parse a URL param as a plain decimal integer. Number() alone would let
+// scientific notation ('1e21'), hex ('0x10'), whitespace (' 3') and beyond-safe
+// integers through — values that would otherwise reach the API and 500 it.
+function parseIntParam(value: string | null): number | null {
+  if (value === null || !/^\d+$/.test(value)) return null
+  const n = Number(value)
+  return Number.isSafeInteger(n) ? n : null
+}
+
 export function usePagination(initialPage = 1, initialLimit = 5) {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const rawPage = Number(searchParams.get('page'))
-  const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : initialPage
+  const rawPage = parseIntParam(searchParams.get('page'))
+  const page = rawPage !== null && rawPage >= 1 ? rawPage : initialPage
 
-  const rawLimit = Number(searchParams.get('limit'))
-  const limit = (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawLimit)
-    ? rawLimit
-    : initialLimit
+  const rawLimit = parseIntParam(searchParams.get('limit'))
+  const limit =
+    rawLimit !== null && (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawLimit)
+      ? rawLimit
+      : initialLimit
 
   // merge-safe: clone prev params so unrelated keys (e.g. ?status=) are preserved
   function update(next: { page?: number; limit?: number }) {
