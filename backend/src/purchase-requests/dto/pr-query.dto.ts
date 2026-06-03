@@ -1,5 +1,5 @@
-import { IsOptional, IsEnum, IsDateString, IsString, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsEnum, IsDateString, IsString, IsInt, IsBoolean, Min } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PrStatus } from '../entities/purchase-request.entity';
 
@@ -63,4 +63,12 @@ export class PrQueryDto {
   @IsOptional()
   @IsString()
   order?: 'ASC' | 'DESC' = 'DESC';
+
+  // First boolean query flag in this DTO. Query strings arrive as 'true'/'false',
+  // so @IsBoolean alone would reject the string — @Transform coerces it first.
+  @ApiPropertyOptional({ description: 'เฉพาะ PR ที่พร้อมแปลงเป็น PO (approved + มีแผนก + ยังไม่มี PO active)' })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  eligibleForPo?: boolean;
 }
