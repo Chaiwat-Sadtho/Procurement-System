@@ -23,6 +23,8 @@ export function GRNReceivePreview({ items }: GRNReceivePreviewProps) {
       <CardContent>
         <p
           data-testid="grn-receive-outcome"
+          role="status"
+          aria-live="polite"
           className={cn(
             'text-sm font-semibold',
             willComplete
