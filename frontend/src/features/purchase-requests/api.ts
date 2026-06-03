@@ -10,6 +10,7 @@ interface PRListParams {
   requesterName?: string
   from?: string
   to?: string
+  eligibleForPo?: boolean // PO picker pre-filter — server resolves it (slice A)
 }
 
 export const purchaseRequestsApi = {
