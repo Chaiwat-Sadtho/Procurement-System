@@ -59,7 +59,7 @@ export function POFormPage() {
       <PageHeader title={`แก้ไข ${po.poNumber}`} description="แก้ไขฉบับร่างใบสั่งซื้อ" />
       {/* key={po.id} forces a remount when navigating edit -> edit between two ids,
           so react-hook-form re-seeds from the new PO's defaultValues instead of keeping stale prefill */}
-      <POForm key={po.id} mode="edit" poId={po.id} defaultValues={poToFormValues(po)} />
+      <POForm key={po.id} mode="edit" poId={po.id} pr={po.purchaseRequest} defaultValues={poToFormValues(po)} />
     </div>
   )
 }

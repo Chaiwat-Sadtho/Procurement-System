@@ -18,6 +18,7 @@ import { useEligiblePRs } from '../hooks/useEligiblePRs'
 import { useBudgetForPR, matchBudgetForPR } from '../hooks/useBudgetForPR'
 import { POItemsField } from './POItemsField'
 import { POBudgetPreview } from './POBudgetPreview'
+import type { POPrRef } from '../types'
 import {
   poFormSchema,
   toCreatePayload,
@@ -28,12 +29,15 @@ import {
 
 type POFormProps =
   | { mode: 'create'; defaultValues: POFormValues }
-  | { mode: 'edit'; poId: number; defaultValues: POFormValues }
+  | { mode: 'edit'; poId: number; defaultValues: POFormValues; pr?: POPrRef }
 
 export function POForm(props: POFormProps) {
   const { mode, defaultValues } = props
   const navigate = useNavigate()
   const isEdit = mode === 'edit'
+  // edit mode: the PO's own PR is excluded from the eligible list (it already has an
+  // active PO), so resolve the summary card + budget from the PO's purchaseRequest ref
+  const editPr = props.mode === 'edit' ? props.pr : undefined
   const { createMutation, updateMutation } = usePOMutations()
   const inFlight = useRef(false)
 
@@ -54,14 +58,21 @@ export function POForm(props: POFormProps) {
   // Combobox works in strings, so bridge with String()/Number() at the seam.
   const selectedPrId = form.watch('prId')
   const selectedPR = useMemo(
-    () => prList.find((pr) => pr.id === selectedPrId),
-    [prList, selectedPrId],
+    () => prList.find((pr) => pr.id === selectedPrId) ?? editPr,
+    [prList, selectedPrId, editPr],
   )
 
-  const prOptions = prList.map((pr) => ({
-    value: String(pr.id),
-    label: `${pr.prNumber} — ${pr.title}`,
-  }))
+  const prOptions = [
+    ...prList.map((pr) => ({
+      value: String(pr.id),
+      label: `${pr.prNumber} — ${pr.title}`,
+    })),
+    // edit mode: PO's PR is absent from the eligible list — add it so the disabled
+    // picker shows the PR number instead of falling back to the placeholder
+    ...(editPr && !prList.some((pr) => pr.id === editPr.id)
+      ? [{ value: String(editPr.id), label: editPr.prNumber }]
+      : []),
+  ]
   const vendorOptions = vendorList
     .filter((v) => !v.isBlacklisted)
     .map((v) => ({ value: String(v.id), label: v.name }))

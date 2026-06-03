@@ -22,7 +22,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { usePOMutations } from '../hooks/usePOMutations'
 import { useEligiblePRs } from '../hooks/useEligiblePRs'
-import { useBudgetForPR } from '../hooks/useBudgetForPR'
+import { useBudgetForPR, matchBudgetForPR } from '../hooks/useBudgetForPR'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
 import { toast } from 'sonner'
 
@@ -157,5 +157,55 @@ describe('POForm', () => {
   it('mounts the budget preview region', () => {
     renderForm(<POForm mode="create" defaultValues={createDefaultValues()} />)
     expect(screen.getByTestId('po-budget-preview')).toBeInTheDocument()
+  })
+})
+
+// F1: in edit mode the edited PO's PR already has an active PO, so the backend's
+// eligibleForPo filter excludes it from the picker list. The form must still resolve
+// the PR (summary card + budget preview) from the PO's own purchaseRequest ref.
+const editPrRef = {
+  id: 5,
+  prNumber: 'PR-2026-0005',
+  quarter: 2,
+  fiscalYear: 2026,
+  departmentId: 1,
+  department: { id: 1, name: 'IT' },
+  totalEstimatedAmount: '1500',
+}
+
+describe('POForm — edit mode resolves PR from the PO, not the eligible list', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setMutations()
+    setHooks()
+    // realistic: the edited PR is absent from the eligible list (it has an active PO)
+    vi.mocked(useEligiblePRs).mockReturnValue({
+      data: { data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 0 } },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useEligiblePRs>)
+  })
+
+  it('shows the PR summary card from the PO PR even when it is absent from the eligible list', () => {
+    renderForm(<POForm mode="edit" poId={3} defaultValues={editDefaults} pr={editPrRef} />)
+    // the PR number now appears in both the (populated) disabled picker and the summary card
+    expect(screen.getAllByText('PR-2026-0005').length).toBeGreaterThan(0)
+    // department renders only inside the summary card, which was previously missing entirely
+    expect(screen.getByText('IT')).toBeInTheDocument()
+  })
+
+  it('resolves the budget preview from the PO PR (renders budget rows, not the not-set fallback)', () => {
+    vi.mocked(matchBudgetForPR).mockReturnValue({
+      totalAmount: '100000',
+      reservedAmount: '10000',
+      usedAmount: '0',
+    } as unknown as ReturnType<typeof matchBudgetForPR>)
+    vi.mocked(useBudgetForPR).mockReturnValue({
+      data: [{ totalAmount: '100000', reservedAmount: '10000', usedAmount: '0' }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBudgetForPR>)
+
+    renderForm(<POForm mode="edit" poId={3} defaultValues={editDefaults} pr={editPrRef} />)
+    expect(screen.getByTestId('po-budget-remaining-after')).toBeInTheDocument()
+    expect(screen.queryByText('งบประมาณยังไม่ถูกกำหนด')).not.toBeInTheDocument()
   })
 })
