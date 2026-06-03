@@ -207,7 +207,10 @@ export class PurchaseOrdersService {
   }
 
   async update(id: number, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
-    const po = await this.poRepository.findOne({ where: { id }, relations: { items: true } });
+    const po = await this.poRepository.findOne({
+      where: { id },
+      relations: { items: true, purchaseRequest: true },
+    });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status !== PoStatus.DRAFT) throw new BadRequestException('Only draft POs can be edited');
 
@@ -217,6 +220,8 @@ export class PurchaseOrdersService {
     if (dto.items) {
       // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว PO จะเหลือ 0 item
       const items = dto.items;
+      const oldTotal = Number(po.totalAmount);
+      const pr = po.purchaseRequest;
       return this.dataSource.transaction(async (manager) => {
         await manager.delete(PurchaseOrderItem, { poId: id });
         const newItems = items.map((item) =>
@@ -233,6 +238,19 @@ export class PurchaseOrdersService {
         );
         po.items = await manager.save(PurchaseOrderItem, newItems);
         po.totalAmount = sumMoney(po.items.map((item) => item.totalPrice));
+
+        // P5-6 (F2): keep the dept budget reserved in sync with the edited total —
+        // mirror create's delta-gate. A positive delta beyond remaining budget throws
+        // inside this transaction → the item delete/recreate rolls back (PO unchanged).
+        if (pr?.departmentId != null) {
+          await this.budgetsService.adjustReservedAmount(
+            pr.departmentId,
+            pr.fiscalYear ?? new Date().getFullYear(),
+            pr.quarter,
+            Number(po.totalAmount) - oldTotal,
+            manager,
+          );
+        }
         return manager.save(PurchaseOrder, po);
       });
     }
