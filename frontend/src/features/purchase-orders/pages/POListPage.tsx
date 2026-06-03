@@ -21,6 +21,8 @@ import {
   type POListFilterValues,
 } from '../components/POListFilterForm'
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
+import { useVendors } from '@/features/vendors/hooks/useVendors'
+import type { PoStatus } from '../types'
 
 const DEFAULT_FILTERS: POListFilterValues = {
   status: 'all',
@@ -35,10 +37,14 @@ export function POListPage() {
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
 
+  const { data: vendorData } = useVendors({ limit: 100 })
+  const vendors = vendorData?.data ?? []
+
   const queryParams = {
     page,
     limit,
-    status: filters.status && filters.status !== 'all' ? filters.status : undefined,
+    status:
+      filters.status && filters.status !== 'all' ? (filters.status as PoStatus) : undefined,
     vendorId:
       filters.vendorId && filters.vendorId !== 'all' ? Number(filters.vendorId) : undefined,
   }
@@ -72,7 +78,7 @@ export function POListPage() {
         }
       />
 
-      <POListFilterForm onSubmit={handleSubmit} onClear={handleClear} />
+      <POListFilterForm vendors={vendors} onSubmit={handleSubmit} onClear={handleClear} />
 
       {isError ? (
         <div className="text-center py-12 space-y-3">

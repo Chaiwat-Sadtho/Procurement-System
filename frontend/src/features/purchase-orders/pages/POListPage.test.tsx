@@ -22,9 +22,11 @@ vi.mock('../components/POListFilterForm', () => ({
     </button>
   ),
 }))
+vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
 
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
+import { useVendors } from '@/features/vendors/hooks/useVendors'
 import { POListPage } from './POListPage'
 
 const mockPO: PurchaseOrder = {
@@ -73,6 +75,7 @@ function setup({
     refetch,
   } as unknown as ReturnType<typeof usePurchaseOrders>)
   vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
+  vi.mocked(useVendors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useVendors>)
   return { refetch }
 }
 
