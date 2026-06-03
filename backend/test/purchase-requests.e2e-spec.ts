@@ -443,6 +443,9 @@ describe('Purchase Requests (e2e)', () => {
       expect(await eligibleIds()).toContain(id);
     });
 
+    // หมายเหตุ: นี่เป็น invariant assertion ไม่ใช่ discriminating test — approve flow บล็อก null-dept อยู่แล้ว
+    // (service.ts) จึงไม่มี approved PR ที่ dept=null เข้าถึงผ่าน public API ในชุดนี้. การพิสูจน์ว่า clause
+    // departmentId IS NOT NULL ถูก emit จริง = unit A2; การพิสูจน์ approved/no-PO mapping = 3 test ด้านบน.
     it('every PR in the eligible list has a non-null department (dept guard invariant)', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/purchase-requests')
