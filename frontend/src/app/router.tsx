@@ -8,6 +8,9 @@ import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
 import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
 import { VendorDetailPage } from '@/features/vendors/pages/VendorDetailPage'
 import { VendorFormPage } from '@/features/vendors/pages/VendorFormPage'
+import { POListPage } from '@/features/purchase-orders/pages/POListPage'
+import { PODetailPage } from '@/features/purchase-orders/pages/PODetailPage'
+import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -90,7 +93,7 @@ export const router = createBrowserRouter([
         path: 'purchase-orders',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Purchase Orders" />
+            <POListPage />
           </ProtectedRoute>
         ),
       },
@@ -98,7 +101,7 @@ export const router = createBrowserRouter([
         path: 'purchase-orders/new',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="New Purchase Order" />
+            <POFormPage />
           </ProtectedRoute>
         ),
       },
@@ -106,7 +109,7 @@ export const router = createBrowserRouter([
         path: 'purchase-orders/:id',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Purchase Order Detail" />
+            <PODetailPage />
           </ProtectedRoute>
         ),
       },
@@ -114,7 +117,7 @@ export const router = createBrowserRouter([
         path: 'purchase-orders/:id/edit',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="Edit Purchase Order" />
+            <POFormPage />
           </ProtectedRoute>
         ),
       },
