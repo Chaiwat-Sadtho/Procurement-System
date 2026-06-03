@@ -1,6 +1,7 @@
-import { IsOptional, IsInt, IsPositive, Min } from 'class-validator';
+import { IsOptional, IsInt, IsPositive, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { GrnStatus } from '../entities/goods-receipt-note.entity';
 
 export class GrnQueryDto {
   @ApiPropertyOptional({ default: 1 })
@@ -23,4 +24,9 @@ export class GrnQueryDto {
   @IsPositive()
   @Type(() => Number)
   poId?: number;
+
+  @ApiPropertyOptional({ enum: GrnStatus })
+  @IsOptional()
+  @IsEnum(GrnStatus)
+  status?: GrnStatus;
 }

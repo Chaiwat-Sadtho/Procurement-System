@@ -187,7 +187,7 @@ export class GoodsReceiptsService {
   async findAll(
     query: GrnQueryDto,
   ): Promise<{ data: GoodsReceiptNote[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, poId } = query;
+    const { page = 1, limit = 20, poId, status } = query;
 
     const qb = this.grnRepository
       .createQueryBuilder('grn')
@@ -195,6 +195,7 @@ export class GoodsReceiptsService {
       .leftJoinAndSelect('grn.purchaseOrder', 'po');
 
     if (poId) qb.andWhere('grn.poId = :poId', { poId });
+    if (status) qb.andWhere('grn.status = :status', { status });
 
     const [data, total] = await qb
       .orderBy('grn.createdAt', 'DESC')

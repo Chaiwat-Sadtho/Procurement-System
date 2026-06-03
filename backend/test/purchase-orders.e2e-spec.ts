@@ -398,4 +398,81 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const afterReserved = await getReservedAnnual();
     expect(afterReserved - before).toBeCloseTo(4000, 2);
   });
+
+  // --- Slice A filters (placed at end of suite: by here poId is completed, a cancelled PO exists
+  //     from the cancel-flow test, draft POs exist from the PATCH tests, and exactly the partial +
+  //     complete GRNs were created on poId — so every assertion is exercised against real rows) ---
+
+  it('GET /api/v1/purchase-orders?receivable=true — returns only acknowledged/partially_received', async () => {
+    // positive fixture: an acknowledged PO with no GRN yet — stays receivable so the
+    // positive assertion below is non-vacuous (poId itself was completed earlier in the suite)
+    const ackPoId = await freshDraftPo(500);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-orders/${ackPoId}/send`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-orders/${ackPoId}/acknowledge`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?receivable=true&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ id: number; status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    // positive: the acknowledged PO we just created IS returned by the filter
+    expect(rows.some((po) => po.id === ackPoId && po.status === 'acknowledged')).toBe(true);
+    // every returned row is receivable
+    for (const po of rows) {
+      expect(['acknowledged', 'partially_received']).toContain(po.status);
+    }
+    // negative control: none of the non-receivable statuses leak through
+    const leaked = rows.filter((po) =>
+      ['draft', 'sent', 'completed', 'cancelled'].includes(po.status),
+    );
+    expect(leaked).toHaveLength(0);
+
+    // negative control #2: an unfiltered fetch DOES contain a completed PO that the filter dropped
+    const all = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const allRows = all.body.data as Array<{ status: string }>;
+    expect(allRows.some((po) => po.status === 'completed')).toBe(true);
+  });
+
+  it('GET /api/v1/goods-receipts?status=partial — returns only partial GRNs', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts?status=partial&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    for (const grn of rows) {
+      expect(grn.status).toBe('partial');
+    }
+    // symmetric negative control: complete GRNs must NOT appear in the partial set
+    expect(rows.some((grn) => grn.status === 'complete')).toBe(false);
+  });
+
+  it('GET /api/v1/goods-receipts?status=complete — returns only complete GRNs', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts?status=complete&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    for (const grn of rows) {
+      expect(grn.status).toBe('complete');
+    }
+    // the partial GRN created earlier in this suite must NOT appear in the complete set
+    expect(rows.some((grn) => grn.status === 'partial')).toBe(false);
+  });
 });

@@ -176,7 +176,7 @@ export class PurchaseOrdersService {
   async findAll(
     query: PoQueryDto,
   ): Promise<{ data: PurchaseOrder[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, status, vendorId, prId } = query;
+    const { page = 1, limit = 20, status, vendorId, prId, receivable } = query;
 
     const qb = this.poRepository
       .createQueryBuilder('po')
@@ -187,6 +187,10 @@ export class PurchaseOrdersService {
     if (status) qb.andWhere('po.status = :status', { status });
     if (vendorId) qb.andWhere('po.vendorId = :vendorId', { vendorId });
     if (prId) qb.andWhere('po.prId = :prId', { prId });
+    if (receivable)
+      qb.andWhere('po.status IN (:...receivable)', {
+        receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
+      });
 
     const [data, total] = await qb
       .orderBy('po.createdAt', 'DESC')

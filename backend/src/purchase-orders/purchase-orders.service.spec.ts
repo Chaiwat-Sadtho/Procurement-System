@@ -345,4 +345,39 @@ describe('PurchaseOrdersService', () => {
       await expect(service.update(1, { notes: 'x' })).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('findAll', () => {
+    // chainable qb mock: every builder method returns `this`; getManyAndCount resolves [[], 0]
+    const makeQb = () => {
+      const qb: Record<string, jest.Mock> = {};
+      for (const m of ['leftJoinAndSelect', 'andWhere', 'orderBy', 'skip', 'take']) {
+        qb[m] = jest.fn().mockReturnValue(qb);
+      }
+      qb.getManyAndCount = jest.fn().mockResolvedValue([[], 0]);
+      return qb;
+    };
+
+    it('should restrict to acknowledged + partially_received when receivable=true', async () => {
+      const qb = makeQb();
+      mockPoRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ receivable: true });
+
+      expect(qb.andWhere).toHaveBeenCalledWith('po.status IN (:...receivable)', {
+        receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
+      });
+    });
+
+    it('should NOT add the receivable filter when the flag is absent', async () => {
+      const qb = makeQb();
+      mockPoRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({});
+
+      const calledWithReceivable = qb.andWhere.mock.calls.some(
+        (c: unknown[]) => c[0] === 'po.status IN (:...receivable)',
+      );
+      expect(calledWithReceivable).toBe(false);
+    });
+  });
 });
