@@ -11,9 +11,14 @@ vi.mock('../api', () => ({
 import { goodsReceiptsApi } from '../api'
 import { useGoodsReceipts } from './useGoodsReceipts'
 
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+function makeQc() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false } } })
+}
+
+function makeWrapper(qc: QueryClient) {
+  return function wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  }
 }
 
 const fake: GRNListResponse = {
@@ -24,18 +29,23 @@ const fake: GRNListResponse = {
 describe('useGoodsReceipts', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('calls goodsReceiptsApi.list with params and unwraps the data', async () => {
+  it('calls goodsReceiptsApi.list with params and caches at the namespaced key', async () => {
     vi.mocked(goodsReceiptsApi.list).mockResolvedValue(fake)
     const params = { page: 1, limit: 20, status: 'partial', poId: 5 } as const
-    const { result } = renderHook(() => useGoodsReceipts(params), { wrapper })
+    const qc = makeQc()
+    const { result } = renderHook(() => useGoodsReceipts(params), {
+      wrapper: makeWrapper(qc),
+    })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(goodsReceiptsApi.list).toHaveBeenCalledWith(params)
     expect(result.current.data).toEqual(fake)
+    // pin the documented key shape (symmetry with useGoodsReceipt detail test)
+    expect(qc.getQueryData(['goods-receipts', 'list', params])).toEqual(fake)
   })
 
   it('does not fetch when enabled=false', () => {
     const { result } = renderHook(() => useGoodsReceipts({}, { enabled: false }), {
-      wrapper,
+      wrapper: makeWrapper(makeQc()),
     })
     expect(result.current.fetchStatus).toBe('idle')
     expect(goodsReceiptsApi.list).not.toHaveBeenCalled()

@@ -11,11 +11,14 @@ vi.mock('../api', () => ({
 import { goodsReceiptsApi } from '../api'
 import { useGRNMutations } from './useGRNMutations'
 
-// created.poId drives the PO-detail/grn-history invalidation prefix (contract §5)
+// created.poId (the resolved GoodsReceipt) drives the PO-detail/grn-history
+// invalidation prefix (contract §5). It is DELIBERATELY distinct from payload.poId
+// (9 vs 8) so the invalidation assertion only passes if onSuccess reads the response
+// (created.poId) and NOT the mutation variables (payload.poId) — pins the load-bearing source.
 const created = { id: 42, poId: 9, status: 'partial' } as GoodsReceipt
 
 const payload: CreateGoodsReceiptPayload = {
-  poId: 9,
+  poId: 8,
   receivedDate: '2025-11-10',
   items: [{ poItemId: 3, receivedQuantity: 2, condition: 'good' }],
 }
@@ -35,7 +38,7 @@ function makeWrapper(qc: QueryClient) {
 describe('useGRNMutations', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('create calls api.create with the payload and invalidates GRN list + PO detail + PO list', async () => {
+  it('create calls api.create and invalidates GRN + PO + budget caches (exactly 5 prefixes)', async () => {
     vi.mocked(goodsReceiptsApi.create).mockResolvedValue(created)
     const qc = makeQc()
     const spy = vi.spyOn(qc, 'invalidateQueries')
@@ -50,10 +53,15 @@ describe('useGRNMutations', () => {
     await waitFor(() => {
       // GRN list+detail (prefix ['goods-receipts'])
       expect(spy).toHaveBeenCalledWith({ queryKey: ['goods-receipts'] })
-      // PO detail + its grn-history (prefix ['purchase-order', created.poId] covers both)
+      // PO detail + its grn-history — keyed off the RESPONSE (created.poId=9), not payload.poId=8
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 9] })
-      // PO list
+      // PO list + receivable picker (prefix ['purchase-orders'])
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // budget caches — a completing GRN consumes reserved -> used (spec §4A.6)
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
+      // exclusivity: exactly these 5 prefixes, no over-invalidation creep
+      expect(spy).toHaveBeenCalledTimes(5)
     })
   })
 

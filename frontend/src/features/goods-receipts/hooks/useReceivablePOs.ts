@@ -7,6 +7,10 @@ import { goodsReceiptsApi } from '../api'
 // to a bare ReceivablePO[] so the Combobox gets a flat array.
 export function useReceivablePOs({ enabled = true }: QueryEnabledOptions = {}) {
   return useQuery({
+    // Deliberately under the ['purchase-orders'] prefix (NOT 'goods-receipts') so the
+    // PO/GRN mutations that invalidate ['purchase-orders'] also refresh this picker —
+    // a completed PO must drop out of ?receivable=true. Do not re-namespace this key
+    // under 'goods-receipts' or that cross-hook freshness contract breaks.
     queryKey: ['purchase-orders', 'receivable'],
     queryFn: () => goodsReceiptsApi.listReceivablePOs(),
     enabled,

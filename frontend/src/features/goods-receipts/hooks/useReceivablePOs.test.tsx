@@ -17,25 +17,37 @@ const fake: ReceivablePO[] = [
   { id: 2, poNumber: 'PO-2025-0002', status: 'partially_received' },
 ]
 
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+function makeQc() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false } } })
+}
+
+function makeWrapper(qc: QueryClient) {
+  return function wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  }
 }
 
 describe('useReceivablePOs', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('fetches receivable POs and returns the mapped array', async () => {
+  it('fetches receivable POs and caches them at the purchase-orders receivable key', async () => {
     vi.mocked(goodsReceiptsApi.listReceivablePOs).mockResolvedValue(fake)
-    const { result } = renderHook(() => useReceivablePOs(), { wrapper })
+    const qc = makeQc()
+    const { result } = renderHook(() => useReceivablePOs(), {
+      wrapper: makeWrapper(qc),
+    })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(goodsReceiptsApi.listReceivablePOs).toHaveBeenCalledWith()
     expect(result.current.data).toEqual(fake)
+    // pin the queryKey: GRN-create invalidates the ['purchase-orders'] prefix so a
+    // completed PO drops out of this picker; that cross-hook contract regresses
+    // silently if this key is renamed, so lock it here.
+    expect(qc.getQueryData(['purchase-orders', 'receivable'])).toEqual(fake)
   })
 
   it('does not fetch when enabled=false', () => {
     const { result } = renderHook(() => useReceivablePOs({ enabled: false }), {
-      wrapper,
+      wrapper: makeWrapper(makeQc()),
     })
     expect(result.current.fetchStatus).toBe('idle')
     expect(goodsReceiptsApi.listReceivablePOs).not.toHaveBeenCalled()
