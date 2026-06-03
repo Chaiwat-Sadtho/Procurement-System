@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -64,5 +64,20 @@ describe('MobileSidebar', () => {
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
     })
+  })
+
+  it('shows the จัดซื้อ group with Purchase Orders inside the mobile drawer', async () => {
+    const user = userEvent.setup()
+    renderMobileSidebar()
+
+    await user.click(screen.getByRole('button', { name: /open menu/i }))
+    const header = await screen.findByRole('button', { name: 'จัดซื้อ' })
+    // Assert Purchase Orders is a CHILD of the group (not a flat sibling) so this
+    // proves the group propagates through SidebarContent into the drawer.
+    const list = document.getElementById(header.getAttribute('aria-controls') as string)
+    expect(list).not.toBeNull()
+    expect(
+      within(list as HTMLElement).getByRole('link', { name: 'Purchase Orders' }),
+    ).toHaveAttribute('href', '/purchase-orders')
   })
 })
