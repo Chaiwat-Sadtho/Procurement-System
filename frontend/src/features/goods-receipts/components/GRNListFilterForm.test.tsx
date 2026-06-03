@@ -58,12 +58,25 @@ describe('GRNListFilterForm', () => {
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
   })
 
-  it('ล้าง resets to all and calls onClear', async () => {
+  it('ล้าง resets status back to the visible ทั้งหมด default and calls onClear', async () => {
     const { onClear } = renderForm()
     await userEvent.click(screen.getByLabelText('สถานะ'))
     await userEvent.click(await screen.findByRole('option', { name: 'รับครบถ้วน' }))
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('รับครบถ้วน')
     await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
     expect(onClear).toHaveBeenCalled()
+    // visual reset, not just isDirty: the status trigger shows the ทั้งหมด default again
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('ทั้งหมด')
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
+  })
+
+  it('choosing a PO then ล้าง resets the combobox back to ทุกใบสั่งซื้อ', async () => {
+    renderForm()
+    await userEvent.click(screen.getByLabelText('ใบสั่งซื้อ (PO)'))
+    await userEvent.click(screen.getByText('PO-2026-0008'))
+    expect(screen.getByLabelText('ใบสั่งซื้อ (PO)')).toHaveTextContent('PO-2026-0008')
+    await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
+    expect(screen.getByLabelText('ใบสั่งซื้อ (PO)')).toHaveTextContent('ทุกใบสั่งซื้อ')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
   })
 })
