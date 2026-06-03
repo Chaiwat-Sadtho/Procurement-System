@@ -19,6 +19,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
   let poId: number;
   let grnId: number;
   let poItemId: number;
+  let deptId: number;
 
   const tag = Date.now();
 
@@ -46,7 +47,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ name: `PO E2E Dept ${tag}` })
       .expect(201);
-    const deptId = deptRes.body.id;
+    deptId = deptRes.body.id;
 
     await request(app.getHttpServer())
       .post('/api/v1/budgets')
@@ -335,5 +336,66 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ prId, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Dup', quantity: 1, unit: 'unit', unitPrice: 100 }] })
       .expect(409);
+  });
+
+  // --- F2: PATCH update must enforce the budget gate and keep reserved in sync ---
+
+  const getReservedAnnual = async (): Promise<number> => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/budgets/department/${deptId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const annual = (res.body as Array<{ fiscalYear: number; quarter: number | null; reservedAmount: string }>)
+      .find((b) => b.quarter == null && b.fiscalYear === new Date().getFullYear());
+    return Number(annual?.reservedAmount ?? 0);
+  };
+
+  const freshDraftPo = async (unitPrice: number): Promise<number> => {
+    const prRes = await request(app.getHttpServer())
+      .post('/api/v1/purchase-requests')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({ title: 'PR for PO update test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: unitPrice }] });
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    const poRes = await request(app.getHttpServer())
+      .post('/api/v1/purchase-orders')
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ prId: prRes.body.id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }] })
+      .expect(201);
+    return poRes.body.id;
+  };
+
+  it('PATCH /api/v1/purchase-orders/:id — rejects an edit that pushes the PO total over the remaining budget, leaving the PO unchanged', async () => {
+    const draftPoId = await freshDraftPo(1000);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 2000000 }] })
+      .expect(400);
+
+    // rollback: items/total untouched after the rejected edit
+    const after = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(Number(after.body.totalAmount)).toBe(1000);
+    expect(after.body.items).toHaveLength(1);
+    expect(Number(after.body.items[0].unitPrice)).toBe(1000);
+  });
+
+  it('PATCH /api/v1/purchase-orders/:id — a within-budget edit adjusts the department reserved amount by the total delta', async () => {
+    const draftPoId = await freshDraftPo(1000);
+    const before = await getReservedAnnual();
+
+    // raise the PO total from 1000 to 5000 (delta +4000), well within the 1,000,000 budget
+    await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 5000 }] })
+      .expect(200);
+
+    const afterReserved = await getReservedAnnual();
+    expect(afterReserved - before).toBeCloseTo(4000, 2);
   });
 });
