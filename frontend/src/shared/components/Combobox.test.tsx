@@ -35,4 +35,9 @@ describe('Combobox', () => {
     await userEvent.click(screen.getByText('Bob'))
     expect(onChange).toHaveBeenCalledWith('6')
   })
+
+  it('disables the trigger when disabled', () => {
+    render(<Combobox value="" onChange={vi.fn()} options={options} disabled />)
+    expect(screen.getByRole('combobox')).toBeDisabled()
+  })
 })

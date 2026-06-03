@@ -29,6 +29,7 @@ interface ComboboxProps {
   placeholder?: string
   searchPlaceholder?: string
   emptyText?: string
+  disabled?: boolean
 }
 
 export function Combobox({
@@ -39,6 +40,7 @@ export function Combobox({
   placeholder = 'เลือก',
   searchPlaceholder = 'ค้นหา...',
   emptyText = 'ไม่พบรายการ',
+  disabled = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const selected = options.find((o) => o.value === value)
@@ -52,6 +54,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className="w-full justify-between font-normal"
         >
           <span className={cn(!selected && 'text-muted-foreground')}>
