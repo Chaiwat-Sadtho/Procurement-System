@@ -115,7 +115,7 @@ export class PurchaseRequestsService {
     user: { id: number; role: UserRole },
     query: PrQueryDto,
   ): Promise<{ data: PurchaseRequest[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC', prNumber, requesterId, requesterName } = query;
+    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC', prNumber, requesterId, requesterName, eligibleForPo } = query;
 
     const qb = this.prRepository
       .createQueryBuilder('pr')
@@ -126,6 +126,16 @@ export class PurchaseRequestsService {
     await this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
+    // §3.1/§4A: เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
+    // NOT EXISTS อ้าง column ดิบ (pr_id / status) ของตาราง purchase_orders → ต้อง e2e จริง (mock qb พิสูจน์ mapping ไม่ได้)
+    if (eligibleForPo) {
+      qb.andWhere('pr.status = :eligibleStatus', { eligibleStatus: PrStatus.APPROVED });
+      qb.andWhere('pr.departmentId IS NOT NULL');
+      qb.andWhere(
+        'NOT EXISTS (SELECT 1 FROM purchase_orders po WHERE po.pr_id = pr.id AND po.status != :cancelledStatus)',
+        { cancelledStatus: 'cancelled' },
+      );
+    }
     if (from) qb.andWhere('pr.createdAt >= :from', { from: new Date(from) });
     if (to) {
       const toEnd = new Date(to);

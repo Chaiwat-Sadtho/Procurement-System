@@ -464,4 +464,66 @@ describe('PurchaseRequestsService', () => {
       );
     });
   });
+
+  describe('findAll eligibleForPo filter', () => {
+    const makeQb = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    });
+
+    it('adds approved + dept-not-null + NOT EXISTS active-PO guards when eligibleForPo is true', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { eligibleForPo: true } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.status = :eligibleStatus', {
+        eligibleStatus: PrStatus.APPROVED,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'NOT EXISTS (SELECT 1 FROM purchase_orders po WHERE po.pr_id = pr.id AND po.status != :cancelledStatus)',
+        { cancelledStatus: 'cancelled' },
+      );
+    });
+
+    it('does NOT add the eligible guards when eligibleForPo is false', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { eligibleForPo: false } as any,
+      );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
+        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      );
+      expect(calledWithNotExists).toBe(false);
+    });
+
+    it('does NOT add the eligible guards when eligibleForPo is undefined', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {} as any,
+      );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
+        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      );
+      expect(calledWithNotExists).toBe(false);
+    });
+  });
 });
