@@ -11,6 +11,7 @@ import { PODetailHeader } from '../components/PODetailHeader'
 import { POItemsTable } from '../components/POItemsTable'
 import { POGrnHistory } from '../components/POGrnHistory'
 import { POActions } from '../components/POActions'
+import { PORatingSection } from '../components/PORatingSection'
 
 type POAction = 'send' | 'acknowledge' | 'cancel'
 
@@ -129,6 +130,8 @@ export function PODetailPage() {
       <POItemsTable items={po.items} totalAmount={Number(po.totalAmount)} />
 
       <POGrnHistory grns={grnsQuery.data ?? []} />
+
+      {user && <PORatingSection po={po} user={user} />}
 
       <ConfirmDialog
         open={confirmAction !== null}

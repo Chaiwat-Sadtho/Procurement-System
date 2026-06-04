@@ -14,6 +14,13 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../hooks/usePurchaseOrder', () => ({ usePurchaseOrder: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+// PORatingSection มี test ของตัวเอง (D2) + เรียก useQuery/useMutation จริง (harness ไม่มี QueryClientProvider)
+// → mock ทั้งตัว แยก concern; assert ว่าถูก render ด้วย po ที่ถูกต้อง
+vi.mock('../components/PORatingSection', () => ({
+  PORatingSection: ({ po }: { po: { id: number } }) => (
+    <div data-testid="po-rating-section">rating:{po.id}</div>
+  ),
+}))
 
 import { usePurchaseOrder } from '../hooks/usePurchaseOrder'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
@@ -192,5 +199,12 @@ describe('PODetailPage', () => {
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'แก้ไข' }))
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-orders/1/edit')
+  })
+
+  it('renders the rating section with the PO', async () => {
+    mockHook()
+    setUser()
+    renderPage()
+    expect(await screen.findByTestId('po-rating-section')).toHaveTextContent('rating:1')
   })
 })
