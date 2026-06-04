@@ -11,6 +11,9 @@ import { VendorFormPage } from '@/features/vendors/pages/VendorFormPage'
 import { POListPage } from '@/features/purchase-orders/pages/POListPage'
 import { PODetailPage } from '@/features/purchase-orders/pages/PODetailPage'
 import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
+import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
+import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
+import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -125,7 +128,7 @@ export const router = createBrowserRouter([
         path: 'goods-receipts',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Goods Receipts" />
+            <GRNListPage />
           </ProtectedRoute>
         ),
       },
@@ -133,7 +136,7 @@ export const router = createBrowserRouter([
         path: 'goods-receipts/new',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="New Goods Receipt" />
+            <GRNFormPage />
           </ProtectedRoute>
         ),
       },
@@ -141,7 +144,7 @@ export const router = createBrowserRouter([
         path: 'goods-receipts/:id',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Goods Receipt Detail" />
+            <GRNDetailPage />
           </ProtectedRoute>
         ),
       },
