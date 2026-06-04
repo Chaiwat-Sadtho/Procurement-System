@@ -11,6 +11,7 @@ import { useVendor } from '../hooks/useVendor'
 import { VendorDetailHeader } from '../components/VendorDetailHeader'
 import { VendorActions } from '../components/VendorActions'
 import { BlacklistReasonDialog } from '../components/BlacklistReasonDialog'
+import { VendorRatingHistory } from '../components/VendorRatingHistory'
 
 export function VendorDetailPage() {
   const { id } = useParams()
@@ -111,6 +112,8 @@ export function VendorDetailPage() {
         isPending={unblacklistMutation.isPending}
         onConfirm={handleUnblacklist}
       />
+
+      <VendorRatingHistory vendorId={vendor.id} />
     </div>
   )
 }

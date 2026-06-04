@@ -14,6 +14,11 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../hooks/useVendor', () => ({ useVendor: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('../components/VendorRatingHistory', () => ({
+  VendorRatingHistory: ({ vendorId }: { vendorId: number }) => (
+    <div data-testid="vendor-rating-history">history:{vendorId}</div>
+  ),
+}))
 
 import { useVendor } from '../hooks/useVendor'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
@@ -94,6 +99,13 @@ describe('VendorDetailPage', () => {
     expect(screen.getByRole('heading', { name: 'ACME Corp' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'แก้ไข' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'แบล็คลิสต์' })).toBeInTheDocument()
+  })
+
+  it('renders the rating history section wired to the vendor id', () => {
+    mockHook()
+    setUser()
+    renderPage()
+    expect(screen.getByTestId('vendor-rating-history')).toHaveTextContent('history:1')
   })
 
   it('hides action buttons for a manager (read-only)', () => {
