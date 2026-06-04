@@ -45,12 +45,12 @@ export function PORatingSection({ po, user }: PORatingSectionProps) {
     <div className="space-y-2 mt-6">
       <h2 className="text-base font-semibold">คะแนนผู้ขาย</h2>
       {isLoading ? (
-        <Skeleton className="h-8 w-48" />
+        <Skeleton data-testid="po-rating-loading" className="h-8 w-48" />
       ) : rating ? (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <StarRating value={rating.score} readOnly />
-            <span className="text-sm text-muted-foreground">({rating.score}/5)</span>
+            <span aria-hidden="true" className="text-sm text-muted-foreground">({rating.score}/5)</span>
           </div>
           <p className="text-sm">{rating.comment ?? 'ไม่มีความคิดเห็น'}</p>
           <p className="text-xs text-muted-foreground">{formatDate(rating.createdAt)}</p>

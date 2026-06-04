@@ -61,7 +61,7 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
               <Controller
                 control={control}
                 name="score"
-                render={({ field }) => <StarRating value={field.value} onChange={field.onChange} />}
+                render={({ field }) => <StarRating value={field.value} onChange={field.onChange} label="คะแนน" />}
               />
               {!watch('score') && (
                 <p className="text-sm text-muted-foreground">เลือกดาวเพื่อให้คะแนน</p>
