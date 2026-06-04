@@ -5,7 +5,9 @@ import type {
   POListParams,
   POListResponse,
   PurchaseOrder,
+  RateVendorPayload,
   UpdatePORequest,
+  VendorRating,
 } from './types'
 
 export const purchaseOrdersApi = {
@@ -35,4 +37,10 @@ export const purchaseOrdersApi = {
     api
       .get<GoodsReceiptSummary[]>(`/purchase-orders/${id}/goods-receipts`)
       .then((r) => r.data),
+
+  rate: (id: number, payload: RateVendorPayload) =>
+    api.post<VendorRating>(`/purchase-orders/${id}/ratings`, payload).then((r) => r.data),
+
+  getRating: (id: number) =>
+    api.get<VendorRating | null>(`/purchase-orders/${id}/rating`).then((r) => r.data),
 }

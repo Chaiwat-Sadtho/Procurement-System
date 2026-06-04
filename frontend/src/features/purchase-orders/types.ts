@@ -120,3 +120,21 @@ export interface CreatePORequest {
 // แก้ได้เฉพาะ expectedDeliveryDate/notes/items (prId/vendorId immutable).
 // Partial<Omit<...>> = { expectedDeliveryDate?, notes?, items? } = ตรง shape ของ UpdatePurchaseOrderDto เป๊ะ
 export type UpdatePORequest = Partial<Omit<CreatePORequest, 'prId' | 'vendorId'>>
+
+// Vendor rating ของ PO (GET /purchase-orders/:id/rating — VendorRating entity ดิบ
+// ไม่ load relation, null ถ้ายังไม่ rate). createdAt = Date serialized → ISO string.
+export interface VendorRating {
+  id: number
+  vendorId: number
+  poId: number
+  score: number
+  comment: string | null
+  ratedBy: number
+  createdAt: string
+}
+
+// POST /purchase-orders/:id/ratings body (RateVendorDto — score required, comment optional)
+export interface RateVendorPayload {
+  score: number
+  comment?: string
+}
