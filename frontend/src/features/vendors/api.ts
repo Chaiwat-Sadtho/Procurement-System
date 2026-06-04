@@ -1,5 +1,5 @@
 import api from '@/shared/lib/axios'
-import type { Vendor, VendorCategory, VendorListParams, VendorListResponse, VendorPayload } from './types'
+import type { Vendor, VendorCategory, VendorListParams, VendorListResponse, VendorPayload, VendorRatingsResponse } from './types'
 
 export const vendorsApi = {
   list: (params?: VendorListParams) =>
@@ -18,6 +18,9 @@ export const vendorsApi = {
 
   unblacklist: (id: number) =>
     api.delete<Vendor>(`/vendors/${id}/blacklist`).then((r) => r.data),
+
+  getRatings: (id: number, params: { page: number; limit: number }) =>
+    api.get<VendorRatingsResponse>(`/vendors/${id}/ratings`, { params }).then((r) => r.data),
 }
 
 export const vendorCategoriesApi = {

@@ -38,3 +38,17 @@ export interface VendorPayload {
   address: string | null
   categoryIds: number[]
 }
+
+// GET /vendors/:id/ratings — mapped history item (join po.poNumber + rater fullName)
+export interface VendorRatingHistoryItem {
+  id: number
+  vendorId: number
+  poId: number
+  purchaseOrder: { id: number; poNumber: string }
+  score: number
+  comment: string | null
+  ratedBy: { id: number; fullName: string }
+  createdAt: string
+}
+
+export type VendorRatingsResponse = PaginatedResponse<VendorRatingHistoryItem>
