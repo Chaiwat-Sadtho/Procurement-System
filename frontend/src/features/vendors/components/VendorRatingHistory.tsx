@@ -32,7 +32,7 @@ export function VendorRatingHistory({ vendorId }: VendorRatingHistoryProps) {
     <div className="space-y-2 mt-8">
       <h2 className="text-base font-semibold">ประวัติการให้คะแนน</h2>
       {isLoading ? (
-        <ListLoadingState rows={3} />
+        <ListLoadingState testId="vendor-rating-history-loading" rows={3} />
       ) : isError ? (
         <ListErrorState message={getApiErrorMessage(error, 'โหลดประวัติคะแนนไม่สำเร็จ')} onRetry={() => refetch()} />
       ) : (
@@ -55,7 +55,7 @@ export function VendorRatingHistory({ vendorId }: VendorRatingHistoryProps) {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <StarRating value={r.score} readOnly />
-                          <span className="text-xs text-muted-foreground">({r.score}/5)</span>
+                          <span className="text-xs text-muted-foreground" aria-hidden="true">({r.score}/5)</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{r.comment ?? '—'}</TableCell>

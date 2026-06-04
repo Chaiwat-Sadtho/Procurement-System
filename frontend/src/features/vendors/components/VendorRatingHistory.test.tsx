@@ -33,8 +33,32 @@ describe('VendorRatingHistory', () => {
     mockUseVendorRatings.mockReturnValue({ data: oneRow, isLoading: false, isError: false, refetch: vi.fn() })
     renderHistory()
     expect(screen.getByLabelText('คะแนน 4 จาก 5')).toBeInTheDocument()
+    expect(screen.getByText('(4/5)')).toBeInTheDocument()
+    expect(screen.getByText('ดี')).toBeInTheDocument()
     expect(screen.getByText('สมชาย ใจดี')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'PO-2026-0007' })).toHaveAttribute('href', '/purchase-orders/7')
+  })
+
+  it('renders every rating row, showing a dash for an empty comment', () => {
+    const rows = [
+      row,
+      { ...row, id: 2, score: 5, comment: null, poId: 8, purchaseOrder: { id: 8, poNumber: 'PO-2026-0008' } },
+    ]
+    mockUseVendorRatings.mockReturnValue({
+      data: { data: rows, meta: { page: 1, limit: 20, total: 2, totalPages: 1 } },
+      isLoading: false, isError: false, refetch: vi.fn(),
+    })
+    renderHistory()
+    expect(screen.getByText('(4/5)')).toBeInTheDocument()
+    expect(screen.getByText('(5/5)')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'PO-2026-0008' })).toBeInTheDocument()
+  })
+
+  it('shows the loading state while fetching', () => {
+    mockUseVendorRatings.mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() })
+    renderHistory()
+    expect(screen.getByTestId('vendor-rating-history-loading')).toBeInTheDocument()
   })
 
   it('shows the empty message when there are no ratings', () => {
@@ -63,5 +87,33 @@ describe('VendorRatingHistory', () => {
     await user.click(screen.getByRole('button', { name: 'ถัดไป' }))
     // หลังคลิก hook ถูกเรียกซ้ำด้วย page: 2
     expect(mockUseVendorRatings).toHaveBeenLastCalledWith(3, { page: 2, limit: 20 })
+  })
+
+  it('goes back a page when clicking prev', async () => {
+    const user = userEvent.setup()
+    mockUseVendorRatings.mockReturnValue({
+      data: { data: [row], meta: { page: 1, limit: 20, total: 25, totalPages: 3 } },
+      isLoading: false, isError: false, refetch: vi.fn(),
+    })
+    renderHistory()
+    // prev ถูก disable ตอน page 1 -> ต้องไปหน้า 2 ก่อนแล้วถอยกลับ
+    await user.click(screen.getByRole('button', { name: 'ถัดไป' }))
+    await user.click(screen.getByRole('button', { name: 'ก่อนหน้า' }))
+    expect(mockUseVendorRatings).toHaveBeenLastCalledWith(3, { page: 1, limit: 20 })
+  })
+
+  it('resets to page 1 when the page size changes', async () => {
+    const user = userEvent.setup()
+    mockUseVendorRatings.mockReturnValue({
+      data: { data: [row], meta: { page: 1, limit: 20, total: 100, totalPages: 5 } },
+      isLoading: false, isError: false, refetch: vi.fn(),
+    })
+    renderHistory()
+    await user.click(screen.getByRole('button', { name: 'ถัดไป' })) // page -> 2
+    expect(mockUseVendorRatings).toHaveBeenLastCalledWith(3, { page: 2, limit: 20 })
+    await user.click(screen.getByLabelText('จำนวนแถวต่อหน้า'))
+    await user.click(await screen.findByRole('option', { name: '50' }))
+    // เปลี่ยน limit ต้องเด้ง page กลับ 1
+    expect(mockUseVendorRatings).toHaveBeenLastCalledWith(3, { page: 1, limit: 50 })
   })
 })
