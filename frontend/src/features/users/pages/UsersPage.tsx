@@ -93,9 +93,11 @@ export function UsersPage() {
             </Table>
           </div>
 
-          <p className="mt-3 text-sm text-muted-foreground" role="status">
-            ทั้งหมด {rows.length} คน
-          </p>
+          {rows.length > 0 && (
+            <p className="mt-3 text-sm text-muted-foreground" role="status">
+              ทั้งหมด {rows.length} คน
+            </p>
+          )}
         </>
       )}
     </div>
