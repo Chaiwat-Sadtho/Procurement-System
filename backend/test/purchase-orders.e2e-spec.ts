@@ -245,6 +245,14 @@ describe('PurchaseOrders + GRN (e2e)', () => {
 
   // --- Vendor Rating ---
 
+  it('GET /api/v1/purchase-orders/:id/rating — returns empty when not yet rated', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(res.body).toEqual({});
+  });
+
   it('POST /api/v1/purchase-orders/:id/ratings — rates vendor after completion', async () => {
     const res = await request(app.getHttpServer())
       .post(`/api/v1/purchase-orders/${poId}/ratings`)
@@ -281,6 +289,37 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ score: 5 })
       .expect(409);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — returns the rating once rated', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(res.body.poId).toBe(poId);
+    expect(res.body.score).toBe(4);
+    expect(res.body.vendorId).toBe(vendorId);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — 404 for non-existent PO', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders/999999/rating')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(404);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — manager allowed (200)', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
   });
 
   // --- Queries ---

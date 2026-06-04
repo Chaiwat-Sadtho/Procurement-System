@@ -376,4 +376,10 @@ export class PurchaseOrdersService {
 
     return savedRating;
   }
+
+  async findRatingForPo(poId: number): Promise<VendorRating | null> {
+    const po = await this.poRepository.findOne({ where: { id: poId } });
+    if (!po) throw new NotFoundException(`Purchase Order ${poId} not found`);
+    return this.ratingRepository.findOne({ where: { poId } });
+  }
 }
