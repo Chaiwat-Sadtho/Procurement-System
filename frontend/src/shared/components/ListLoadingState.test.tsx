@@ -16,4 +16,9 @@ describe('ListLoadingState', () => {
     const status = screen.getByRole('status')
     expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(3)
   })
+
+  it('renders 5 skeleton rows by default', () => {
+    render(<ListLoadingState />)
+    expect(screen.getByRole('status').querySelectorAll('[aria-hidden="true"]')).toHaveLength(5)
+  })
 })

@@ -68,4 +68,12 @@ describe('ListPaginationFooter', () => {
     expect(onPrev).toHaveBeenCalledOnce()
     expect(onNext).toHaveBeenCalledOnce()
   })
+
+  it('wires onLimitChange (as a number) to the page-size selector', async () => {
+    const onLimitChange = vi.fn()
+    render(<ListPaginationFooter {...baseProps} summary="" onLimitChange={onLimitChange} />)
+    await userEvent.click(screen.getByLabelText('จำนวนแถวต่อหน้า'))
+    await userEvent.click(await screen.findByRole('option', { name: '20' }))
+    expect(onLimitChange).toHaveBeenCalledWith(20)
+  })
 })

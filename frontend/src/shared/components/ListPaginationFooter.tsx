@@ -32,7 +32,7 @@ export function ListPaginationFooter({
 }: ListPaginationFooterProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-      <span role="status" className="text-sm text-muted-foreground">
+      <span role="status" aria-live="polite" className="text-sm text-muted-foreground">
         {summary}
       </span>
       <div className="flex items-center gap-4">

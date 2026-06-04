@@ -106,13 +106,16 @@ describe('POListPage', () => {
   it('shows the loading skeleton', () => {
     setup({ data: undefined, isLoading: true })
     renderPage()
-    expect(screen.getByTestId('po-list-loading')).toBeInTheDocument()
+    const loading = screen.getByTestId('po-list-loading')
+    expect(loading).toBeInTheDocument()
+    expect(loading).toHaveAttribute('aria-busy', 'true')
   })
 
   it('shows the empty row when data is empty', () => {
     setup({ data: listData([], { total: 0, totalPages: 0 }) })
     renderPage()
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
+    expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toHaveAttribute('role', 'status')
   })
 
   it('renders the table (table-fixed + bg-table-header) with PO fields', () => {
@@ -146,6 +149,7 @@ describe('POListPage', () => {
     const { refetch } = setup({ data: undefined, isError: true })
     renderPage()
     expect(screen.getByText('โหลดข้อมูลใบสั่งซื้อไม่สำเร็จ')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('โหลดข้อมูลใบสั่งซื้อไม่สำเร็จ')
     await userEvent.click(screen.getByRole('button', { name: /ลองใหม่/i }))
     expect(refetch).toHaveBeenCalled()
   })

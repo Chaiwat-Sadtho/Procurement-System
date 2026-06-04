@@ -193,7 +193,9 @@ describe('PRListPage', () => {
     renderPage()
     await searchDateRange()
 
-    expect(screen.getByTestId('pr-list-loading')).toBeInTheDocument()
+    const loading = screen.getByTestId('pr-list-loading')
+    expect(loading).toBeInTheDocument()
+    expect(loading).toHaveAttribute('aria-busy', 'true')
   })
 
   it('renders table with bg-table-header + table-fixed when data is loaded', async () => {

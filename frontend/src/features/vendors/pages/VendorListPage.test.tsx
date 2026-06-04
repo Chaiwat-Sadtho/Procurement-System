@@ -91,13 +91,16 @@ describe('VendorListPage', () => {
   it('shows the loading skeleton', () => {
     setup({ data: undefined, isLoading: true })
     renderPage()
-    expect(screen.getByTestId('vendor-list-loading')).toBeInTheDocument()
+    const loading = screen.getByTestId('vendor-list-loading')
+    expect(loading).toBeInTheDocument()
+    expect(loading).toHaveAttribute('aria-busy', 'true')
   })
 
   it('shows the empty row inside the table when data is empty', () => {
     setup({ data: listData([], { total: 0, totalPages: 0 }) })
     renderPage()
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
+    expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toHaveAttribute('role', 'status')
   })
 
   it('shows the empty row defensively when data is undefined (not loading, not error)', () => {
@@ -169,6 +172,7 @@ describe('VendorListPage', () => {
     const { refetch } = setup({ data: undefined, isError: true })
     renderPage()
     expect(screen.getByText('โหลดข้อมูลผู้ขายไม่สำเร็จ')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('โหลดข้อมูลผู้ขายไม่สำเร็จ')
     await userEvent.click(screen.getByRole('button', { name: /ลองใหม่/i }))
     expect(refetch).toHaveBeenCalled()
   })
