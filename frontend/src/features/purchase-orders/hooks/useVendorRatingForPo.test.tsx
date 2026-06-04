@@ -32,4 +32,15 @@ describe('useVendorRatingForPo', () => {
     renderHook(() => useVendorRatingForPo(7, { enabled: false }), { wrapper })
     expect(purchaseOrdersApi.getRating).not.toHaveBeenCalled()
   })
+
+  it('does not fetch when poId is not positive (poId > 0 gate)', () => {
+    renderHook(() => useVendorRatingForPo(0, { enabled: true }), { wrapper })
+    expect(purchaseOrdersApi.getRating).not.toHaveBeenCalled()
+  })
+
+  it('fetches by default when no options are passed', async () => {
+    vi.mocked(purchaseOrdersApi.getRating).mockResolvedValue(fakeRating)
+    const { result } = renderHook(() => useVendorRatingForPo(7), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual(fakeRating))
+  })
 })

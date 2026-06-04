@@ -34,10 +34,11 @@ describe('useRateVendor', () => {
     await result.current.mutateAsync({ score: 4 })
 
     expect(purchaseOrdersApi.rate).toHaveBeenCalledWith(7, { score: 4 })
-    await waitFor(() => {
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['vendor', 3] })
-    })
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(2))
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['vendor', 3] })
+    // success must NOT touch the narrow rating sub-key (that is the error path)
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['purchase-order', 7, 'rating'] })
   })
 
   it('on error (409 already-rated race) invalidates the rating sub-key to resync read-only', async () => {
@@ -51,5 +52,9 @@ describe('useRateVendor', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7, 'rating'] }),
     )
+    // error path is narrow ONLY: never refetch the whole PO or vendor on a failed rate
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['vendor', 3] })
   })
 })
