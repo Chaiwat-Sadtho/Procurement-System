@@ -40,4 +40,24 @@ describe('Switch', () => {
     await user.click(sw)
     expect(onCheckedChange).not.toHaveBeenCalled()
   })
+
+  it('disabled also blocks keyboard activation (Space/Enter)', async () => {
+    // a native disabled button is not focusable, so Space/Enter never reach it.
+    // pins the native-disabled choice: switching to aria-disabled would make the
+    // button focusable again and re-enable keyboard activation, failing this test.
+    const user = userEvent.setup()
+    const onCheckedChange = vi.fn()
+    render(<Switch checked={false} disabled onCheckedChange={onCheckedChange} aria-label="x" />)
+    screen.getByRole('switch').focus()
+    await user.keyboard('{Enter}')
+    await user.keyboard(' ')
+    expect(onCheckedChange).not.toHaveBeenCalled()
+  })
+
+  it('renders and clicks safely without an onCheckedChange callback', async () => {
+    // onCheckedChange is optional; the optional-chaining call must not throw.
+    const user = userEvent.setup()
+    render(<Switch checked={false} aria-label="x" />)
+    await expect(user.click(screen.getByRole('switch'))).resolves.toBeUndefined()
+  })
 })
