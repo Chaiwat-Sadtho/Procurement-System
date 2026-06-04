@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -13,6 +12,10 @@ import {
   TableRow,
 } from '@/shared/components/ui/table'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { ListLoadingState } from '@/shared/components/ListLoadingState'
+import { ListErrorState } from '@/shared/components/ListErrorState'
+import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { getRowIndex } from '@/shared/lib/utils'
 import { VendorBlacklistBadge } from '../components/VendorBlacklistBadge'
@@ -22,7 +25,6 @@ import {
 } from '../components/VendorListFilterForm'
 import { useVendors } from '../hooks/useVendors'
 import { useVendorCategories } from '../hooks/useVendorCategories'
-import { PageSizeSelect } from '@/shared/components/PageSizeSelect'
 import { formatRating, toCategoryIdParam, toIsBlacklistedParam } from '../lib/vendorFilters'
 
 const DEFAULT_FILTERS: VendorListFilterValues = {
@@ -84,18 +86,9 @@ export function VendorListPage() {
       />
 
       {isError ? (
-        <div className="text-center py-12 space-y-3">
-          <p className="text-muted-foreground">โหลดข้อมูลผู้ขายไม่สำเร็จ</p>
-          <Button variant="outline" onClick={() => refetch()}>
-            ลองใหม่
-          </Button>
-        </div>
+        <ListErrorState message="โหลดข้อมูลผู้ขายไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (
-        <div data-testid="vendor-list-loading" className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
+        <ListLoadingState testId="vendor-list-loading" />
       ) : (
         <>
           <div className="rounded-md border">
@@ -113,11 +106,7 @@ export function VendorListPage() {
               </TableHeader>
               <TableBody>
                 {!data || data.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      ไม่พบข้อมูลตามเงื่อนไข
-                    </TableCell>
-                  </TableRow>
+                  <ListEmptyRow colSpan={7} />
                 ) : (
                   data.data.map((v, i) => (
                     <TableRow
@@ -170,29 +159,15 @@ export function VendorListPage() {
           </div>
 
           {data && data.meta.total > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-              <span className="text-sm text-muted-foreground">
-                หน้า {data.meta.page} จาก {data.meta.totalPages} ({data.meta.total} รายการ)
-              </span>
-              <div className="flex items-center gap-4">
-                <PageSizeSelect value={limit} onChange={setLimit} />
-                {data.meta.totalPages > 1 && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
-                      ก่อนหน้า
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={nextPage}
-                      disabled={page >= data.meta.totalPages}
-                    >
-                      ถัดไป
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ListPaginationFooter
+              summary={`หน้า ${data.meta.page} จาก ${data.meta.totalPages} (${data.meta.total} รายการ)`}
+              page={page}
+              totalPages={data.meta.totalPages}
+              limit={limit}
+              onPrev={prevPage}
+              onNext={nextPage}
+              onLimitChange={setLimit}
+            />
           )}
         </>
       )}

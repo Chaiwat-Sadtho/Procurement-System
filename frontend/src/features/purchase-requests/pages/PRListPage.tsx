@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
-import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -13,7 +12,9 @@ import {
 } from '@/shared/components/ui/table'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { PageSizeSelect } from '@/shared/components/PageSizeSelect'
+import { ListLoadingState } from '@/shared/components/ListLoadingState'
+import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
@@ -115,11 +116,7 @@ export function PRListPage() {
           กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล
         </p>
       ) : isLoading ? (
-        <div data-testid="pr-list-loading" className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
+        <ListLoadingState testId="pr-list-loading" />
       ) : (
         <>
           <div className="rounded-md border">
@@ -138,11 +135,7 @@ export function PRListPage() {
               </TableHeader>
               <TableBody>
                 {data?.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      ไม่พบข้อมูลตามเงื่อนไข
-                    </TableCell>
-                  </TableRow>
+                  <ListEmptyRow colSpan={8} />
                 ) : (
                   data?.data.map((pr, i) => (
                     <TableRow key={pr.id}>
@@ -190,29 +183,17 @@ export function PRListPage() {
           </div>
 
           {data && data.meta.total > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-              <span className="text-sm text-muted-foreground">
-                Page {data.meta.page} of {data.meta.totalPages} ({data.meta.total} total)
-              </span>
-              <div className="flex items-center gap-4">
-                <PageSizeSelect value={limit} onChange={setLimit} />
-                {data.meta.totalPages > 1 && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={prevPage} disabled={page <= 1}>
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={nextPage}
-                      disabled={page >= data.meta.totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ListPaginationFooter
+              summary={`Page ${data.meta.page} of ${data.meta.totalPages} (${data.meta.total} total)`}
+              page={page}
+              totalPages={data.meta.totalPages}
+              limit={limit}
+              onPrev={prevPage}
+              onNext={nextPage}
+              onLimitChange={setLimit}
+              prevLabel="Previous"
+              nextLabel="Next"
+            />
           )}
         </>
       )}
