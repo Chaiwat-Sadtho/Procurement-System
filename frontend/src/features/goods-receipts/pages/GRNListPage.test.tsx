@@ -144,17 +144,19 @@ describe('GRNListPage', () => {
   it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
+    // click a NON-link cell (PO number); the GRN-number cell is the link, which stops propagation
     await userEvent.click(screen.getByText('PO-2026-0005'))
     expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
   })
 
-  it('exposes the GRN number as a real link to the detail route (keyboard + new-tab path)', () => {
+  it('exposes the GRN number as a real link, and clicking it does not double-fire the row onClick', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
-    expect(screen.getByRole('link', { name: 'GRN-2026-0001' })).toHaveAttribute(
-      'href',
-      '/goods-receipts/1',
-    )
+    const link = screen.getByRole('link', { name: 'GRN-2026-0001' })
+    expect(link).toHaveAttribute('href', '/goods-receipts/1')
+    // stopPropagation guard: the link handles nav; the row onClick must not also fire
+    await userEvent.click(link)
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {

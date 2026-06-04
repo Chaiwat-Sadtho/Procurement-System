@@ -155,14 +155,19 @@ describe('VendorListPage', () => {
   it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockVendor]) })
     renderPage()
+    // click a NON-link cell (taxId); the name cell is the link, which stops propagation
     await userEvent.click(screen.getByText('0105551234567'))
     expect(mockNavigate).toHaveBeenCalledWith('/vendors/1')
   })
 
-  it('exposes the name as a real link to the detail route (keyboard + new-tab path)', () => {
+  it('exposes the name as a real link, and clicking it does not double-fire the row onClick', async () => {
     setup({ data: listData([mockVendor]) })
     renderPage()
-    expect(screen.getByRole('link', { name: 'ACME Corp' })).toHaveAttribute('href', '/vendors/1')
+    const link = screen.getByRole('link', { name: 'ACME Corp' })
+    expect(link).toHaveAttribute('href', '/vendors/1')
+    // stopPropagation guard: the link handles nav; the row onClick must not also fire
+    await userEvent.click(link)
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {

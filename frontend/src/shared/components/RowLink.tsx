@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/shared/lib/utils'
 
 const rowLinkClass =
-  'rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
 
 interface RowLinkProps {
   to: string

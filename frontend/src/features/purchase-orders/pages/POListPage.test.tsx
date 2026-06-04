@@ -132,17 +132,19 @@ describe('POListPage', () => {
   it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
+    // click a NON-link cell (vendor name); the id cell is the link, which stops propagation
     await userEvent.click(screen.getByText('ACME Corp'))
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-orders/1')
   })
 
-  it('exposes the id as a real link to the detail route (keyboard + new-tab path)', () => {
+  it('exposes the id as a real link, and clicking it does not double-fire the row onClick', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
-    expect(screen.getByRole('link', { name: 'PO-2026-0001' })).toHaveAttribute(
-      'href',
-      '/purchase-orders/1',
-    )
+    const link = screen.getByRole('link', { name: 'PO-2026-0001' })
+    expect(link).toHaveAttribute('href', '/purchase-orders/1')
+    // stopPropagation guard: the link handles nav; the row onClick must not also fire
+    await userEvent.click(link)
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {
