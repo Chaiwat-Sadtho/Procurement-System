@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
+import { GrnStatusBadge } from '@/features/goods-receipts/components/GrnStatusBadge'
 import { formatDate } from '@/shared/lib/utils'
 import type { GoodsReceiptSummary } from '../types'
 
@@ -35,7 +36,9 @@ export function POGrnHistory({ grns }: POGrnHistoryProps) {
                 <TableRow key={grn.id}>
                   <TableCell className="font-mono">{grn.grnNumber}</TableCell>
                   <TableCell>{formatDate(grn.receivedDate)}</TableCell>
-                  <TableCell>{grn.status}</TableCell>
+                  <TableCell>
+                    <GrnStatusBadge status={grn.status} />
+                  </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
                     {grn.items.length}
                   </TableCell>

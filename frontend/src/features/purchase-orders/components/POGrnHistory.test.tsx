@@ -47,6 +47,14 @@ describe('POGrnHistory', () => {
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
+  it('renders Thai status badges instead of raw English status', () => {
+    render(<POGrnHistory grns={grns} />)
+    expect(screen.getByText('รับครบถ้วน')).toBeInTheDocument()
+    expect(screen.getByText('รับไม่ครบ')).toBeInTheDocument()
+    expect(screen.queryByText('complete')).not.toBeInTheDocument()
+    expect(screen.queryByText('partial')).not.toBeInTheDocument()
+  })
+
   it('does not render any links (read-only until GRN spec)', () => {
     render(<POGrnHistory grns={grns} />)
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
