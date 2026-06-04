@@ -49,4 +49,20 @@ describe('GRNItemsTable', () => {
     expect(thead).toHaveClass('bg-table-header')
     expect(thead).toHaveClass('text-table-header-foreground')
   })
+
+  it('falls back to a dash for item name and ordered qty when poItem is absent', () => {
+    const orphan: GoodsReceiptItem[] = [
+      { id: 399, grnId: 1, poItemId: 99, poItem: undefined, receivedQuantity: '3', condition: 'good' },
+    ]
+    render(<GRNItemsTable items={orphan} />)
+    // both the name cell (`poItem?.itemName ?? '-'`) and the ordered-qty cell (`poItem ? ... : '-'`) fall back
+    expect(screen.getAllByText('-')).toHaveLength(2)
+    // received qty still renders from receivedQuantity even without poItem
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('renders only the header with no body rows when items is empty', () => {
+    const { container } = render(<GRNItemsTable items={[]} />)
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(0)
+  })
 })

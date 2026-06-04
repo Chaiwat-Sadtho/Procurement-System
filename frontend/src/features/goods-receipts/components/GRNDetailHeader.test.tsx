@@ -61,4 +61,15 @@ describe('GRNDetailHeader', () => {
     renderHeader({ notes: 'ของครบตามสั่ง' })
     expect(screen.getByText('ของครบตามสั่ง')).toBeInTheDocument()
   })
+
+  it('falls back to #poId for the PO link when purchaseOrder is absent', () => {
+    renderHeader({ purchaseOrder: undefined })
+    const poLink = screen.getByRole('link', { name: '#7' })
+    expect(poLink).toHaveAttribute('href', '/purchase-orders/7')
+  })
+
+  it('omits the notes paragraph when notes is null', () => {
+    renderHeader({ notes: null })
+    expect(screen.queryByText('ของครบตามสั่ง')).not.toBeInTheDocument()
+  })
 })
