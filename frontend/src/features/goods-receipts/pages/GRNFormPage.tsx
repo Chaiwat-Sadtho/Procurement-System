@@ -17,7 +17,7 @@ export function GRNFormPage() {
   const { data: pos, isLoading: posLoading } = useReceivablePOs()
   const poList = pos ?? []
 
-  const { data: po, isLoading: poLoading } = usePurchaseOrder(selectedPoId)
+  const { data: po, isLoading: poLoading, isError: poError } = usePurchaseOrder(selectedPoId)
 
   const poOptions = poList.map((p) => ({
     value: String(p.id),
@@ -46,9 +46,15 @@ export function GRNFormPage() {
         </div>
 
         {selectedPoId > 0 && poLoading && (
-          <div className="flex items-center justify-center py-16">
+          <div data-testid="grn-po-loading" className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
           </div>
+        )}
+
+        {selectedPoId > 0 && poError && (
+          <p role="alert" className="py-4 text-sm text-destructive dark:text-red-400">
+            โหลดใบสั่งซื้อไม่สำเร็จ กรุณาเลือกใบสั่งซื้ออีกครั้ง
+          </p>
         )}
 
         {po && (
