@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { GoodsReceiptListItem, GRNListResponse } from '../types'
@@ -14,12 +14,28 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../hooks/useGoodsReceipts', () => ({ useGoodsReceipts: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('../hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
-// keep this page test focused on the page, not filter internals (mirror POListPage test)
+// keep this page test focused on the page, not filter internals (mirror POListPage test).
+// mockFilter.values lets a test drive a specific (non-'all') submission so the page's
+// value->queryParam mapping (string id -> Number, 'all' -> undefined) is actually exercised.
+const mockFilter = vi.hoisted(() => ({
+  values: { status: 'all', poId: 'all' } as { status: string; poId: string },
+}))
 vi.mock('../components/GRNListFilterForm', () => ({
-  GRNListFilterForm: ({ onSubmit }: { onSubmit: (v: unknown) => void }) => (
-    <button type="button" onClick={() => onSubmit({ status: 'all', poId: 'all' })}>
-      ค้นหา
-    </button>
+  GRNListFilterForm: ({
+    onSubmit,
+    onClear,
+  }: {
+    onSubmit: (v: unknown) => void
+    onClear?: () => void
+  }) => (
+    <div>
+      <button type="button" onClick={() => onSubmit(mockFilter.values)}>
+        ค้นหา
+      </button>
+      <button type="button" onClick={() => onClear?.()}>
+        ล้างตัวกรอง
+      </button>
+    </div>
   ),
 }))
 
@@ -69,9 +85,9 @@ function setup({
   return { refetch }
 }
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ['/']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <GRNListPage />
     </MemoryRouter>,
   )
@@ -81,7 +97,10 @@ const poUser = { id: 9, role: 'procurement_officer' } as User
 const managerUser = { id: 2, role: 'manager' } as User
 
 describe('GRNListPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFilter.values = { status: 'all', poId: 'all' }
+  })
 
   it('fetches immediately on mount with page 1, limit 5', () => {
     setup({ data: undefined })
@@ -111,7 +130,9 @@ describe('GRNListPage', () => {
     expect(screen.getByText('GRN-2026-0001')).toBeInTheDocument()
     expect(screen.getByText('PO-2026-0005')).toBeInTheDocument()
     expect(screen.getByText('รับครบถ้วน')).toBeInTheDocument() // GrnStatusBadge complete
-    expect(screen.getByText('2')).toBeInTheDocument() // items.length
+    // scope the item-count assertion to the row so it can never pick up a stray '2'
+    const grnRow = screen.getByText('GRN-2026-0001').closest('tr')!
+    expect(within(grnRow).getByText('2')).toBeInTheDocument() // items.length
     const table = screen.getByRole('table')
     expect(table).toHaveClass('table-fixed')
     expect(table.querySelector('thead')).toHaveClass('bg-table-header')
@@ -177,11 +198,51 @@ describe('GRNListPage', () => {
     expect(screen.queryByRole('button', { name: /ก่อนหน้า/i })).not.toBeInTheDocument()
   })
 
-  it('refetches on filter submit and keeps page reset to 1', async () => {
+  it('resets to page 1 on filter submit (starts on page 2 so the reset is observable)', async () => {
     setup({ data: listData([mockGrn]) })
-    renderPage()
+    renderPage(['/?page=2&limit=5'])
+    // sanity: the page genuinely started on 2 — otherwise asserting a reset to 1 is vacuous
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][0]).toEqual(
+      expect.objectContaining({ page: 2 }),
+    )
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const lastCall = vi.mocked(useGoodsReceipts).mock.calls.at(-1)!
     expect(lastCall[0]).toEqual(expect.objectContaining({ page: 1 }))
+  })
+
+  it('maps non-all filter values into the query (poId -> number, status passthrough)', async () => {
+    setup({ data: listData([mockGrn]) })
+    mockFilter.values = { status: 'complete', poId: '5' }
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    const lastCall = vi.mocked(useGoodsReceipts).mock.calls.at(-1)!
+    expect(lastCall[0]).toEqual(
+      expect.objectContaining({ status: 'complete', poId: 5, page: 1 }),
+    )
+  })
+
+  it('clears filters back to undefined when the clear button is pressed', async () => {
+    setup({ data: listData([mockGrn]) })
+    mockFilter.values = { status: 'complete', poId: '5' }
+    renderPage()
+    // apply a real filter first so the reset is observable (non-vacuous)
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    expect(vi.mocked(useGoodsReceipts).mock.calls.at(-1)![0]).toEqual(
+      expect.objectContaining({ status: 'complete', poId: 5 }),
+    )
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    const afterClear = vi.mocked(useGoodsReceipts).mock.calls.at(-1)!
+    expect(afterClear[0]?.status).toBeUndefined()
+    expect(afterClear[0]?.poId).toBeUndefined()
+    expect(afterClear[0]).toEqual(expect.objectContaining({ page: 1 }))
+  })
+
+  it('navigates when Space is pressed on a focused row (keyboard a11y)', async () => {
+    setup({ data: listData([mockGrn]) })
+    renderPage()
+    const row = screen.getByText('GRN-2026-0001').closest('tr')!
+    row.focus()
+    await userEvent.keyboard(' ')
+    expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
   })
 })
