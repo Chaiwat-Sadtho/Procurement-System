@@ -4,6 +4,7 @@ import { router } from './router'
 import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
 import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
 
 // router config is a plain object tree; the protected children live under route[1] ('/')
 type RouteLike = { path?: string; element?: unknown; children?: RouteLike[] }
@@ -41,5 +42,14 @@ describe('router — goods-receipts routes are wired (no more ComingSoon)', () =
     expect(innerPageType(route.element)).toBe(GRNDetailPage)
     const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
     expect(guardProps.allowedRoles).toEqual(['manager', 'procurement_officer'])
+  })
+})
+
+describe('router — users route is wired (no more ComingSoon)', () => {
+  it('users → UsersPage, guarded by procurement_officer only', () => {
+    const route = findRoute('users')!
+    expect(innerPageType(route.element)).toBe(UsersPage)
+    const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
+    expect(guardProps.allowedRoles).toEqual(['procurement_officer'])
   })
 })

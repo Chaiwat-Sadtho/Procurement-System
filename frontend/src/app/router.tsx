@@ -14,6 +14,7 @@ import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
 import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
 import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -176,7 +177,7 @@ export const router = createBrowserRouter([
         path: 'users',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="Users" />
+            <UsersPage />
           </ProtectedRoute>
         ),
       },
