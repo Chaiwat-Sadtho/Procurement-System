@@ -15,6 +15,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { RowLink } from '@/shared/components/RowLink'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatDate, getRowIndex } from '@/shared/lib/utils'
 import { GrnStatusBadge } from '../components/GrnStatusBadge'
@@ -106,22 +107,14 @@ export function GRNListPage() {
                   data.data.map((grn, i) => (
                     <TableRow
                       key={grn.id}
-                      tabIndex={0}
-                      role="button"
                       onClick={() => navigate(`/goods-receipts/${grn.id}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          navigate(`/goods-receipts/${grn.id}`)
-                        }
-                      }}
-                      className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      className="cursor-pointer hover:bg-muted/50"
                     >
                       <TableCell className="text-center">
                         {getRowIndex(displayPage, displayLimit, i)}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums truncate">
-                        {grn.grnNumber}
+                        <RowLink to={`/goods-receipts/${grn.id}`}>{grn.grnNumber}</RowLink>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(grn.receivedDate)}

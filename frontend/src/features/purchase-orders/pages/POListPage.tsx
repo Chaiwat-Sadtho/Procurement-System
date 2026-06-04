@@ -15,6 +15,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { RowLink } from '@/shared/components/RowLink'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { POStatusBadge } from '../components/POStatusBadge'
@@ -109,22 +110,14 @@ export function POListPage() {
                   data.data.map((po, i) => (
                     <TableRow
                       key={po.id}
-                      tabIndex={0}
-                      role="button"
                       onClick={() => navigate(`/purchase-orders/${po.id}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          navigate(`/purchase-orders/${po.id}`)
-                        }
-                      }}
-                      className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      className="cursor-pointer hover:bg-muted/50"
                     >
                       <TableCell className="text-center">
                         {getRowIndex(displayPage, displayLimit, i)}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums truncate">
-                        {po.poNumber}
+                        <RowLink to={`/purchase-orders/${po.id}`}>{po.poNumber}</RowLink>
                       </TableCell>
                       <TableCell className="font-mono tabular-nums truncate">
                         {po.purchaseRequest?.prNumber ?? '—'}

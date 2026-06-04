@@ -129,20 +129,20 @@ describe('POListPage', () => {
     expect(table.querySelector('thead')).toHaveClass('bg-table-header')
   })
 
-  it('navigates to the detail route when a row is clicked', async () => {
+  it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
-    await userEvent.click(screen.getByText('PO-2026-0001'))
+    await userEvent.click(screen.getByText('ACME Corp'))
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-orders/1')
   })
 
-  it('navigates when Enter is pressed on a focused row (keyboard a11y)', async () => {
+  it('exposes the id as a real link to the detail route (keyboard + new-tab path)', () => {
     setup({ data: listData([mockPO]) })
     renderPage()
-    const row = screen.getByText('PO-2026-0001').closest('tr')!
-    row.focus()
-    await userEvent.keyboard('{Enter}')
-    expect(mockNavigate).toHaveBeenCalledWith('/purchase-orders/1')
+    expect(screen.getByRole('link', { name: 'PO-2026-0001' })).toHaveAttribute(
+      'href',
+      '/purchase-orders/1',
+    )
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {

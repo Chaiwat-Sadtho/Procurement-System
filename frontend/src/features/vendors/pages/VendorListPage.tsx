@@ -16,6 +16,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { RowLink } from '@/shared/components/RowLink'
 import { usePagination } from '@/shared/hooks/usePagination'
 import { getRowIndex } from '@/shared/lib/utils'
 import { VendorBlacklistBadge } from '../components/VendorBlacklistBadge'
@@ -111,21 +112,15 @@ export function VendorListPage() {
                   data.data.map((v, i) => (
                     <TableRow
                       key={v.id}
-                      tabIndex={0}
-                      role="button"
                       onClick={() => navigate(`/vendors/${v.id}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          navigate(`/vendors/${v.id}`)
-                        }
-                      }}
-                      className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      className="cursor-pointer hover:bg-muted/50"
                     >
                       <TableCell className="text-center">
                         {getRowIndex(displayPage, displayLimit, i)}
                       </TableCell>
-                      <TableCell className="font-medium truncate">{v.name}</TableCell>
+                      <TableCell className="font-medium truncate">
+                        <RowLink to={`/vendors/${v.id}`}>{v.name}</RowLink>
+                      </TableCell>
                       <TableCell className="font-mono tabular-nums">{v.taxId ?? '—'}</TableCell>
                       <TableCell>
                         {v.categories.length === 0 ? (

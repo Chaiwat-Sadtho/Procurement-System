@@ -141,20 +141,20 @@ describe('GRNListPage', () => {
     expect(table.querySelector('thead')).toHaveClass('bg-table-header')
   })
 
-  it('navigates to the detail route when a row is clicked', async () => {
+  it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
-    await userEvent.click(screen.getByText('GRN-2026-0001'))
+    await userEvent.click(screen.getByText('PO-2026-0005'))
     expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
   })
 
-  it('navigates when Enter is pressed on a focused row (keyboard a11y)', async () => {
+  it('exposes the GRN number as a real link to the detail route (keyboard + new-tab path)', () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
-    const row = screen.getByText('GRN-2026-0001').closest('tr')!
-    row.focus()
-    await userEvent.keyboard('{Enter}')
-    expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
+    expect(screen.getByRole('link', { name: 'GRN-2026-0001' })).toHaveAttribute(
+      'href',
+      '/goods-receipts/1',
+    )
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {
@@ -239,14 +239,5 @@ describe('GRNListPage', () => {
     expect(afterClear[0]?.status).toBeUndefined()
     expect(afterClear[0]?.poId).toBeUndefined()
     expect(afterClear[0]).toEqual(expect.objectContaining({ page: 1 }))
-  })
-
-  it('navigates when Space is pressed on a focused row (keyboard a11y)', async () => {
-    setup({ data: listData([mockGrn]) })
-    renderPage()
-    const row = screen.getByText('GRN-2026-0001').closest('tr')!
-    row.focus()
-    await userEvent.keyboard(' ')
-    expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
   })
 })

@@ -152,20 +152,17 @@ describe('VendorListPage', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3)
   })
 
-  it('navigates to the detail route when a row is clicked', async () => {
+  it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockVendor]) })
     renderPage()
-    await userEvent.click(screen.getByText('ACME Corp'))
+    await userEvent.click(screen.getByText('0105551234567'))
     expect(mockNavigate).toHaveBeenCalledWith('/vendors/1')
   })
 
-  it('navigates when Enter is pressed on a focused row (keyboard a11y)', async () => {
+  it('exposes the name as a real link to the detail route (keyboard + new-tab path)', () => {
     setup({ data: listData([mockVendor]) })
     renderPage()
-    const row = screen.getByText('ACME Corp').closest('tr')!
-    row.focus()
-    await userEvent.keyboard('{Enter}')
-    expect(mockNavigate).toHaveBeenCalledWith('/vendors/1')
+    expect(screen.getByRole('link', { name: 'ACME Corp' })).toHaveAttribute('href', '/vendors/1')
   })
 
   it('shows the error box with a retry button that calls refetch', async () => {
