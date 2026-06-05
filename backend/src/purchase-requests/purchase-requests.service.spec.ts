@@ -186,7 +186,6 @@ describe('PurchaseRequestsService', () => {
   describe('submit', () => {
     it('should transition draft PR to submitted', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr });
-      mockPrRepo.save.mockResolvedValue({ ...mockDraftPr, status: PrStatus.SUBMITTED });
 
       const result = await service.submit(1, 1);
       expect(result.status).toBe(PrStatus.SUBMITTED);
@@ -264,11 +263,6 @@ describe('PurchaseRequestsService', () => {
     it('should reject a submitted PR with reason', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
-      mockPrRepo.save.mockResolvedValue({
-        ...mockSubmittedPr,
-        status: PrStatus.REJECTED,
-        rejectReason: 'No budget',
-      });
 
       const result = await service.reject(1, 2, { reason: 'No budget' });
       expect(result.status).toBe(PrStatus.REJECTED);

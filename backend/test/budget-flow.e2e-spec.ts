@@ -12,12 +12,13 @@ import { Budget } from '../src/budgets/entities/budget.entity';
 // budget rows, so budget assertions are not polluted by previous runs. afterAll only closes
 // the app — no table wipes.
 
-// Audit logs and notifications are written fire-and-forget (`void ...log()`) AFTER the
-// transaction commits — see purchase-requests.service.approve() / goods-receipts.service —
-// so they may not be persisted yet when the HTTP response returns. Poll the read endpoint
-// until the expected row appears instead of reading once and racing the async write
-// (condition-based waiting; the budget summary reads stay single-shot because budget rows
-// are updated inside the awaited transaction and are never eventually-consistent).
+// Notifications are written fire-and-forget (`void ...send()`) AFTER the transaction commits —
+// see purchase-requests.service / goods-receipts.service — so they may not be persisted yet when
+// the HTTP response returns. Poll the read endpoint until the expected row appears instead of
+// reading once and racing the async write (condition-based waiting). Audit logs are now written
+// INSIDE the business transaction (ADR-0001), so they commit atomically with the action and are
+// immediately consistent — the poll below is harmless (it succeeds on the first read). The budget
+// summary reads stay single-shot because budget rows update inside the awaited transaction.
 async function waitFor<T>(
   condition: () => Promise<T | undefined | null | false>,
   description: string,

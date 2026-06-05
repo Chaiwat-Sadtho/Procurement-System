@@ -252,8 +252,8 @@ export class PurchaseRequestsService {
     if (pr.status !== PrStatus.DRAFT) throw new BadRequestException('Only draft PRs can be submitted');
 
     pr.status = PrStatus.SUBMITTED;
-    const saved = await this.dataSource.transaction(async (manager) => {
-      const result = await manager.save(PurchaseRequest, pr);
+    const saved = await this.dataSource.transaction(async (txManager) => {
+      const result = await txManager.save(PurchaseRequest, pr);
       await this.auditLogsService.log(
         {
           userId: requesterId,
@@ -263,7 +263,7 @@ export class PurchaseRequestsService {
           oldValue: { status: PrStatus.DRAFT },
           newValue: { status: PrStatus.SUBMITTED },
         },
-        manager,
+        txManager,
       );
       return result;
     });
@@ -375,8 +375,8 @@ export class PurchaseRequestsService {
 
     pr.status = PrStatus.REJECTED;
     pr.rejectReason = dto.reason;
-    const saved = await this.dataSource.transaction(async (manager) => {
-      const result = await manager.save(PurchaseRequest, pr);
+    const saved = await this.dataSource.transaction(async (txManager) => {
+      const result = await txManager.save(PurchaseRequest, pr);
       await this.auditLogsService.log(
         {
           userId: managerId,
@@ -386,7 +386,7 @@ export class PurchaseRequestsService {
           oldValue: { status: PrStatus.SUBMITTED },
           newValue: { status: PrStatus.REJECTED, rejectReason: dto.reason },
         },
-        manager,
+        txManager,
       );
       return result;
     });

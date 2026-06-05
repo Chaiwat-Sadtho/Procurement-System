@@ -155,6 +155,7 @@ export class PurchaseOrdersService {
         // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
         throw new ConflictException('PO number collision, please retry');
       }
+      // error อื่นที่ไม่ใช่ 23505 (รวม audit write fail ภายใน tx) → re-throw → rollback → HTTP 500
       throw err;
     }
 
