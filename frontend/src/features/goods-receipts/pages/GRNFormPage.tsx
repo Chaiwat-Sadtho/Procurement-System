@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
 import { Label } from '@/shared/components/ui/label'
 import { Combobox } from '@/shared/components/Combobox'
 import { usePurchaseOrder } from '@/features/purchase-orders/hooks/usePurchaseOrder'
@@ -45,11 +46,7 @@ export function GRNFormPage() {
           </div>
         </div>
 
-        {selectedPoId > 0 && poLoading && (
-          <div data-testid="grn-po-loading" className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-          </div>
-        )}
+        {selectedPoId > 0 && poLoading && <LoadingSpinner testId="grn-po-loading" />}
 
         {selectedPoId > 0 && poError && (
           <p role="alert" className="py-4 text-sm text-destructive dark:text-red-400">
