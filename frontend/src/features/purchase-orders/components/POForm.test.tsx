@@ -208,4 +208,32 @@ describe('POForm — edit mode resolves PR from the PO, not the eligible list', 
     expect(screen.getByTestId('po-budget-remaining-after')).toBeInTheDocument()
     expect(screen.queryByText('งบประมาณยังไม่ถูกกำหนด')).not.toBeInTheDocument()
   })
+
+  // characterization for the watch('items') -> useWatch swap: the budget preview's
+  // remaining-after is derived from the live PO total, so editing a quantity must
+  // recompute it. A broken items subscription would leave it pinned at the initial value.
+  it('budget preview reflects the live PO total as item quantities change (watch items)', async () => {
+    vi.mocked(matchBudgetForPR).mockReturnValue({
+      totalAmount: '100000',
+      reservedAmount: '10000',
+      usedAmount: '0',
+    } as unknown as ReturnType<typeof matchBudgetForPR>)
+    vi.mocked(useBudgetForPR).mockReturnValue({
+      data: [{ totalAmount: '100000', reservedAmount: '10000', usedAmount: '0' }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBudgetForPR>)
+
+    renderForm(<POForm mode="edit" poId={3} defaultValues={editDefaults} pr={editPrRef} />)
+    // initial: poTotal = 10 × 150 = 1500 = prEstimate → delta 0 → remainingAfter = remaining = 90,000
+    expect(screen.getByTestId('po-budget-remaining-after')).toHaveTextContent('90,000')
+
+    // bump quantity 10 → 20: poTotal 3000, delta +1500 → remainingAfter 88,500
+    const qty = screen.getByDisplayValue('10')
+    await userEvent.clear(qty)
+    await userEvent.type(qty, '20')
+    // synchronous assert (no waitFor): useWatch('items') updates within the same act()
+    // flush as the input change, so the budget total is never one render behind the
+    // sibling POItemsField's form.watch('items'). No transient stale value.
+    expect(screen.getByTestId('po-budget-remaining-after')).toHaveTextContent('88,500')
+  })
 })

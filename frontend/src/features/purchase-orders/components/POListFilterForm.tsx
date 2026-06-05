@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
@@ -46,12 +46,15 @@ export function POListFilterForm({ vendors, onSubmit, onClear }: POListFilterFor
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { isDirty },
   } = useForm<POListFilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues,
   })
+
+  const status = useWatch({ control, name: 'status' })
+  const vendorId = useWatch({ control, name: 'vendorId' })
 
   const vendorOptions = [
     { value: 'all', label: 'ทุกผู้ขาย' },
@@ -69,7 +72,7 @@ export function POListFilterForm({ vendors, onSubmit, onClear }: POListFilterFor
         <div className="space-y-1">
           <Label htmlFor="status">สถานะ</Label>
           <Select
-            value={watch('status') ?? 'all'}
+            value={status ?? 'all'}
             onValueChange={(v) => setValue('status', v, { shouldDirty: true })}
           >
             <SelectTrigger id="status">
@@ -89,7 +92,7 @@ export function POListFilterForm({ vendors, onSubmit, onClear }: POListFilterFor
           <Label htmlFor="vendorId">ผู้ขาย</Label>
           <Combobox
             id="vendorId"
-            value={watch('vendorId') ?? 'all'}
+            value={vendorId ?? 'all'}
             onChange={(v) => setValue('vendorId', v, { shouldDirty: true })}
             options={vendorOptions}
             placeholder="ทุกผู้ขาย"

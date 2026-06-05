@@ -45,7 +45,16 @@ describe('VendorListFilterForm', () => {
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
     await userEvent.click(screen.getByLabelText('หมวดหมู่'))
     await userEvent.click(screen.getByText('Hardware'))
+    // the combobox trigger reflects the watched categoryId (pins watch -> useWatch swap)
+    expect(screen.getByLabelText('หมวดหมู่')).toHaveTextContent('Hardware')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
+
+  it('reflects the chosen blacklist status in the trigger (watch isBlacklisted)', async () => {
+    renderForm()
+    await userEvent.click(screen.getByLabelText('สถานะ'))
+    await userEvent.click(await screen.findByRole('option', { name: 'แบล็คลิสต์' }))
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('แบล็คลิสต์')
   })
 
   it('renders category options from the categories prop', async () => {

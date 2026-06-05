@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -56,7 +56,7 @@ export function POForm(props: POFormProps) {
 
   // prId/vendorId are numbers in POFormValues (poFormSchema = z.number); the
   // Combobox works in strings, so bridge with String()/Number() at the seam.
-  const selectedPrId = form.watch('prId')
+  const selectedPrId = useWatch({ control: form.control, name: 'prId' })
   const selectedPR = useMemo(
     () => prList.find((pr) => pr.id === selectedPrId) ?? editPr,
     [prList, selectedPrId, editPr],
@@ -80,7 +80,7 @@ export function POForm(props: POFormProps) {
   // budget preview (§4A): the form resolves the matching budget row itself
   // (useBudgetForPR + matchBudgetForPR, exact-quarter no-fallback) and feeds the
   // presentational POBudgetPreview the budget + the two figures it compares.
-  const watchedItems = form.watch('items')
+  const watchedItems = useWatch({ control: form.control, name: 'items' })
   const poTotal = (watchedItems ?? []).reduce(
     (sum, it) => sum + safeNum(it?.quantity) * safeNum(it?.unitPrice),
     0,
@@ -140,6 +140,9 @@ export function POForm(props: POFormProps) {
 
   return (
     <Form {...form}>
+      {/* react-hooks/refs false positive: handleSubmit returns an event handler — the
+          inFlight ref inside onSubmit is read on submit, never during render. */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       <form className="mx-auto max-w-4xl space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
