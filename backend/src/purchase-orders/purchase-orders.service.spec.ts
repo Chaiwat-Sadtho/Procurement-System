@@ -299,6 +299,40 @@ describe('PurchaseOrdersService', () => {
       expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(1, 2026, null, 60000, manager);
     });
 
+    // guard lock: PR ไม่ APPROVED → ไม่ release (mutation-proof: ตัด status check → release ถูกเรียก → แดง)
+    it('should NOT release reserved budget when the linked PR is not approved', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.SUBMITTED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+
+      const result = await service.cancel(1, 1);
+
+      expect(result.status).toBe(PoStatus.CANCELLED); // cancel ยังสำเร็จ แม้ไม่ release
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
+    });
+
+    // guard lock: PR ไม่มี department → ไม่ release (mutation-proof: ตัด departmentId check → release ถูกเรียก → แดง)
+    it('should NOT release reserved budget when the linked PR has no department', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: null, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+
+      const result = await service.cancel(1, 1);
+
+      expect(result.status).toBe(PoStatus.CANCELLED);
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
+    });
+
     // ปิด silent catch: release fail ต้อง propagate (rollback) ไม่ใช่กลืนเงียบ
     it('should propagate a budget-release failure instead of swallowing it', async () => {
       mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });

@@ -182,7 +182,7 @@ describe('BudgetsService', () => {
   });
 
   describe('releaseReservedAmount', () => {
-    it('should decrease reservedAmount using the transaction manager with a write lock', async () => {
+    it('should decrease reservedAmount via the default manager with a write lock', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 200000 });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
