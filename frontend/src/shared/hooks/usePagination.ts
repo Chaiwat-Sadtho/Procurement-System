@@ -96,3 +96,24 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
 
   return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit, setParams }
 }
+
+// clamp page > totalPages ลง — เรียกหลัง data มี totalPages (ต้อง downstream ของ usePagination).
+// แยกจาก usePagination เพราะ totalPages มาจาก query ที่ใช้ page/limit ของ usePagination (data cycle).
+export function useClampPageToTotal(totalPages?: number) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawPage = parseIntParam(searchParams.get('page'))
+  const page = rawPage !== null && rawPage >= 1 ? rawPage : 1
+
+  useEffect(() => {
+    if (totalPages === undefined || totalPages < 1 || page <= totalPages) return
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        params.set('page', String(totalPages))
+        return params
+      },
+      { replace: true },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, totalPages])
+}

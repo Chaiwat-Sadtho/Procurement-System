@@ -3,7 +3,7 @@ import { useEffect, StrictMode, type ReactNode } from 'react'
 import { renderHook, act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
-import { usePagination, PAGE_SIZE_OPTIONS } from './usePagination'
+import { usePagination, PAGE_SIZE_OPTIONS, useClampPageToTotal } from './usePagination'
 
 function wrapperWith(initialEntries: string[]) {
   return ({ children }: { children: ReactNode }) => (
@@ -328,5 +328,77 @@ describe('usePagination — history (push user-nav vs replace auto-correct)', ()
     // valid → ไม่ navigate; StrictMode double-invoke ของ collector effect อาจ push ค่าซ้ำ
     // แต่ค่าต้องเป็น '?page=2&limit=20' ทุกตัว (ไม่มี normalize เปลี่ยน URL)
     expect(new Set(searches)).toEqual(new Set(['?page=2&limit=20']))
+  })
+})
+
+function renderClamp(initialEntries: string[], totalPages?: number) {
+  const searches: string[] = []
+  function Probe({ tp }: { tp?: number }) {
+    useClampPageToTotal(tp)
+    const loc = useLocation()
+    useEffect(() => {
+      searches.push(loc.search)
+    }, [loc])
+    return null
+  }
+  const utils = render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <Probe tp={totalPages} />
+    </MemoryRouter>,
+  )
+  return { searches, utils, Probe }
+}
+
+describe('useClampPageToTotal', () => {
+  it('clamps page down to totalPages when page exceeds it', async () => {
+    const { searches } = renderClamp(['/?page=999'], 3)
+    await waitFor(() => expect(searches.at(-1)).toBe('?page=3'))
+  })
+
+  it('does NOT navigate at the boundary page === totalPages', async () => {
+    const { searches } = renderClamp(['/?page=3'], 3)
+    await Promise.resolve()
+    expect(searches).toEqual(['?page=3']) // no navigation → kill mutation `>` → `>=`
+  })
+
+  it('does NOT clamp while totalPages is unknown (loading)', async () => {
+    const { searches } = renderClamp(['/?page=999'], undefined)
+    await Promise.resolve()
+    expect(searches).toEqual(['?page=999'])
+  })
+
+  it('does NOT navigate to page 0 when total is 0 (totalPages=0)', async () => {
+    const { searches } = renderClamp(['/'], 0)
+    await Promise.resolve()
+    expect(searches).toEqual(['']) // kill mutation ลบ guard totalPages<1
+  })
+
+  it('re-clamps when totalPages shrinks below current page', async () => {
+    const { searches, utils, Probe } = renderClamp(['/?page=3'], 5) // 3<=5 → no-op
+    await Promise.resolve()
+    utils.rerender(
+      <MemoryRouter initialEntries={['/?page=3']}>
+        <Probe tp={2} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(searches.at(-1)).toBe('?page=2'))
+  })
+
+  it('clamp uses REPLACE (the over-range page is not left in history)', async () => {
+    function Probe({ tp }: { tp?: number }) {
+      useClampPageToTotal(tp)
+      return null
+    }
+    render(
+      <MemoryRouter initialEntries={['/base', '/?page=999']}>
+        <Probe tp={3} />
+        <LocationPath />
+        <BackButton />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/'))
+    // clamp settle → ?page=3; back ต้องไป /base (replace ทับ ?page=999)
+    await userEvent.click(screen.getByText('back'))
+    expect(screen.getByTestId('path')).toHaveTextContent('/base')
   })
 })
