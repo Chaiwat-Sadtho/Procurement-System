@@ -1,10 +1,7 @@
 import { z } from 'zod'
 import type { CreatePORequest, PurchaseOrder, UpdatePORequest } from '../types'
 
-export function safeNum(v: string | undefined): number {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : 0
-}
+export { safeNum } from '@/shared/lib/safeNum'
 
 const itemSchema = z.object({
   prItemId: z.number().optional(),

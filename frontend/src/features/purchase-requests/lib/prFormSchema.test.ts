@@ -117,6 +117,7 @@ describe('helpers', () => {
   it('safeNum returns 0 for non-numeric', () => {
     expect(safeNum('abc')).toBe(0)
     expect(safeNum('')).toBe(0)
+    expect(safeNum(undefined)).toBe(0)
     expect(safeNum('12.5')).toBe(12.5)
   })
 })
