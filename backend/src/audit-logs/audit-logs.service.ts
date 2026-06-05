@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { AuditLog } from './entities/audit-log.entity';
 import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 
@@ -20,7 +20,7 @@ export class AuditLogsService {
     private readonly auditLogRepository: Repository<AuditLog>,
   ) {}
 
-  async log(params: LogParams): Promise<AuditLog> {
+  async log(params: LogParams, manager?: EntityManager): Promise<AuditLog> {
     const entry = this.auditLogRepository.create({
       userId: params.userId,
       action: params.action,
@@ -29,7 +29,7 @@ export class AuditLogsService {
       oldValue: params.oldValue ?? null,
       newValue: params.newValue ?? null,
     });
-    return this.auditLogRepository.save(entry);
+    return manager ? manager.save(AuditLog, entry) : this.auditLogRepository.save(entry);
   }
 
   async findAll(

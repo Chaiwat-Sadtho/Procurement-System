@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Not, QueryFailedError, Like } from 'typeorm';
@@ -21,6 +21,8 @@ import { formatRunningNumber } from '../common/running-number';
 
 @Injectable()
 export class PurchaseOrdersService {
+  private readonly logger = new Logger(PurchaseOrdersService.name);
+
   constructor(
     @InjectRepository(PurchaseOrder)
     private readonly poRepository: Repository<PurchaseOrder>,
@@ -123,7 +125,23 @@ export class PurchaseOrdersService {
           reserveDelta,
           manager,
         );
-        return manager.save(PurchaseOrder, po);
+        const created = await manager.save(PurchaseOrder, po);
+        await this.auditLogsService.log(
+          {
+            userId: createdBy,
+            action: 'PO_CREATED',
+            entityType: 'PurchaseOrder',
+            entityId: created.id,
+            newValue: {
+              poNumber: created.poNumber,
+              prId: dto.prId,
+              vendorId: dto.vendorId,
+              totalAmount: created.totalAmount,
+            },
+          },
+          manager,
+        );
+        return created;
       });
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
@@ -137,21 +155,9 @@ export class PurchaseOrdersService {
         // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
         throw new ConflictException('PO number collision, please retry');
       }
+      // error อื่นที่ไม่ใช่ 23505 (รวม audit write fail ภายใน tx) → re-throw → rollback → HTTP 500
       throw err;
     }
-
-    void this.auditLogsService.log({
-      userId: createdBy,
-      action: 'PO_CREATED',
-      entityType: 'PurchaseOrder',
-      entityId: savedPo.id,
-      newValue: {
-        poNumber: savedPo.poNumber,
-        prId: dto.prId,
-        vendorId: dto.vendorId,
-        totalAmount: savedPo.totalAmount,
-      },
-    }).catch(() => {});
 
     void (async () => {
       const linkedPr = await this.prRepository.findOne({
@@ -168,7 +174,7 @@ export class PurchaseOrdersService {
           referenceType: 'PurchaseOrder',
         });
       }
-    })().catch(() => {});
+    })().catch((err) => this.logger.warn('notification failed: PO_CREATED', err));
 
     return savedPo;
   }
@@ -277,16 +283,21 @@ export class PurchaseOrdersService {
       throw new BadRequestException('Only sent POs can be acknowledged');
     }
     po.status = PoStatus.ACKNOWLEDGED;
-    const saved = await this.poRepository.save(po);
-
-    void this.auditLogsService.log({
-      userId,
-      action: 'PO_ACKNOWLEDGED',
-      entityType: 'PurchaseOrder',
-      entityId: id,
-      oldValue: { status: PoStatus.SENT },
-      newValue: { status: PoStatus.ACKNOWLEDGED },
-    }).catch(() => {});
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const result = await manager.save(PurchaseOrder, po);
+      await this.auditLogsService.log(
+        {
+          userId,
+          action: 'PO_ACKNOWLEDGED',
+          entityType: 'PurchaseOrder',
+          entityId: id,
+          oldValue: { status: PoStatus.SENT },
+          newValue: { status: PoStatus.ACKNOWLEDGED },
+        },
+        manager,
+      );
+      return result;
+    });
 
     return saved;
   }
@@ -302,7 +313,21 @@ export class PurchaseOrdersService {
     }
     const oldStatus = po.status;
     po.status = PoStatus.CANCELLED;
-    const saved = await this.poRepository.save(po);
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const result = await manager.save(PurchaseOrder, po);
+      await this.auditLogsService.log(
+        {
+          userId,
+          action: 'PO_CANCELLED',
+          entityType: 'PurchaseOrder',
+          entityId: id,
+          oldValue: { status: oldStatus },
+          newValue: { status: PoStatus.CANCELLED },
+        },
+        manager,
+      );
+      return result;
+    });
 
     // P5-2: release reserved budget ของ PR ที่ผูกอยู่ กัน budget leak
     // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
@@ -323,15 +348,6 @@ export class PurchaseOrdersService {
         );
       }
     })().catch(() => {});
-
-    void this.auditLogsService.log({
-      userId,
-      action: 'PO_CANCELLED',
-      entityType: 'PurchaseOrder',
-      entityId: id,
-      oldValue: { status: oldStatus },
-      newValue: { status: PoStatus.CANCELLED },
-    }).catch(() => {});
 
     return saved;
   }

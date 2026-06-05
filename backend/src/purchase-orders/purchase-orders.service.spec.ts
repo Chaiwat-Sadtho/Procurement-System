@@ -244,9 +244,12 @@ describe('PurchaseOrdersService', () => {
   describe('acknowledge', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED });
+      const manager = { save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
+      // mutation-proof: status-save joins the tx (manager.save), not the bare repo
+      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.ACKNOWLEDGED }));
     });
 
     it('should throw BadRequest if PO is not sent', async () => {
@@ -258,9 +261,12 @@ describe('PurchaseOrdersService', () => {
   describe('cancel', () => {
     it('should cancel a draft PO', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
+      const manager = { save: jest.fn().mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
+      // mutation-proof: status-save joins the tx (manager.save), not the bare repo
+      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.CANCELLED }));
     });
 
     it('should throw BadRequest if PO is already completed', async () => {
@@ -276,7 +282,8 @@ describe('PurchaseOrdersService', () => {
     // P5-2/P5-6: release ยอด PO จริง (reserved สะท้อน PO total หลังสร้าง PO) ไม่ใช่ PR estimate
     it('P5-2: should release the PO total from reserved budget when cancelling a PO of an approved PR', async () => {
       mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
-      mockPoRepo.save.mockResolvedValue({ id: 1, status: PoStatus.CANCELLED });
+      const manager = { save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       mockPrRepo.findOne.mockResolvedValue({
         id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, totalEstimatedAmount: 50000, status: PrStatus.APPROVED,
       });
