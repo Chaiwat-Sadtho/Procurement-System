@@ -244,7 +244,8 @@ describe('PurchaseOrdersService', () => {
   describe('acknowledge', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED });
+      const manager = { save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
     });
@@ -258,7 +259,8 @@ describe('PurchaseOrdersService', () => {
   describe('cancel', () => {
     it('should cancel a draft PO', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
+      const manager = { save: jest.fn().mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
     });
