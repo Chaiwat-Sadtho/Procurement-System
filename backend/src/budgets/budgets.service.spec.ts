@@ -147,6 +147,24 @@ describe('BudgetsService', () => {
       );
     });
 
+    // audit-durability #5 (notification observability): budget-warning is best-effort
+    // and must not block the reserve, but a failed send must be logged, not swallowed.
+    it('should log a warning (not throw) when the budget-warning notification fails', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
+      mockDepartmentRepo.findOne.mockResolvedValue({ id: 1, name: 'Engineering' });
+      mockUserRepo.find.mockResolvedValue([{ id: 5 }]);
+      mockNotificationsService.sendToMany.mockRejectedValue(new Error('notify down'));
+      const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
+
+      // committed 850000/1000000 = 85% > 80% → trigger warning; reserve must still succeed
+      await expect(service.reserveAmount(1, 2026, null, 850000)).resolves.toBeUndefined();
+      await new Promise((r) => setImmediate(r));
+
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
     // P5-3: quarter เป็นเลข → where ต้อง match quarter ตรง ไม่ใช่ IsNull
     it('should query budget row matching the quarter when quarter is set', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, quarter: 2 });

@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
@@ -15,6 +15,8 @@ import { applyReserve, applyRelease, applyAdjust, applyConsume } from '../common
 
 @Injectable()
 export class BudgetsService {
+  private readonly logger = new Logger(BudgetsService.name);
+
   constructor(
     @InjectRepository(Budget)
     private readonly budgetRepository: Repository<Budget>,
@@ -164,7 +166,8 @@ export class BudgetsService {
     });
 
     if (totalCommitted / Number(budget.totalAmount) > 0.8) {
-      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount)).catch(() => {});
+      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount))
+        .catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
     }
   }
 
@@ -252,7 +255,8 @@ export class BudgetsService {
 
     const totalCommitted = newReserved + Number(budget.usedAmount);
     if (delta > 0 && totalCommitted / Number(budget.totalAmount) > 0.8) {
-      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount)).catch(() => {});
+      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount))
+        .catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
     }
   }
 
