@@ -26,4 +26,25 @@ describe('dashboardApi.getBudgets', () => {
     // arithmetic ที่เคยพัง (string concat → NaN) ต้องได้ตัวเลขจริง
     expect(b.reservedAmount + b.usedAmount).toBe(750000)
   })
+
+  it('collapses non-finite amounts to 0 (defense-in-depth: never display ฿NaN/฿∞)', async () => {
+    // ถ้า backend คืนค่าเพี้ยน (overflow string / non-numeric) raw Number() จะได้ Infinity/NaN
+    // → guard ที่ boundary ต้อง coerce เป็น 0 ไม่ให้หลุดไปคำนวณ/แสดงผล
+    vi.mocked(api.get).mockResolvedValue({
+      data: [
+        {
+          id: 2, departmentId: 2, department: { id: 2, name: 'HR' }, fiscalYear: 2026, quarter: null,
+          totalAmount: '1e999', reservedAmount: 'abc', usedAmount: '',
+        },
+      ],
+    } as never)
+
+    const [b] = await dashboardApi.getBudgets({ fiscalYear: 2026 })
+
+    expect(b.totalAmount).toBe(0) // Number('1e999') === Infinity → 0
+    expect(b.reservedAmount).toBe(0) // Number('abc') === NaN → 0
+    expect(b.usedAmount).toBe(0)
+    // arithmetic ยังเป็นตัวเลขจริง ไม่ใช่ NaN
+    expect(b.reservedAmount + b.usedAmount).toBe(0)
+  })
 })

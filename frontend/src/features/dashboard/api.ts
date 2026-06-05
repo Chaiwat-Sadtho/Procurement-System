@@ -1,4 +1,5 @@
 import api from '@/shared/lib/axios'
+import { safeNum } from '@/shared/lib/safeNum'
 import type { PrStatsResponse, PRListResponse, PurchaseRequest } from '@/features/purchase-requests/types'
 
 // Budget shape จาก GET /budgets (array, ไม่ paginate) — ไม่มี remaining/usagePercent (เฉพาะ /:id/summary)
@@ -51,12 +52,12 @@ export const dashboardApi = {
   getBudgets: (params: BudgetParams): Promise<DashboardBudget[]> =>
     api.get<DashboardBudget[]>('/budgets', { params }).then((r) =>
       // pg numeric กลับมาเป็น string → coerce ที่ boundary ให้ type number เป็นจริง
-      // (กัน NaN ตอน arithmetic เช่น reservedAmount+usedAmount)
+      // safeNum กัน non-finite (NaN/Infinity) ไม่ให้หลุดไปคำนวณ (reservedAmount+usedAmount) หรือแสดงผล (฿NaN/฿∞)
       r.data.map((b) => ({
         ...b,
-        totalAmount: Number(b.totalAmount),
-        reservedAmount: Number(b.reservedAmount),
-        usedAmount: Number(b.usedAmount),
+        totalAmount: safeNum(b.totalAmount),
+        reservedAmount: safeNum(b.reservedAmount),
+        usedAmount: safeNum(b.usedAmount),
       })),
     ),
 
