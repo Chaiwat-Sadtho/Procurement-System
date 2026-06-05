@@ -161,6 +161,7 @@ describe('GoodsReceiptsService', () => {
           entityId: mockGrn.id,
           newValue: expect.objectContaining({ poCompleted: true }),
         }),
+        manager, // audit now joins the GRN transaction
       );
       expect(mockNotificationsService.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -193,8 +194,11 @@ describe('GoodsReceiptsService', () => {
 
       expect(mockBudgetsService.consumeAmount).not.toHaveBeenCalled();
       expect(mockNotificationsService.send).not.toHaveBeenCalled();
-      // audit ยิงทุกครั้งที่สร้าง GRN สำเร็จ
-      expect(mockAuditLogsService.log).toHaveBeenCalled();
+      // audit ยิงทุกครั้งที่สร้าง GRN สำเร็จ — และต้อง join tx (ส่ง manager) เหมือน full-receipt
+      expect(mockAuditLogsService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'GRN_CREATED' }),
+        manager,
+      );
     });
 
     it('should skip consume + warn (not throw) when PR not found on full receipt', async () => {

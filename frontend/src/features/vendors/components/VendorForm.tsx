@@ -67,6 +67,9 @@ export function VendorForm(props: VendorFormProps) {
 
   return (
     <Form {...form}>
+      {/* react-hooks/refs false positive: handleSubmit returns an event handler — the
+          inFlight ref inside onSubmit is read on submit, never during render. */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       <form className="mx-auto max-w-2xl space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}

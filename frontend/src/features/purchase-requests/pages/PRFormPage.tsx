@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
 import { Button } from '@/shared/components/ui/button'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePurchaseRequest } from '../hooks/usePurchaseRequest'
@@ -36,11 +37,7 @@ export function PRFormPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   if (isError || !pr) {

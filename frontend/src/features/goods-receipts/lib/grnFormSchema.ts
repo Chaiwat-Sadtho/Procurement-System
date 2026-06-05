@@ -1,11 +1,9 @@
 import { z } from 'zod'
 import type { CreateGoodsReceiptPayload } from '../types'
 import type { PurchaseOrder } from '@/features/purchase-orders/types'
+import { safeNum } from '@/shared/lib/safeNum'
 
-export function safeNum(v: string | undefined): number {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : 0
-}
+export { safeNum }
 
 const lineSchema = z
   .object({

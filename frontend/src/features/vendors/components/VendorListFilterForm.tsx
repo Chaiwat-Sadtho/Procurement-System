@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
@@ -46,12 +46,15 @@ export function VendorListFilterForm({ categories, onSubmit, onClear }: VendorLi
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { isDirty },
   } = useForm<VendorListFilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues,
   })
+
+  const isBlacklisted = useWatch({ control, name: 'isBlacklisted' })
+  const categoryId = useWatch({ control, name: 'categoryId' })
 
   const categoryOptions = [
     { value: 'all', label: 'ทุกหมวดหมู่' },
@@ -74,7 +77,7 @@ export function VendorListFilterForm({ categories, onSubmit, onClear }: VendorLi
         <div className="space-y-1">
           <Label htmlFor="isBlacklisted">สถานะ</Label>
           <Select
-            value={watch('isBlacklisted') ?? 'all'}
+            value={isBlacklisted ?? 'all'}
             onValueChange={(v) => setValue('isBlacklisted', v, { shouldDirty: true })}
           >
             <SelectTrigger id="isBlacklisted">
@@ -94,7 +97,7 @@ export function VendorListFilterForm({ categories, onSubmit, onClear }: VendorLi
           <Label htmlFor="categoryId">หมวดหมู่</Label>
           <Combobox
             id="categoryId"
-            value={watch('categoryId') ?? 'all'}
+            value={categoryId ?? 'all'}
             onChange={(v) => setValue('categoryId', v, { shouldDirty: true })}
             options={categoryOptions}
             placeholder="ทุกหมวดหมู่"

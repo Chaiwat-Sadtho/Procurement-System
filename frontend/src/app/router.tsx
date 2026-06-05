@@ -19,14 +19,7 @@ import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="flex items-center justify-center h-64 text-muted-foreground">
-      {title} — Coming Soon
-    </div>
-  )
-}
+import { ComingSoon } from './ComingSoon'
 
 export const router = createBrowserRouter([
   {

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -45,7 +45,7 @@ export function GRNForm({ po, defaultValues }: GRNFormProps) {
   const { isDirty, isValid } = form.formState
 
   // feed the presentational preview the two figures it compares per line (§4A.2+4)
-  const watchedItems = form.watch('items')
+  const watchedItems = useWatch({ control: form.control, name: 'items' })
   const previewItems = (watchedItems ?? []).map((line) => ({
     remaining: line.remaining,
     good: safeNum(line.good),
@@ -69,6 +69,9 @@ export function GRNForm({ po, defaultValues }: GRNFormProps) {
 
   return (
     <Form {...form}>
+      {/* react-hooks/refs false positive: handleSubmit returns an event handler — the
+          inFlight ref inside onSubmit is read on submit, never during render. */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       <form className="mx-auto max-w-4xl space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <Card>
           <CardContent className="grid grid-cols-2 gap-4 pt-6 md:grid-cols-3">

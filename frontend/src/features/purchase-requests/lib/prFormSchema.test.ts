@@ -42,6 +42,17 @@ describe('prFormSchema', () => {
     expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], estimatedUnitPrice: '0' }] }).success).toBe(true)
   })
 
+  // '1e999' parses to Infinity, which passed the bare `>= 0.01` / `>= 0` refines and then serialized
+  // to null in JSON.stringify (backend then 400s). Same gap as poFormSchema — reject non-finite input
+  // FE-side instead of leaking Infinity into the mapped payload.
+  it('rejects non-finite quantity (1e999 -> Infinity)', () => {
+    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '1e999' }] }).success).toBe(false)
+  })
+
+  it('rejects non-finite estimatedUnitPrice (1e999 -> Infinity)', () => {
+    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], estimatedUnitPrice: '1e999' }] }).success).toBe(false)
+  })
+
   it('requires at least one item', () => {
     expect(prFormSchema.safeParse({ ...validValues, items: [] }).success).toBe(false)
   })
@@ -106,6 +117,7 @@ describe('helpers', () => {
   it('safeNum returns 0 for non-numeric', () => {
     expect(safeNum('abc')).toBe(0)
     expect(safeNum('')).toBe(0)
+    expect(safeNum(undefined)).toBe(0)
     expect(safeNum('12.5')).toBe(12.5)
   })
 })

@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
 import { Button } from '@/shared/components/ui/button'
 import { useVendor } from '../hooks/useVendor'
 import { VendorForm } from '../components/VendorForm'
@@ -34,11 +35,7 @@ export function VendorFormPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   if (isError || !vendor) {

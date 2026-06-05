@@ -156,6 +156,24 @@ describe('GRNForm', () => {
     expect(mockNavigate).not.toHaveBeenCalledWith('/goods-receipts/42')
   })
 
+  // characterization for the watch('items') -> useWatch swap: the receive-outcome
+  // preview is derived from the live good/remaining per line, so editing 'good' must
+  // re-evaluate it. A broken items subscription would leave the outcome stale.
+  it('the receive-outcome preview updates live as the good qty changes (watch items)', async () => {
+    renderForm()
+    // default good = remaining = 10 → whole GRN will complete
+    expect(screen.getByTestId('grn-receive-outcome')).toHaveTextContent('รับครบถ้วน → PO completed')
+    // drop good below remaining → partially received
+    const good = screen.getByLabelText('รับสภาพดี')
+    await userEvent.clear(good)
+    await userEvent.type(good, '6')
+    // synchronous assert (no waitFor): useWatch('items') reflects the live good qty
+    // within the same act() flush — the outcome is not one render stale.
+    expect(screen.getByTestId('grn-receive-outcome')).toHaveTextContent(
+      'รับไม่ครบ → partially_received',
+    )
+  })
+
   it('ignores a second submit while the first is in flight (inFlight guard)', async () => {
     // a never-resolving mutation keeps the first submit "in flight" so the
     // synchronous inFlight ref must swallow the second click (isPending stays false here)

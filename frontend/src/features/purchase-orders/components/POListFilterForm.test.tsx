@@ -57,6 +57,8 @@ describe('POListFilterForm', () => {
     const { onSubmit } = renderForm()
     await userEvent.click(screen.getByLabelText('สถานะ'))
     await userEvent.click(await screen.findByRole('option', { name: 'ส่งแล้ว' }))
+    // the controlled trigger reflects the watched value (pins watch -> useWatch swap)
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('ส่งแล้ว')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'sent' }),
@@ -67,6 +69,7 @@ describe('POListFilterForm', () => {
     const { onSubmit } = renderForm()
     await userEvent.click(screen.getByLabelText('ผู้ขาย'))
     await userEvent.click(screen.getByText('Beta Ltd'))
+    expect(screen.getByLabelText('ผู้ขาย')).toHaveTextContent('Beta Ltd')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ vendorId: '8' }),

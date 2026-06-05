@@ -244,9 +244,12 @@ describe('PurchaseOrdersService', () => {
   describe('acknowledge', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED });
+      const manager = { save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }) };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
+      // mutation-proof: status-save joins the tx (manager.save), not the bare repo
+      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.ACKNOWLEDGED }));
     });
 
     it('should throw BadRequest if PO is not sent', async () => {
@@ -258,9 +261,15 @@ describe('PurchaseOrdersService', () => {
   describe('cancel', () => {
     it('should cancel a draft PO', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue(null), // PR lookup ใน tx → ไม่เจอ → ไม่ release
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
+      // mutation-proof: status-save joins the tx (manager.save), not the bare repo
+      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.CANCELLED }));
     });
 
     it('should throw BadRequest if PO is already completed', async () => {
@@ -273,19 +282,70 @@ describe('PurchaseOrdersService', () => {
       await expect(service.cancel(1, 1)).rejects.toThrow(BadRequestException);
     });
 
-    // P5-2/P5-6: release ยอด PO จริง (reserved สะท้อน PO total หลังสร้าง PO) ไม่ใช่ PR estimate
-    it('P5-2: should release the PO total from reserved budget when cancelling a PO of an approved PR', async () => {
+    // P5-2/P5-6: release ยอด PO จริง ภายใน tx เดียวกับ cancel — ส่ง manager (atomic, mutation-proof identity)
+    it('P5-2: should release the PO total from reserved budget within the cancel transaction', async () => {
       mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
-      mockPoRepo.save.mockResolvedValue({ id: 1, status: PoStatus.CANCELLED });
-      mockPrRepo.findOne.mockResolvedValue({
-        id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, totalEstimatedAmount: 50000, status: PrStatus.APPROVED,
-      });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
 
       await service.cancel(1, 1);
-      // รอ fire-and-forget IIFE ปล่อย microtask
-      await new Promise((r) => setImmediate(r));
 
-      expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(1, 2026, null, 60000);
+      // arg 5 = tx manager → release joins the cancel tx (rollback together on failure)
+      expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(1, 2026, null, 60000, manager);
+    });
+
+    // guard lock: PR ไม่ APPROVED → ไม่ release (mutation-proof: ตัด status check → release ถูกเรียก → แดง)
+    it('should NOT release reserved budget when the linked PR is not approved', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.SUBMITTED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+
+      const result = await service.cancel(1, 1);
+
+      expect(result.status).toBe(PoStatus.CANCELLED); // cancel ยังสำเร็จ แม้ไม่ release
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
+    });
+
+    // guard lock: PR ไม่มี department → ไม่ release (mutation-proof: ตัด departmentId check → release ถูกเรียก → แดง)
+    it('should NOT release reserved budget when the linked PR has no department', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: null, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+
+      const result = await service.cancel(1, 1);
+
+      expect(result.status).toBe(PoStatus.CANCELLED);
+      expect(mockBudgetsService.releaseReservedAmount).not.toHaveBeenCalled();
+    });
+
+    // ปิด silent catch: release fail ต้อง propagate (rollback) ไม่ใช่กลืนเงียบ
+    it('should propagate a budget-release failure instead of swallowing it', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      const manager = {
+        save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+        }),
+      };
+      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockBudgetsService.releaseReservedAmount.mockRejectedValueOnce(new Error('release failed'));
+
+      await expect(service.cancel(1, 1)).rejects.toThrow('release failed');
     });
   });
 

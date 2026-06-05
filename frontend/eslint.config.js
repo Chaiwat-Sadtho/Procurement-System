@@ -19,4 +19,14 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // shadcn/ui primitives are vendored and intentionally co-export components
+    // with their cva variants / context hooks (e.g. buttonVariants, useFormField).
+    // react-refresh/only-export-components is a Fast Refresh (HMR) concern with no
+    // runtime impact, so we scope it off for this vendored directory only.
+    files: ['src/shared/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

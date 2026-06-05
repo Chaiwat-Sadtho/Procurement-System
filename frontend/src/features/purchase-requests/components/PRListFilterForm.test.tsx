@@ -54,6 +54,13 @@ describe('PRListFilterForm', () => {
     )
   })
 
+  it('reflects the chosen status in the trigger (watch status)', async () => {
+    renderForm()
+    await userEvent.click(screen.getByLabelText('สถานะ'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Approved' }))
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+  })
+
   it('hides Requester field when showRequester=false', () => {
     renderForm({ showRequester: false })
     expect(screen.queryByLabelText(/ผู้ขอ/i)).not.toBeInTheDocument()

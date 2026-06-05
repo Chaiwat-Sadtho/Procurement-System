@@ -158,18 +158,21 @@ export class GoodsReceiptsService {
         }
       }
 
+      await this.auditLogsService.log(
+        {
+          userId: receivedBy,
+          action: 'GRN_CREATED',
+          entityType: 'GoodsReceiptNote',
+          entityId: savedGrn.id,
+          newValue: { grnNumber: savedGrn.grnNumber, poId: dto.poId, poCompleted: allReceived },
+        },
+        manager,
+      );
+
       return { grn: savedGrn, poCompleted: allReceived };
     });
 
-    // audit + notification หลัง transaction commit (fire-and-forget)
-    void this.auditLogsService.log({
-      userId: receivedBy,
-      action: 'GRN_CREATED',
-      entityType: 'GoodsReceiptNote',
-      entityId: grn.id,
-      newValue: { grnNumber: grn.grnNumber, poId: dto.poId, poCompleted },
-    }).catch(() => {});
-
+    // notification หลัง transaction commit (best-effort)
     if (poCompleted) {
       void this.notificationsService.send({
         userId: receivedBy,
@@ -178,7 +181,7 @@ export class GoodsReceiptsService {
         type: NotificationType.GRN_CREATED,
         referenceId: grn.id,
         referenceType: 'GoodsReceiptNote',
-      }).catch(() => {});
+      }).catch((err) => this.logger.warn('notification failed: GRN_CREATED', err));
     }
 
     return grn;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -30,13 +30,16 @@ export function DateField({ id, value, onChange, error }: DateFieldProps) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState(() => (value ? isoToBuddhistText(value) : ''))
 
-  // sync ข้อความที่แสดงเมื่อ value เปลี่ยนจากภายนอก (reset/default) — ไม่ทับตอนกำลังพิมพ์
-  useEffect(() => {
+  // sync ข้อความที่แสดงเมื่อ value เปลี่ยนจากภายนอก (reset/default) — ไม่ทับตอนกำลังพิมพ์.
+  // ปรับ state ระหว่าง render (React-recommended) แทน setState ใน effect → ไม่เกิด cascading
+  // render รอบสอง และไม่ต้อง suppress react-hooks/set-state-in-effect
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
     if (value !== buddhistTextToIso(text)) {
       setText(value ? isoToBuddhistText(value) : '')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
+  }
 
   function handleInput(raw: string) {
     const masked = maskBuddhistDate(raw)
