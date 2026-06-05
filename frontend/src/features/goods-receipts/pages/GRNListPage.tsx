@@ -16,7 +16,7 @@ import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { RowLink } from '@/shared/components/RowLink'
-import { usePagination } from '@/shared/hooks/usePagination'
+import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatDate, getRowIndex } from '@/shared/lib/utils'
 import { GrnStatusBadge } from '../components/GrnStatusBadge'
 import {
@@ -52,6 +52,7 @@ export function GRNListPage() {
   }
 
   const { data, isLoading, isError, refetch } = useGoodsReceipts(queryParams, { enabled: true })
+  useClampPageToTotal(data?.meta.totalPages)
 
   // running number sticks to the page the server actually returned (meta),
   // not the local page state which momentarily leads the fetch

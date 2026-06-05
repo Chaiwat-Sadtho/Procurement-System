@@ -402,3 +402,29 @@ describe('useClampPageToTotal', () => {
     expect(screen.getByTestId('path')).toHaveTextContent('/base')
   })
 })
+
+describe('integration — normalize + clamp compose (strip then clamp)', () => {
+  it('strips invalid limit then clamps over-range page to the correct end state', async () => {
+    const searches: string[] = []
+    function Probe() {
+      usePagination() // normalize (mount)
+      useClampPageToTotal(3) // clamp (totalPages คงที่จำลอง data พร้อม)
+      const loc = useLocation()
+      useEffect(() => {
+        searches.push(loc.search)
+      }, [loc])
+      return null
+    }
+    render(
+      <MemoryRouter initialEntries={['/?limit=7&page=999&status=draft']}>
+        <Probe />
+      </MemoryRouter>,
+    )
+    await waitFor(() => {
+      const last = new URLSearchParams(searches.at(-1))
+      expect(last.has('limit')).toBe(false) // strip
+      expect(last.get('page')).toBe('3') // clamp 999 → 3
+      expect(last.get('status')).toBe('draft') // unrelated คง
+    })
+  })
+})
