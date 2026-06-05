@@ -161,6 +161,7 @@ describe('GoodsReceiptsService', () => {
           entityId: mockGrn.id,
           newValue: expect.objectContaining({ poCompleted: true }),
         }),
+        manager, // audit now joins the GRN transaction
       );
       expect(mockNotificationsService.send).toHaveBeenCalledWith(
         expect.objectContaining({
