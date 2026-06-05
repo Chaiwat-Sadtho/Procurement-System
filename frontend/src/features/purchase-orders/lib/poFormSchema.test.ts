@@ -71,6 +71,17 @@ describe('poFormSchema', () => {
     expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unitPrice: '0' }] }).success).toBe(true)
   })
 
+  // '1e999' parses to Infinity, which passed the bare `>= 0.01` / `>= 0` refines and then
+  // serialized to null in JSON.stringify (backend then 400s). The schema must reject non-finite
+  // input FE-side with a clear message instead of leaking Infinity into the payload.
+  it('rejects non-finite quantity (1e999 -> Infinity)', () => {
+    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '1e999' }] }).success).toBe(false)
+  })
+
+  it('rejects non-finite unitPrice (1e999 -> Infinity)', () => {
+    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unitPrice: '1e999' }] }).success).toBe(false)
+  })
+
   it('requires at least one item', () => {
     expect(poFormSchema.safeParse({ ...validValues, items: [] }).success).toBe(false)
   })

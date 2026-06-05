@@ -111,6 +111,19 @@ describe('grnFormSchema', () => {
     expect(grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '0.005' })] })).success).toBe(false)
   })
 
+  // Regression lock: unlike poFormSchema, every numeric read here flows through safeNum, whose
+  // Number.isFinite guard collapses '1e999' (Infinity) to 0. So a non-finite value never reaches the
+  // bound check — the line emits nothing and the form fails on the EMITTED refine (not the bound). We
+  // assert the emitted-refine message specifically: if safeNum lost its guard, Infinity would survive,
+  // trip the `> remaining` bound instead, and this message assertion would fail before Infinity leaks.
+  it('coerces a non-finite good (1e999 -> Infinity -> 0) so the only line fails the emitted refine, not the bound', () => {
+    const result = grnFormSchema.safeParse(values({ items: [line({ good: '1e999', damaged: '0' })] }))
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.message)).toEqual(['ต้องระบุจำนวนรับอย่างน้อย 1 รายการ'])
+    }
+  })
+
   // float-safe bound: 0.1 + 0.2 === 0.30000000000000004 must NOT reject an at-bound receive
   it('accepts an at-bound receive despite float imprecision (remaining 0.3, good 0.1 + damaged 0.2)', () => {
     expect(grnFormSchema.safeParse(values({ items: [line({ remaining: 0.3, good: '0.1', damaged: '0.2' })] })).success).toBe(true)
@@ -147,6 +160,13 @@ describe('toCreatePayload — damaged-split mapper (4 cases)', () => {
 
   it('emitted qty below 0.01 is NOT emitted (good = 0.009)', () => {
     const out = toCreatePayload(values({ items: [line({ good: '0.009', damaged: '0' })] }))
+    expect(out.items).toEqual([])
+  })
+
+  // Regression lock (mapper side): safeNum collapses Infinity to 0, so a non-finite input is dropped
+  // rather than leaking Infinity into receivedQuantity. Mirrors the schema-level lock above.
+  it('drops a non-finite quantity line (good 1e999 -> safeNum 0, not emitted)', () => {
+    const out = toCreatePayload(values({ items: [line({ good: '1e999', damaged: '0' })] }))
     expect(out.items).toEqual([])
   })
 
