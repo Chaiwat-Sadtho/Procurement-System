@@ -16,7 +16,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { usePagination } from '@/shared/hooks/usePagination'
+import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { getApiErrorMessage } from '@/shared/lib/getApiErrorMessage'
 import { PRStatusBadge } from '../components/PRStatusBadge'
@@ -57,6 +57,7 @@ export function PRListPage() {
     : undefined
 
   const { data, isLoading } = usePurchaseRequests(queryParams, { enabled: filters !== null })
+  useClampPageToTotal(data?.meta.totalPages)
 
   const canCreate = user?.role === 'employee'
   // running number sticks to the page actually returned by the server (meta),

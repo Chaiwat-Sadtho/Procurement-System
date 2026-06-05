@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const
@@ -22,6 +23,33 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
     rawLimit !== null && (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawLimit)
       ? rawLimit
       : initialLimit
+
+  // normalize: ลบ param ที่ "มีอยู่ + invalid/non-canonical" ออกจาก URL (display ใช้ fallback อยู่แล้ว).
+  // self-contained — ไม่พึ่ง totalPages (clamp แยกอยู่ useClampPageToTotal). auto-correction → replace.
+  useEffect(() => {
+    const pageRaw = searchParams.get('page')
+    const limitRaw = searchParams.get('limit')
+    // invalid = parse ไม่ผ่าน OR ผิด domain rule OR ไม่ canonical ('01' parse=1 แต่ String(1)!=='01')
+    const pageInvalid =
+      pageRaw !== null && (rawPage === null || rawPage < 1 || String(rawPage) !== pageRaw)
+    const limitInvalid =
+      limitRaw !== null &&
+      (rawLimit === null ||
+        !(PAGE_SIZE_OPTIONS as readonly number[]).includes(rawLimit) ||
+        String(rawLimit) !== limitRaw)
+    if (!pageInvalid && !limitInvalid) return
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        if (pageInvalid) params.delete('page')
+        if (limitInvalid) params.delete('limit')
+        return params
+      },
+      { replace: true },
+    )
+    // deps แคบโดยตั้งใจ: rawPage/rawLimit derive จาก searchParams, setSearchParams stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // merge-safe: clone prev params so unrelated keys (e.g. ?status=) are preserved
   function update(next: { page?: number; limit?: number }) {
@@ -67,4 +95,25 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
   }
 
   return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit, setParams }
+}
+
+// clamp page > totalPages ลง — เรียกหลัง data มี totalPages (ต้อง downstream ของ usePagination).
+// แยกจาก usePagination เพราะ totalPages มาจาก query ที่ใช้ page/limit ของ usePagination (data cycle).
+export function useClampPageToTotal(totalPages?: number) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawPage = parseIntParam(searchParams.get('page'))
+  const page = rawPage !== null && rawPage >= 1 ? rawPage : 1
+
+  useEffect(() => {
+    if (totalPages === undefined || totalPages < 1 || page <= totalPages) return
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        params.set('page', String(totalPages))
+        return params
+      },
+      { replace: true },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, totalPages])
 }
