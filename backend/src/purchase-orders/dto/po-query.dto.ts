@@ -1,5 +1,5 @@
-import { IsOptional, IsEnum, IsInt, IsPositive, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsEnum, IsInt, IsPositive, Min, IsBoolean } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PoStatus } from '../entities/purchase-order.entity';
 
@@ -36,4 +36,12 @@ export class PoQueryDto {
   @IsPositive()
   @Type(() => Number)
   prId?: number;
+
+  // Query strings arrive as 'true'/'false', so @IsBoolean alone would reject the string —
+  // @Transform coerces it first. เฉพาะ 'true' (หรือ boolean true) → true; ค่าอื่น → false (ไม่กรอง, ไม่มี 400).
+  @ApiPropertyOptional({ description: 'เฉพาะ PO ที่รับของได้ (acknowledged + partially_received)' })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  receivable?: boolean;
 }

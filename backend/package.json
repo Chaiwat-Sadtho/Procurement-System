@@ -17,8 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" src/database/seed.ts"
+    "test:e2e": "cross-env NODE_ENV=test DB_NAME=procurement_test_db jest --config ./test/jest-e2e.json",
+    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" src/database/seed.ts",
+    "seed:demo": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" src/database/seed-demo.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -51,7 +52,9 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.20.0",
     "@types/supertest": "^7.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

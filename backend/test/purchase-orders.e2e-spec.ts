@@ -19,6 +19,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
   let poId: number;
   let grnId: number;
   let poItemId: number;
+  let deptId: number;
 
   const tag = Date.now();
 
@@ -46,7 +47,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ name: `PO E2E Dept ${tag}` })
       .expect(201);
-    const deptId = deptRes.body.id;
+    deptId = deptRes.body.id;
 
     await request(app.getHttpServer())
       .post('/api/v1/budgets')
@@ -152,6 +153,16 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     poItemId = res.body.items[0].id;
   });
 
+  it('PO item returns prItemId = null when no prItemId supplied (nullable FK)', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const adHoc = res.body.items.find((i: { prItemId: number | null }) => i.prItemId === null);
+    expect(adHoc).toBeDefined();
+    expect(adHoc.prItemId).toBeNull();
+  });
+
   it('POST /api/v1/purchase-orders — rejects PO with non-approved PR', async () => {
     // สร้าง draft PR ใหม่ (ไม่ approve)
     const draftPrRes = await request(app.getHttpServer())
@@ -234,6 +245,14 @@ describe('PurchaseOrders + GRN (e2e)', () => {
 
   // --- Vendor Rating ---
 
+  it('GET /api/v1/purchase-orders/:id/rating — returns empty when not yet rated', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(res.body).toEqual({});
+  });
+
   it('POST /api/v1/purchase-orders/:id/ratings — rates vendor after completion', async () => {
     const res = await request(app.getHttpServer())
       .post(`/api/v1/purchase-orders/${poId}/ratings`)
@@ -270,6 +289,37 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ score: 5 })
       .expect(409);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — returns the rating once rated', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(res.body.poId).toBe(poId);
+    expect(res.body.score).toBe(4);
+    expect(res.body.vendorId).toBe(vendorId);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — 404 for non-existent PO', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders/999999/rating')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(404);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/rating — manager allowed (200)', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/rating`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
   });
 
   // --- Queries ---
@@ -325,5 +375,143 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ prId, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Dup', quantity: 1, unit: 'unit', unitPrice: 100 }] })
       .expect(409);
+  });
+
+  // --- F2: PATCH update must enforce the budget gate and keep reserved in sync ---
+
+  const getReservedAnnual = async (): Promise<number> => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/budgets/department/${deptId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const annual = (res.body as Array<{ fiscalYear: number; quarter: number | null; reservedAmount: string }>)
+      .find((b) => b.quarter == null && b.fiscalYear === new Date().getFullYear());
+    return Number(annual?.reservedAmount ?? 0);
+  };
+
+  const freshDraftPo = async (unitPrice: number): Promise<number> => {
+    const prRes = await request(app.getHttpServer())
+      .post('/api/v1/purchase-requests')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({ title: 'PR for PO update test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: unitPrice }] });
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    const poRes = await request(app.getHttpServer())
+      .post('/api/v1/purchase-orders')
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ prId: prRes.body.id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }] })
+      .expect(201);
+    return poRes.body.id;
+  };
+
+  it('PATCH /api/v1/purchase-orders/:id — rejects an edit that pushes the PO total over the remaining budget, leaving the PO unchanged', async () => {
+    const draftPoId = await freshDraftPo(1000);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 2000000 }] })
+      .expect(400);
+
+    // rollback: items/total untouched after the rejected edit
+    const after = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    expect(Number(after.body.totalAmount)).toBe(1000);
+    expect(after.body.items).toHaveLength(1);
+    expect(Number(after.body.items[0].unitPrice)).toBe(1000);
+  });
+
+  it('PATCH /api/v1/purchase-orders/:id — a within-budget edit adjusts the department reserved amount by the total delta', async () => {
+    const draftPoId = await freshDraftPo(1000);
+    const before = await getReservedAnnual();
+
+    // raise the PO total from 1000 to 5000 (delta +4000), well within the 1,000,000 budget
+    await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 5000 }] })
+      .expect(200);
+
+    const afterReserved = await getReservedAnnual();
+    expect(afterReserved - before).toBeCloseTo(4000, 2);
+  });
+
+  // --- Slice A filters (placed at end of suite: by here poId is completed, a cancelled PO exists
+  //     from the cancel-flow test, draft POs exist from the PATCH tests, and exactly the partial +
+  //     complete GRNs were created on poId — so every assertion is exercised against real rows) ---
+
+  it('GET /api/v1/purchase-orders?receivable=true — returns only acknowledged/partially_received', async () => {
+    // positive fixture: an acknowledged PO with no GRN yet — stays receivable so the
+    // positive assertion below is non-vacuous (poId itself was completed earlier in the suite)
+    const ackPoId = await freshDraftPo(500);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-orders/${ackPoId}/send`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-orders/${ackPoId}/acknowledge`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?receivable=true&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ id: number; status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    // positive: the acknowledged PO we just created IS returned by the filter
+    expect(rows.some((po) => po.id === ackPoId && po.status === 'acknowledged')).toBe(true);
+    // every returned row is receivable
+    for (const po of rows) {
+      expect(['acknowledged', 'partially_received']).toContain(po.status);
+    }
+    // negative control: none of the non-receivable statuses leak through
+    const leaked = rows.filter((po) =>
+      ['draft', 'sent', 'completed', 'cancelled'].includes(po.status),
+    );
+    expect(leaked).toHaveLength(0);
+
+    // negative control #2: an unfiltered fetch DOES contain a completed PO that the filter dropped
+    const all = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+    const allRows = all.body.data as Array<{ status: string }>;
+    expect(allRows.some((po) => po.status === 'completed')).toBe(true);
+  });
+
+  it('GET /api/v1/goods-receipts?status=partial — returns only partial GRNs', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts?status=partial&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    for (const grn of rows) {
+      expect(grn.status).toBe('partial');
+    }
+    // symmetric negative control: complete GRNs must NOT appear in the partial set
+    expect(rows.some((grn) => grn.status === 'complete')).toBe(false);
+  });
+
+  it('GET /api/v1/goods-receipts?status=complete — returns only complete GRNs', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts?status=complete&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = res.body.data as Array<{ status: string }>;
+    expect(rows).toBeInstanceOf(Array);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    for (const grn of rows) {
+      expect(grn.status).toBe('complete');
+    }
+    // the partial GRN created earlier in this suite must NOT appear in the complete set
+    expect(rows.some((grn) => grn.status === 'partial')).toBe(false);
   });
 });

@@ -36,6 +36,12 @@ export class PurchaseRequestsController {
     return this.service.findAll(user, query);
   }
 
+  @ApiOperation({ summary: 'สถิติ PR ต่อ status — กรองตาม role (All)' })
+  @Get('stats')
+  stats(@CurrentUser() user: CurrentUserPayload) {
+    return this.service.stats(user);
+  }
+
   @ApiOperation({ summary: 'ดู PR รายละเอียด (All)' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {

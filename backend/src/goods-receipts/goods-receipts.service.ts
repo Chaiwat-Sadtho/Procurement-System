@@ -14,6 +14,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { formatRunningNumber } from '../common/running-number';
 
 const RECEIVABLE_STATUSES = [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED];
 
@@ -60,7 +61,7 @@ export class GoodsReceiptsService {
         select: { id: true, grnNumber: true },
       });
       const nextGrn = latestGrn ? parseInt(latestGrn.grnNumber.slice(-4), 10) + 1 : 1;
-      const grnNumber = `GRN-${year}-${String(nextGrn).padStart(4, '0')}`;
+      const grnNumber = formatRunningNumber('GRN', year, nextGrn);
 
       // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)
       const effectiveByPoItem = new Map<number, number>();
@@ -138,7 +139,7 @@ export class GoodsReceiptsService {
           where: { id: po.prId },
           select: { id: true, departmentId: true, fiscalYear: true, quarter: true, totalEstimatedAmount: true },
         });
-        if (prData) {
+        if (prData && prData.departmentId != null) {
           // P5-5: ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
           await this.budgetsService.consumeAmount(
             prData.departmentId,
@@ -152,7 +153,7 @@ export class GoodsReceiptsService {
           // ไม่ควรเกิด — PO ทุกตัวมาจาก PR จริง (UQ_active_po_per_pr). ถ้าเกิด = ข้อมูลเพี้ยน
           // และ reserved budget จะค้างไม่ถูก release จึง log ไว้ debug (ไม่ throw เพื่อไม่ rollback GRN ที่ถูกต้อง)
           this.logger.warn(
-            `PO ${po.id} completed but PR ${po.prId} not found — reserved budget not consumed`,
+            `PO ${po.id} completed but PR ${po.prId} has no department/not found — budget not consumed`,
           );
         }
       }
@@ -186,7 +187,7 @@ export class GoodsReceiptsService {
   async findAll(
     query: GrnQueryDto,
   ): Promise<{ data: GoodsReceiptNote[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, poId } = query;
+    const { page = 1, limit = 20, poId, status } = query;
 
     const qb = this.grnRepository
       .createQueryBuilder('grn')
@@ -194,6 +195,7 @@ export class GoodsReceiptsService {
       .leftJoinAndSelect('grn.purchaseOrder', 'po');
 
     if (poId) qb.andWhere('grn.poId = :poId', { poId });
+    if (status) qb.andWhere('grn.status = :status', { status });
 
     const [data, total] = await qb
       .orderBy('grn.createdAt', 'DESC')

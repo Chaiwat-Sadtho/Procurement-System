@@ -2,7 +2,7 @@ import {
   Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, Like, DataSource, QueryFailedError } from 'typeorm';
+import { Repository, Like, DataSource, QueryFailedError, SelectQueryBuilder } from 'typeorm';
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -15,6 +15,8 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
+import { formatRunningNumber } from '../common/running-number';
+import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -43,12 +45,15 @@ export class PurchaseRequestsService {
       select: { id: true, prNumber: true },
     });
     const next = latest ? parseInt(latest.prNumber.slice(-4), 10) + 1 : 1;
-    return `PR-${year}-${String(next).padStart(4, '0')}`;
+    return formatRunningNumber('PR', year, next);
   }
 
   async create(requesterId: number, dto: CreatePurchaseRequestDto): Promise<PurchaseRequest> {
     const requester = await this.userRepository.findOne({ where: { id: requesterId } });
     if (!requester) throw new NotFoundException('User not found');
+    if (requester.departmentId == null) {
+      throw new BadRequestException('ผู้ใช้ต้องสังกัดแผนกก่อนสร้างใบขอซื้อ');
+    }
 
     const prNumber = await this.generatePrNumber();
 
@@ -88,11 +93,29 @@ export class PurchaseRequestsService {
     }
   }
 
+  // role-scope กลาง: ใช้ทั้ง findAll และ stats เพื่อกัน scope เพี้ยนคนละทาง
+  private async applyRoleScope(
+    qb: SelectQueryBuilder<PurchaseRequest>,
+    user: { id: number; role: UserRole },
+  ): Promise<void> {
+    if (user.role === UserRole.EMPLOYEE) {
+      qb.andWhere('pr.requesterId = :userId', { userId: user.id });
+    } else if (user.role === UserRole.MANAGER) {
+      const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!fullUser) throw new NotFoundException('User not found');
+      if (fullUser.departmentId == null) {
+        throw new ForbiddenException('ผู้ใช้ระดับ manager ต้องสังกัดแผนก');
+      }
+      qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
+    }
+    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
+  }
+
   async findAll(
     user: { id: number; role: UserRole },
     query: PrQueryDto,
   ): Promise<{ data: PurchaseRequest[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC' } = query;
+    const { page = 1, limit = 20, status, from, to, search, sort = 'created_at', order = 'DESC', prNumber, requesterId, requesterName, eligibleForPo } = query;
 
     const qb = this.prRepository
       .createQueryBuilder('pr')
@@ -100,16 +123,19 @@ export class PurchaseRequestsService {
       .leftJoinAndSelect('pr.requester', 'requester')
       .leftJoinAndSelect('pr.approver', 'approver');
 
-    if (user.role === UserRole.EMPLOYEE) {
-      qb.andWhere('pr.requesterId = :userId', { userId: user.id });
-    } else if (user.role === UserRole.MANAGER) {
-      const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
-      if (!fullUser) throw new NotFoundException('User not found');
-      qb.andWhere('pr.departmentId = :deptId', { deptId: fullUser.departmentId });
-    }
-    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
+    await this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
+    // §3.1/§4A: เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
+    // NOT EXISTS อ้าง column ดิบ (pr_id / status) ของตาราง purchase_orders → ต้อง e2e จริง (mock qb พิสูจน์ mapping ไม่ได้)
+    if (eligibleForPo) {
+      qb.andWhere('pr.status = :eligibleStatus', { eligibleStatus: PrStatus.APPROVED });
+      qb.andWhere('pr.departmentId IS NOT NULL');
+      qb.andWhere(
+        'NOT EXISTS (SELECT 1 FROM purchase_orders po WHERE po.pr_id = pr.id AND po.status != :cancelledStatus)',
+        { cancelledStatus: 'cancelled' },
+      );
+    }
     if (from) qb.andWhere('pr.createdAt >= :from', { from: new Date(from) });
     if (to) {
       const toEnd = new Date(to);
@@ -117,6 +143,14 @@ export class PurchaseRequestsService {
       qb.andWhere('pr.createdAt <= :to', { to: toEnd });
     }
     if (search) qb.andWhere('pr.title ILIKE :search', { search: `%${search}%` });
+    if (prNumber)    qb.andWhere('pr.prNumber ILIKE :prNumber', { prNumber: `%${prNumber}%` });
+    if (requesterId) qb.andWhere('pr.requesterId = :requesterId', { requesterId });
+    if (requesterName) {
+      qb.andWhere(
+        "CONCAT_WS(' ', requester.firstName, requester.middleName, requester.lastName) ILIKE :requesterName",
+        { requesterName: `%${requesterName}%` },
+      );
+    }
 
     const sortField =
       sort === 'total_estimated_amount' ? 'pr.totalEstimatedAmount'
@@ -131,13 +165,24 @@ export class PurchaseRequestsService {
     return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
+  async stats(user: { id: number; role: UserRole }): Promise<PrStatsResponse> {
+    const qb = this.prRepository
+      .createQueryBuilder('pr')
+      .select('pr.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('pr.status');
+    await this.applyRoleScope(qb, user);
+    const rows = await qb.getRawMany<{ status: PrStatus; count: string }>();
+    return mapStatsRows(rows);
+  }
+
   async findOne(
     id: number,
     user: { id: number; role: UserRole },
   ): Promise<PurchaseRequest> {
     const pr = await this.prRepository.findOne({
       where: { id },
-      relations: { items: true, requester: true, approver: true },
+      relations: { items: true, requester: true, approver: true, department: true },
     });
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
 
@@ -148,7 +193,7 @@ export class PurchaseRequestsService {
     if (user.role === UserRole.MANAGER) {
       const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
       if (!fullUser) throw new NotFoundException('User not found');
-      if (pr.departmentId !== fullUser.departmentId) {
+      if (fullUser.departmentId == null || pr.departmentId !== fullUser.departmentId) {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
     }
@@ -217,6 +262,7 @@ export class PurchaseRequestsService {
     }).catch(() => {});
 
     void (async () => {
+      if (pr.departmentId == null) return;
       const managers = await this.userRepository.find({
         where: { departmentId: pr.departmentId, role: UserRole.MANAGER, isActive: true },
       });
@@ -244,9 +290,14 @@ export class PurchaseRequestsService {
       throw new BadRequestException('Only submitted PRs can be approved');
     }
 
+    if (pr.departmentId == null) {
+      throw new BadRequestException('ใบขอซื้อนี้ไม่มีแผนก ไม่สามารถอนุมัติได้');
+    }
+    const prDepartmentId: number = pr.departmentId;
+
     const manager = await this.userRepository.findOne({ where: { id: managerId } });
     if (!manager) throw new NotFoundException('Manager not found');
-    if (pr.departmentId !== manager.departmentId) {
+    if (prDepartmentId !== manager.departmentId) {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
 
@@ -261,7 +312,7 @@ export class PurchaseRequestsService {
       const saved = await txManager.save(PurchaseRequest, pr);
 
       await this.budgetsService.reserveAmount(
-        pr.departmentId,
+        prDepartmentId,
         fiscalYear,
         pr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
         Number(pr.totalEstimatedAmount),
@@ -301,6 +352,9 @@ export class PurchaseRequestsService {
     if (!pr) throw new NotFoundException(`Purchase Request ${id} not found`);
     if (pr.status !== PrStatus.SUBMITTED) {
       throw new BadRequestException('Only submitted PRs can be rejected');
+    }
+    if (pr.departmentId == null) {
+      throw new BadRequestException('ใบขอซื้อนี้ไม่มีแผนก ไม่สามารถปฏิเสธได้');
     }
 
     const manager = await this.userRepository.findOne({ where: { id: managerId } });

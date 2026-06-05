@@ -3,7 +3,7 @@ import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { GoodsReceiptsService } from './goods-receipts.service';
-import { GoodsReceiptNote } from './entities/goods-receipt-note.entity';
+import { GoodsReceiptNote, GrnStatus } from './entities/goods-receipt-note.entity';
 import { GoodsReceiptItem } from './entities/goods-receipt-item.entity';
 import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
@@ -391,6 +391,40 @@ describe('GoodsReceiptsService', () => {
         receivedDate: '2025-11-15',
         items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
       })).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('findAll', () => {
+    const makeQb = () => {
+      const qb: Record<string, jest.Mock> = {};
+      for (const m of ['leftJoinAndSelect', 'andWhere', 'orderBy', 'skip', 'take']) {
+        qb[m] = jest.fn().mockReturnValue(qb);
+      }
+      qb.getManyAndCount = jest.fn().mockResolvedValue([[], 0]);
+      return qb;
+    };
+
+    it('should filter by status when status is provided', async () => {
+      const qb = makeQb();
+      mockGrnRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ status: GrnStatus.PARTIAL });
+
+      expect(qb.andWhere).toHaveBeenCalledWith('grn.status = :status', {
+        status: GrnStatus.PARTIAL,
+      });
+    });
+
+    it('should NOT filter by status when status is absent', async () => {
+      const qb = makeQb();
+      mockGrnRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({});
+
+      const calledWithStatus = qb.andWhere.mock.calls.some(
+        (c: unknown[]) => c[0] === 'grn.status = :status',
+      );
+      expect(calledWithStatus).toBe(false);
     });
   });
 });

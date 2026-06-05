@@ -1,0 +1,208 @@
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { AppLayout } from '@/shared/components/AppLayout'
+import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
+import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
+import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
+import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
+import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
+import { VendorDetailPage } from '@/features/vendors/pages/VendorDetailPage'
+import { VendorFormPage } from '@/features/vendors/pages/VendorFormPage'
+import { POListPage } from '@/features/purchase-orders/pages/POListPage'
+import { PODetailPage } from '@/features/purchase-orders/pages/PODetailPage'
+import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
+import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
+import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
+import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
+import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
+import { ProfilePage } from '@/features/settings/pages/ProfilePage'
+import { SecurityPage } from '@/features/settings/pages/SecurityPage'
+
+function ComingSoon({ title }: { title: string }) {
+  return (
+    <div className="flex items-center justify-center h-64 text-muted-foreground">
+      {title} — Coming Soon
+    </div>
+  )
+}
+
+export const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'purchase-requests', element: <PRListPage /> },
+      {
+        path: 'purchase-requests/new',
+        element: (
+          <ProtectedRoute allowedRoles={['employee']}>
+            <PRFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      { path: 'purchase-requests/:id', element: <PRDetailPage /> },
+      {
+        path: 'purchase-requests/:id/edit',
+        element: (
+          <ProtectedRoute allowedRoles={['employee']}>
+            <PRFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'vendors',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <VendorListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'vendors/new',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <VendorFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'vendors/:id',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <VendorDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'vendors/:id/edit',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <VendorFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'purchase-orders',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <POListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'purchase-orders/new',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <POFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'purchase-orders/:id',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <PODetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'purchase-orders/:id/edit',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <POFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'goods-receipts',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <GRNListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'goods-receipts/new',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <GRNFormPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'goods-receipts/:id',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <GRNDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'budgets',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <ComingSoon title="Budgets" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'budgets/new',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <ComingSoon title="New Budget" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'budgets/:id',
+        element: (
+          <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
+            <ComingSoon title="Budget Detail" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'users',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'settings',
+        element: <SettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="/settings/profile" replace /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'security', element: <SecurityPage /> },
+        ],
+      },
+      {
+        path: '*',
+        element: (
+          <div className="flex flex-col items-center justify-center h-64 gap-2">
+            <h2 className="text-2xl font-semibold">404</h2>
+            <p className="text-muted-foreground">Page not found</p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/login" replace />,
+  },
+])

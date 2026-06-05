@@ -12,6 +12,28 @@ import { Budget } from '../src/budgets/entities/budget.entity';
 // budget rows, so budget assertions are not polluted by previous runs. afterAll only closes
 // the app — no table wipes.
 
+// Audit logs and notifications are written fire-and-forget (`void ...log()`) AFTER the
+// transaction commits — see purchase-requests.service.approve() / goods-receipts.service —
+// so they may not be persisted yet when the HTTP response returns. Poll the read endpoint
+// until the expected row appears instead of reading once and racing the async write
+// (condition-based waiting; the budget summary reads stay single-shot because budget rows
+// are updated inside the awaited transaction and are never eventually-consistent).
+async function waitFor<T>(
+  condition: () => Promise<T | undefined | null | false>,
+  description: string,
+  timeoutMs = 5000,
+): Promise<T> {
+  const startTime = Date.now();
+  for (;;) {
+    const result = await condition();
+    if (result) return result;
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 describe('Budget reserve/consume + audit + notification (e2e)', () => {
   let app: INestApplication;
 
@@ -179,12 +201,17 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
   // --- AUDIT: PR_SUBMITTED + PR_APPROVED logged ---
 
   it('records audit logs for PR_SUBMITTED and PR_APPROVED', async () => {
-    const res = await request(app.getHttpServer())
-      .get(`/api/v1/audit-logs?entityType=PurchaseRequest&entityId=${prId}`)
-      .set('Authorization', `Bearer ${poToken}`)
-      .expect(200);
-
-    const actions = res.body.data.map((log: { action: string }) => log.action);
+    const actions = await waitFor(
+      async () => {
+        const res = await request(app.getHttpServer())
+          .get(`/api/v1/audit-logs?entityType=PurchaseRequest&entityId=${prId}`)
+          .set('Authorization', `Bearer ${poToken}`)
+          .expect(200);
+        const found = res.body.data.map((log: { action: string }) => log.action) as string[];
+        return found.includes('PR_SUBMITTED') && found.includes('PR_APPROVED') ? found : undefined;
+      },
+      'PR_SUBMITTED + PR_APPROVED audit logs',
+    );
     expect(actions).toContain('PR_SUBMITTED');
     expect(actions).toContain('PR_APPROVED');
   });
@@ -192,12 +219,17 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
   // --- NOTIFICATION: employee notified of approval ---
 
   it('sends a pr_approved notification to the employee', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/notifications')
-      .set('Authorization', `Bearer ${employeeToken}`)
-      .expect(200);
-
-    const types = res.body.data.map((n: { type: string }) => n.type);
+    const types = await waitFor(
+      async () => {
+        const res = await request(app.getHttpServer())
+          .get('/api/v1/notifications')
+          .set('Authorization', `Bearer ${employeeToken}`)
+          .expect(200);
+        const found = res.body.data.map((n: { type: string }) => n.type) as string[];
+        return found.includes('pr_approved') ? found : undefined;
+      },
+      'pr_approved notification',
+    );
     expect(types).toContain('pr_approved');
   });
 
@@ -262,12 +294,18 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     expect(Number(summary.body.usedAmount)).toBe(10000);
     expect(Number(summary.body.remaining)).toBe(490000);
 
-    // GRN_CREATED audit log exists for the GRN
-    const audit = await request(app.getHttpServer())
-      .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grnRes.body.id}`)
-      .set('Authorization', `Bearer ${poToken}`)
-      .expect(200);
-    const grnActions = audit.body.data.map((log: { action: string }) => log.action);
+    // GRN_CREATED audit log exists for the GRN (fire-and-forget — poll until written)
+    const grnActions = await waitFor(
+      async () => {
+        const audit = await request(app.getHttpServer())
+          .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grnRes.body.id}`)
+          .set('Authorization', `Bearer ${poToken}`)
+          .expect(200);
+        const found = audit.body.data.map((log: { action: string }) => log.action) as string[];
+        return found.includes('GRN_CREATED') ? found : undefined;
+      },
+      'GRN_CREATED audit log',
+    );
     expect(grnActions).toContain('GRN_CREATED');
   });
 

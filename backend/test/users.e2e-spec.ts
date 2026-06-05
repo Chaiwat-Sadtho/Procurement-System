@@ -8,6 +8,7 @@ describe('Users / Auth security (e2e)', () => {
   let app: INestApplication;
   let employeeToken: string;
   let procurementToken: string;
+  let managerToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,6 +32,12 @@ describe('Users / Auth security (e2e)', () => {
       .send({ email: 'procurement@company.com', password: 'Password123' })
       .expect(201);
     procurementToken = procRes.body.access_token;
+
+    const mgrRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'manager@company.com', password: 'Password123' })
+      .expect(201);
+    managerToken = mgrRes.body.access_token;
   });
 
   afterAll(async () => {
@@ -54,6 +61,17 @@ describe('Users / Auth security (e2e)', () => {
     expect(res.body.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('GET /api/v1/users — Manager can list users (scoped to same department)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    const deptIds = new Set(res.body.map((u: { departmentId: number | null }) => u.departmentId));
+    expect(deptIds.size).toBe(1);
+  });
+
   it('POST /api/v1/auth/register — ignores role mass-assignment (defaults to employee)', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -62,6 +80,7 @@ describe('Users / Auth security (e2e)', () => {
         password: 'Password123',
         firstName: 'Mass',
         lastName: 'Assign',
+        departmentId: 1,
         role: 'procurement_officer',
         isActive: false,
       })
@@ -74,7 +93,7 @@ describe('Users / Auth security (e2e)', () => {
     const email = `pw-${Date.now()}@test.com`;
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password: 'Password123', firstName: 'Pw', lastName: 'Test' })
+      .send({ email, password: 'Password123', firstName: 'Pw', lastName: 'Test', departmentId: 1 })
       .expect(201);
 
     await request(app.getHttpServer())
@@ -88,7 +107,7 @@ describe('Users / Auth security (e2e)', () => {
     const email = `deactivate-${Date.now()}@test.com`;
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password: 'Password123', firstName: 'Deact', lastName: 'Me' })
+      .send({ email, password: 'Password123', firstName: 'Deact', lastName: 'Me', departmentId: 1 })
       .expect(201);
     const userId = reg.body.user.id;
 

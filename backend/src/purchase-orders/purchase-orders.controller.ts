@@ -90,6 +90,14 @@ export class PurchaseOrdersController {
     return this.poService.rateVendor(id, user.id, dto);
   }
 
+  @ApiOperation({ summary: 'ดูคะแนนของ PO (null ถ้ายังไม่ให้คะแนน)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
+  @Get(':id/rating')
+  getRating(@Param('id', ParseIntPipe) id: number) {
+    return this.poService.findRatingForPo(id);
+  }
+
   @ApiOperation({ summary: 'ดู GRN ทั้งหมดของ PO (All)' })
   @Get(':id/goods-receipts')
   findGrnsByPo(@Param('id', ParseIntPipe) id: number) {

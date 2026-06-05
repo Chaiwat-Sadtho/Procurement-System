@@ -17,6 +17,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
+import { formatRunningNumber } from '../common/running-number';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -49,7 +50,7 @@ export class PurchaseOrdersService {
       select: { id: true, poNumber: true },
     });
     const next = latest ? parseInt(latest.poNumber.slice(-4), 10) + 1 : 1;
-    return `PO-${year}-${String(next).padStart(4, '0')}`;
+    return formatRunningNumber('PO', year, next);
   }
 
   async create(createdBy: number, dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
@@ -103,6 +104,11 @@ export class PurchaseOrdersService {
       items,
     });
 
+    if (pr.departmentId == null) {
+      throw new BadRequestException('PR ที่เชื่อมโยงไม่มีแผนก');
+    }
+    const prDepartmentId: number = pr.departmentId;
+
     // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
     // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
     const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
@@ -111,7 +117,7 @@ export class PurchaseOrdersService {
     try {
       savedPo = await this.dataSource.transaction(async (manager) => {
         await this.budgetsService.adjustReservedAmount(
-          pr.departmentId,
+          prDepartmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
           pr.quarter,
           reserveDelta,
@@ -170,7 +176,7 @@ export class PurchaseOrdersService {
   async findAll(
     query: PoQueryDto,
   ): Promise<{ data: PurchaseOrder[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { page = 1, limit = 20, status, vendorId, prId } = query;
+    const { page = 1, limit = 20, status, vendorId, prId, receivable } = query;
 
     const qb = this.poRepository
       .createQueryBuilder('po')
@@ -181,6 +187,10 @@ export class PurchaseOrdersService {
     if (status) qb.andWhere('po.status = :status', { status });
     if (vendorId) qb.andWhere('po.vendorId = :vendorId', { vendorId });
     if (prId) qb.andWhere('po.prId = :prId', { prId });
+    if (receivable)
+      qb.andWhere('po.status IN (:...receivable)', {
+        receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
+      });
 
     const [data, total] = await qb
       .orderBy('po.createdAt', 'DESC')
@@ -201,7 +211,10 @@ export class PurchaseOrdersService {
   }
 
   async update(id: number, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
-    const po = await this.poRepository.findOne({ where: { id }, relations: { items: true } });
+    const po = await this.poRepository.findOne({
+      where: { id },
+      relations: { items: true, purchaseRequest: true },
+    });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     if (po.status !== PoStatus.DRAFT) throw new BadRequestException('Only draft POs can be edited');
 
@@ -211,6 +224,8 @@ export class PurchaseOrdersService {
     if (dto.items) {
       // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว PO จะเหลือ 0 item
       const items = dto.items;
+      const oldTotal = Number(po.totalAmount);
+      const pr = po.purchaseRequest;
       return this.dataSource.transaction(async (manager) => {
         await manager.delete(PurchaseOrderItem, { poId: id });
         const newItems = items.map((item) =>
@@ -227,6 +242,19 @@ export class PurchaseOrdersService {
         );
         po.items = await manager.save(PurchaseOrderItem, newItems);
         po.totalAmount = sumMoney(po.items.map((item) => item.totalPrice));
+
+        // P5-6 (F2): keep the dept budget reserved in sync with the edited total —
+        // mirror create's delta-gate. A positive delta beyond remaining budget throws
+        // inside this transaction → the item delete/recreate rolls back (PO unchanged).
+        if (pr?.departmentId != null) {
+          await this.budgetsService.adjustReservedAmount(
+            pr.departmentId,
+            pr.fiscalYear ?? new Date().getFullYear(),
+            pr.quarter,
+            Number(po.totalAmount) - oldTotal,
+            manager,
+          );
+        }
         return manager.save(PurchaseOrder, po);
       });
     }
@@ -286,7 +314,7 @@ export class PurchaseOrdersService {
           quarter: true, totalEstimatedAmount: true, status: true,
         },
       });
-      if (pr && pr.status === PrStatus.APPROVED) {
+      if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {
         await this.budgetsService.releaseReservedAmount(
           pr.departmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
@@ -347,5 +375,11 @@ export class PurchaseOrdersService {
     });
 
     return savedRating;
+  }
+
+  async findRatingForPo(poId: number): Promise<VendorRating | null> {
+    const po = await this.poRepository.findOne({ where: { id: poId } });
+    if (!po) throw new NotFoundException(`Purchase Order ${poId} not found`);
+    return this.ratingRepository.findOne({ where: { poId } });
   }
 }

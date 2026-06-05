@@ -174,6 +174,13 @@ describe('PurchaseRequestsService', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('throws BadRequest when requester has no department', async () => {
+      mockUserRepo.findOne.mockResolvedValue({ ...mockUser, departmentId: null });
+      await expect(
+        service.create(1, { title: 'x', requiredDate: '2026-01-01', items: [] } as never),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('submit', () => {
@@ -275,6 +282,14 @@ describe('PurchaseRequestsService', () => {
         service.reject(1, 2, { reason: 'No budget' }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws BadRequest when rejecting a PR with null department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      await expect(
+        service.reject(1, 2, { reason: 'No budget' }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('remove', () => {
@@ -310,6 +325,205 @@ describe('PurchaseRequestsService', () => {
       await expect(
         service.findOne(1, { id: 2, role: UserRole.MANAGER }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should load department relation so PR detail can show department name', async () => {
+      const prWithDept = {
+        ...mockDraftPr,
+        requesterId: 1,
+        department: { id: 1, name: 'IT' },
+      };
+      mockPrRepo.findOne.mockResolvedValue(prWithDept);
+
+      const result = await service.findOne(1, { id: 1, role: UserRole.EMPLOYEE });
+
+      expect(mockPrRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: expect.objectContaining({ department: true }),
+        }),
+      );
+      expect(result.department).toEqual({ id: 1, name: 'IT' });
+    });
+  });
+
+  describe('null department guards', () => {
+    it('approve throws BadRequest when PR has null department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      await expect(service.approve(1, 2)).rejects.toThrow(BadRequestException);
+    });
+
+    it('findAll (manager) throws Forbidden when manager has null department', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+      mockUserRepo.findOne.mockResolvedValue({ id: 2, role: UserRole.MANAGER, departmentId: null });
+      await expect(
+        service.findAll({ id: 2, role: UserRole.MANAGER }, {} as never),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('findAll filters', () => {
+    it('filters by prNumber (ILIKE partial match)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { prNumber: '0001' } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.prNumber ILIKE :prNumber',
+        { prNumber: '%0001%' },
+      );
+    });
+
+    it('filters by requesterId (exact match)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { requesterId: 5 } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.requesterId = :requesterId',
+        { requesterId: 5 },
+      );
+    });
+
+    it('Manager scope + requesterId stack independently in andWhere', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+      mockUserRepo.findOne.mockResolvedValue({ id: 2, departmentId: 1 });
+
+      await service.findAll(
+        { id: 2, role: UserRole.MANAGER },
+        { requesterId: 99 } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.departmentId = :deptId',
+        { deptId: 1 },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pr.requesterId = :requesterId',
+        { requesterId: 99 },
+      );
+    });
+
+    it('filters by requesterName (CONCAT_WS of requester name ILIKE)', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { requesterName: 'สมชาย' } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "CONCAT_WS(' ', requester.firstName, requester.middleName, requester.lastName) ILIKE :requesterName",
+        { requesterName: '%สมชาย%' },
+      );
+    });
+  });
+
+  describe('findAll eligibleForPo filter', () => {
+    const makeQb = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    });
+
+    it('adds approved + dept-not-null + NOT EXISTS active-PO guards when eligibleForPo is true', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { eligibleForPo: true } as any,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.status = :eligibleStatus', {
+        eligibleStatus: PrStatus.APPROVED,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'NOT EXISTS (SELECT 1 FROM purchase_orders po WHERE po.pr_id = pr.id AND po.status != :cancelledStatus)',
+        { cancelledStatus: 'cancelled' },
+      );
+    });
+
+    it('does NOT add the eligible guards when eligibleForPo is false', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        { eligibleForPo: false } as any,
+      );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
+        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      );
+      expect(calledWithNotExists).toBe(false);
+    });
+
+    it('does NOT add the eligible guards when eligibleForPo is undefined', async () => {
+      const qb = makeQb();
+      mockPrRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {} as any,
+      );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
+      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
+        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      );
+      expect(calledWithNotExists).toBe(false);
     });
   });
 });

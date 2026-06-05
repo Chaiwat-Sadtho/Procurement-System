@@ -107,6 +107,7 @@ describe('Purchase Requests (e2e)', () => {
         password: 'Password123',
         firstName: 'Other',
         lastName: 'Employee',
+        departmentId: deptId,
       })
       .expect(201);
     otherEmployeeToken = otherRes.body.access_token;
@@ -129,6 +130,16 @@ describe('Purchase Requests (e2e)', () => {
     expect(res.body.items).toHaveLength(1);
 
     prId = res.body.id;
+  });
+
+  it('draft PR returns approvedAt/approvedBy/rejectReason = null', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/purchase-requests/${prId}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(200);
+    expect(res.body.approvedAt).toBeNull();
+    expect(res.body.approvedBy).toBeNull();
+    expect(res.body.rejectReason).toBeNull();
   });
 
   it('POST /api/v1/purchase-requests — rejects empty items array', async () => {
@@ -287,5 +298,164 @@ describe('Purchase Requests (e2e)', () => {
 
     expect(Array.isArray(res.body.data)).toBe(true);
     expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
+  });
+
+  // Gap-closer: requesterName must run on real Postgres to prove TypeORM maps
+  // requester.firstName -> first_name *inside* CONCAT_WS (a mock-qb unit test cannot).
+  // A mapping failure would 500 (column does not exist), so .expect(200) is itself the mapping proof.
+  // employee in this suite = firstName 'PR', lastName 'Employee', middle null => CONCAT_WS = 'PR Employee'.
+  it('GET /api/v1/purchase-requests?requesterName= — filters by requester full name (CONCAT_WS ILIKE, real DB)', async () => {
+    const full = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'PR Employee' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(full.body.meta.total).toBeGreaterThanOrEqual(1);
+
+    const partial = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'Employee' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(partial.body.meta.total).toBeGreaterThanOrEqual(1);
+
+    // negative control: a name nobody has must return 0 — proves the WHERE actually discriminates
+    const none = await request(app.getHttpServer())
+      .get('/api/v1/purchase-requests')
+      .query({ requesterName: 'NoSuchRequesterZZZ' })
+      .set('Authorization', `Bearer ${procurementToken}`)
+      .expect(200);
+    expect(none.body.meta.total).toBe(0);
+  });
+
+  // --- eligibleForPo flag (raw NOT EXISTS must hit real Postgres) ---
+  // procurementToken has no role-scope filter, so ?eligibleForPo=true is the only discriminator.
+  describe('GET /api/v1/purchase-requests?eligibleForPo=true (e2e)', () => {
+    let elVendorId: number;
+
+    const eligTag = Date.now();
+
+    // helper: create → submit → approve a PR in this suite's dept, returns its id
+    const makeApprovedPr = async (title: string): Promise<number> => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/v1/purchase-requests')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .send({
+          title,
+          requiredDate: '2025-12-31',
+          items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 1000 }],
+        })
+        .expect(201);
+      const id: number = createRes.body.id;
+      await request(app.getHttpServer())
+        .post(`/api/v1/purchase-requests/${id}/submit`)
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .expect(201);
+      await request(app.getHttpServer())
+        .post(`/api/v1/purchase-requests/${id}/approve`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(201);
+      return id;
+    };
+
+    // helper: read the full eligible list (large limit so paging never hides a row)
+    const eligibleIds = async (): Promise<Set<number>> => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/purchase-requests')
+        .query({ eligibleForPo: 'true', limit: 200 })
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .expect(200);
+      return new Set<number>(res.body.data.map((pr: { id: number }) => pr.id));
+    };
+
+    beforeAll(async () => {
+      const catRes = await request(app.getHttpServer())
+        .post('/api/v1/vendor-categories')
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .send({ name: `Eligible Cat ${eligTag}` })
+        .expect(201);
+      const vendorRes = await request(app.getHttpServer())
+        .post('/api/v1/vendors')
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .send({ name: `Eligible Vendor ${eligTag}`, taxId: `el${eligTag}`, categoryIds: [catRes.body.id] })
+        .expect(201);
+      elVendorId = vendorRes.body.id;
+    });
+
+    it('approved PR with a department and no PO appears in the eligible list', async () => {
+      const id = await makeApprovedPr('Eligible: approved no PO');
+      expect(await eligibleIds()).toContain(id);
+    });
+
+    it('draft and submitted PRs are hidden from the eligible list', async () => {
+      const draftRes = await request(app.getHttpServer())
+        .post('/api/v1/purchase-requests')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .send({
+          title: 'Eligible: draft hidden',
+          requiredDate: '2025-12-31',
+          items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+        })
+        .expect(201);
+      const draftId: number = draftRes.body.id;
+
+      const submittedRes = await request(app.getHttpServer())
+        .post('/api/v1/purchase-requests')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .send({
+          title: 'Eligible: submitted hidden',
+          requiredDate: '2025-12-31',
+          items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+        })
+        .expect(201);
+      const submittedId: number = submittedRes.body.id;
+      await request(app.getHttpServer())
+        .post(`/api/v1/purchase-requests/${submittedId}/submit`)
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .expect(201);
+
+      const ids = await eligibleIds();
+      expect(ids).not.toContain(draftId);
+      expect(ids).not.toContain(submittedId);
+    });
+
+    it('an active PO hides the PR, and cancelling that PO makes it reappear', async () => {
+      const id = await makeApprovedPr('Eligible: PO lifecycle');
+      expect(await eligibleIds()).toContain(id);
+
+      const poRes = await request(app.getHttpServer())
+        .post('/api/v1/purchase-orders')
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .send({
+          prId: id,
+          vendorId: elVendorId,
+          expectedDeliveryDate: '2025-12-15',
+          items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+        })
+        .expect(201);
+      const poId: number = poRes.body.id;
+      expect(await eligibleIds()).not.toContain(id);
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/purchase-orders/${poId}/cancel`)
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .expect(201);
+      expect(await eligibleIds()).toContain(id);
+    });
+
+    // หมายเหตุ: นี่เป็น invariant assertion ไม่ใช่ discriminating test — approve flow บล็อก null-dept อยู่แล้ว
+    // (service.ts) จึงไม่มี approved PR ที่ dept=null เข้าถึงผ่าน public API ในชุดนี้. การพิสูจน์ว่า clause
+    // departmentId IS NOT NULL ถูก emit จริง = unit A2; การพิสูจน์ approved/no-PO mapping = 3 test ด้านบน.
+    it('every PR in the eligible list has a non-null department (dept guard invariant)', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/purchase-requests')
+        .query({ eligibleForPo: 'true', limit: 200 })
+        .set('Authorization', `Bearer ${procurementToken}`)
+        .expect(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      for (const pr of res.body.data as Array<{ departmentId: number | null }>) {
+        expect(pr.departmentId).not.toBeNull();
+      }
+    });
   });
 });

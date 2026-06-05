@@ -1,0 +1,171 @@
+import { describe, it, expect } from 'vitest'
+import type { ReactNode } from 'react'
+import { renderHook, act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useSearchParams } from 'react-router-dom'
+import { usePagination, PAGE_SIZE_OPTIONS } from './usePagination'
+
+function wrapperWith(initialEntries: string[]) {
+  return ({ children }: { children: ReactNode }) => (
+    <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+  )
+}
+
+describe('usePagination', () => {
+  it('exposes the page-size options', () => {
+    expect(PAGE_SIZE_OPTIONS).toEqual([5, 10, 20, 50])
+  })
+
+  it('defaults to page 1 / limit 5 when the URL has no params', () => {
+    const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith(['/']) })
+    expect(result.current.page).toBe(1)
+    expect(result.current.limit).toBe(5)
+  })
+
+  it('reads page and limit from the URL', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=3&limit=20']),
+    })
+    expect(result.current.page).toBe(3)
+    expect(result.current.limit).toBe(20)
+  })
+
+  it('falls back to defaults for invalid URL params', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=abc&limit=7']),
+    })
+    expect(result.current.page).toBe(1)
+    expect(result.current.limit).toBe(5)
+  })
+
+  it('setLimit sets the limit and resets page to 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=4&limit=5']),
+    })
+    act(() => result.current.setLimit(20))
+    expect(result.current.limit).toBe(20)
+    expect(result.current.page).toBe(1)
+  })
+
+  it('nextPage / prevPage move within bounds and clamp at 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=2&limit=5']),
+    })
+    act(() => result.current.nextPage())
+    expect(result.current.page).toBe(3)
+    act(() => result.current.prevPage())
+    expect(result.current.page).toBe(2)
+    act(() => result.current.setPage(1))
+    act(() => result.current.prevPage())
+    expect(result.current.page).toBe(1)
+  })
+
+  it('preserves unrelated query params (e.g. status) when changing page size', async () => {
+    function Probe() {
+      const { limit, setLimit } = usePagination()
+      const [params] = useSearchParams()
+      return (
+        <div>
+          <span data-testid="limit">{limit}</span>
+          <span data-testid="status">{params.get('status') ?? ''}</span>
+          <button onClick={() => setLimit(10)}>change</button>
+        </div>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/?status=draft&limit=5']}>
+        <Probe />
+      </MemoryRouter>,
+    )
+    await userEvent.click(screen.getByText('change'))
+    expect(screen.getByTestId('limit')).toHaveTextContent('10')
+    expect(screen.getByTestId('status')).toHaveTextContent('draft')
+  })
+
+  // spec edge-case table: ?page=0 / ?page=-3 / non-integer all fall back to 1
+  it.each(['/?page=0', '/?page=-3', '/?page=2.5', '/?page=abc'])(
+    'falls back to page 1 for invalid page param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.page).toBe(1)
+    },
+  )
+
+  // robustness: scientific notation / hex / beyond-safe-integer must NOT slip
+  // through to the query (Number('1e21') is a finite integer → would reach the API)
+  it.each(['/?page=1e21', '/?page=0x10', '/?page=99999999999999999999', '/?page= 3'])(
+    'falls back to page 1 for unsafe or non-decimal page param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.page).toBe(1)
+    },
+  )
+
+  it.each(['/?limit=0x14', '/?limit=2e1'])(
+    'falls back to limit 5 for non-decimal limit param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.limit).toBe(5)
+    },
+  )
+
+  // limit must be one of the allowed options, else fall back to default 5
+  it.each(['/?limit=7', '/?limit=0', '/?limit=abc', '/?limit=100'])(
+    'falls back to limit 5 for invalid limit param %s',
+    (entry) => {
+      const { result } = renderHook(() => usePagination(), { wrapper: wrapperWith([entry]) })
+      expect(result.current.limit).toBe(5)
+    },
+  )
+
+  it('goToPage navigates to the given page and clamps below 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=2&limit=5']),
+    })
+    act(() => result.current.goToPage(4))
+    expect(result.current.page).toBe(4)
+    act(() => result.current.goToPage(0))
+    expect(result.current.page).toBe(1)
+  })
+
+  it('setParams applies a merge-safe mutation: sets given keys, preserves the rest', async () => {
+    function Probe() {
+      const { setParams } = usePagination()
+      const [params] = useSearchParams()
+      return (
+        <div>
+          <span data-testid="page">{params.get('page') ?? ''}</span>
+          <span data-testid="limit">{params.get('limit') ?? ''}</span>
+          <span data-testid="status">{params.get('status') ?? ''}</span>
+          <button
+            onClick={() =>
+              setParams((p) => {
+                p.set('page', '1')
+                p.set('status', 'approved')
+              })
+            }
+          >
+            apply
+          </button>
+        </div>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/?status=draft&page=2&limit=20']}>
+        <Probe />
+      </MemoryRouter>,
+    )
+    await userEvent.click(screen.getByText('apply'))
+    expect(screen.getByTestId('page')).toHaveTextContent('1')
+    expect(screen.getByTestId('status')).toHaveTextContent('approved')
+    expect(screen.getByTestId('limit')).toHaveTextContent('20') // unrelated key preserved
+  })
+
+  it('setPage clamps values below 1 to 1', () => {
+    const { result } = renderHook(() => usePagination(), {
+      wrapper: wrapperWith(['/?page=3&limit=5']),
+    })
+    act(() => result.current.setPage(-2))
+    expect(result.current.page).toBe(1)
+  })
+})

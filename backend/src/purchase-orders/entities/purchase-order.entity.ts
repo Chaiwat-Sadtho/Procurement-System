@@ -69,7 +69,7 @@ export class PurchaseOrder {
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes: string | null;
 
   @OneToMany(() => PurchaseOrderItem, (item) => item.purchaseOrder, { cascade: true })
   items: PurchaseOrderItem[];

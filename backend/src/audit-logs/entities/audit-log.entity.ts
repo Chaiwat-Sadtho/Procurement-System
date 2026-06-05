@@ -13,10 +13,10 @@ export class AuditLog {
 
   @ManyToOne(() => User, { eager: false, nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: User | null;
 
   @Column({ name: 'user_id', nullable: true })
-  userId: number;
+  userId: number | null;
 
   @ApiProperty({ example: 'PR_STATUS_CHANGED' })
   @Column({ length: 100 })

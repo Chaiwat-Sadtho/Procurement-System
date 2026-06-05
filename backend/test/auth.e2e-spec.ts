@@ -46,11 +46,19 @@ describe('Auth (e2e)', () => {
         firstName: 'John',
         middleName: 'Michael',
         lastName: 'Doe',
+        departmentId: 1,
       })
       .expect(201);
 
     expect(res.body).toHaveProperty('access_token');
     expect(res.body.user).toHaveProperty('fullName', 'John Michael Doe');
+  });
+
+  it('POST /api/v1/auth/register — rejects missing departmentId', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email: `nodept-${tag}@test.com`, password: 'Password123' })
+      .expect(400);
   });
 
   it('POST /api/v1/auth/login — returns token', async () => {
