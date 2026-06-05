@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
+  Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, Like, DataSource, QueryFailedError, SelectQueryBuilder } from 'typeorm';
@@ -20,6 +20,8 @@ import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
 
 @Injectable()
 export class PurchaseRequestsService {
+  private readonly logger = new Logger(PurchaseRequestsService.name);
+
   constructor(
     @InjectRepository(PurchaseRequest)
     private readonly prRepository: Repository<PurchaseRequest>,
@@ -250,16 +252,21 @@ export class PurchaseRequestsService {
     if (pr.status !== PrStatus.DRAFT) throw new BadRequestException('Only draft PRs can be submitted');
 
     pr.status = PrStatus.SUBMITTED;
-    const saved = await this.prRepository.save(pr);
-
-    void this.auditLogsService.log({
-      userId: requesterId,
-      action: 'PR_SUBMITTED',
-      entityType: 'PurchaseRequest',
-      entityId: id,
-      oldValue: { status: PrStatus.DRAFT },
-      newValue: { status: PrStatus.SUBMITTED },
-    }).catch(() => {});
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const result = await manager.save(PurchaseRequest, pr);
+      await this.auditLogsService.log(
+        {
+          userId: requesterId,
+          action: 'PR_SUBMITTED',
+          entityType: 'PurchaseRequest',
+          entityId: id,
+          oldValue: { status: PrStatus.DRAFT },
+          newValue: { status: PrStatus.SUBMITTED },
+        },
+        manager,
+      );
+      return result;
+    });
 
     void (async () => {
       if (pr.departmentId == null) return;
@@ -278,7 +285,7 @@ export class PurchaseRequestsService {
           },
         );
       }
-    })().catch(() => {});
+    })().catch((err) => this.logger.warn('notification failed: PR_SUBMITTED', err));
 
     return saved;
   }
@@ -319,17 +326,20 @@ export class PurchaseRequestsService {
         txManager,
       );
 
+      await this.auditLogsService.log(
+        {
+          userId: managerId,
+          action: 'PR_APPROVED',
+          entityType: 'PurchaseRequest',
+          entityId: id,
+          oldValue: { status: PrStatus.SUBMITTED },
+          newValue: { status: PrStatus.APPROVED, approvedBy: managerId },
+        },
+        txManager,
+      );
+
       return saved;
     });
-
-    void this.auditLogsService.log({
-      userId: managerId,
-      action: 'PR_APPROVED',
-      entityType: 'PurchaseRequest',
-      entityId: id,
-      oldValue: { status: PrStatus.SUBMITTED },
-      newValue: { status: PrStatus.APPROVED, approvedBy: managerId },
-    }).catch(() => {});
 
     void this.notificationsService.send({
       userId: savedPr.requesterId,
@@ -338,7 +348,7 @@ export class PurchaseRequestsService {
       type: NotificationType.PR_APPROVED,
       referenceId: id,
       referenceType: 'PurchaseRequest',
-    }).catch(() => {});
+    }).catch((err) => this.logger.warn('notification failed: PR_APPROVED', err));
 
     return savedPr;
   }
@@ -365,16 +375,21 @@ export class PurchaseRequestsService {
 
     pr.status = PrStatus.REJECTED;
     pr.rejectReason = dto.reason;
-    const saved = await this.prRepository.save(pr);
-
-    void this.auditLogsService.log({
-      userId: managerId,
-      action: 'PR_REJECTED',
-      entityType: 'PurchaseRequest',
-      entityId: id,
-      oldValue: { status: PrStatus.SUBMITTED },
-      newValue: { status: PrStatus.REJECTED, rejectReason: dto.reason },
-    }).catch(() => {});
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const result = await manager.save(PurchaseRequest, pr);
+      await this.auditLogsService.log(
+        {
+          userId: managerId,
+          action: 'PR_REJECTED',
+          entityType: 'PurchaseRequest',
+          entityId: id,
+          oldValue: { status: PrStatus.SUBMITTED },
+          newValue: { status: PrStatus.REJECTED, rejectReason: dto.reason },
+        },
+        manager,
+      );
+      return result;
+    });
 
     void this.notificationsService.send({
       userId: saved.requesterId,
@@ -383,7 +398,7 @@ export class PurchaseRequestsService {
       type: NotificationType.PR_REJECTED,
       referenceId: id,
       referenceType: 'PurchaseRequest',
-    }).catch(() => {});
+    }).catch((err) => this.logger.warn('notification failed: PR_REJECTED', err));
 
     return saved;
   }
