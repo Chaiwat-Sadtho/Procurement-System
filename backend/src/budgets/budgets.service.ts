@@ -176,13 +176,18 @@ export class BudgetsService {
     fiscalYear: number,
     quarter: number | null,
     amount: number,
+    txManager?: EntityManager,
   ): Promise<void> {
-    const budget = await this.budgetRepository.findOne({
+    const mgr = txManager ?? this.dataSource.manager;
+
+    // P5-4: pessimistic write lock กัน lost update เมื่อ release ชน consume/reserve บน budget row เดียวกัน
+    const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
+      lock: { mode: 'pessimistic_write' },
     });
     if (!budget) return;
 
-    await this.budgetRepository.update(budget.id, {
+    await mgr.update(Budget, budget.id, {
       reservedAmount: applyRelease(Number(budget.reservedAmount), amount),
     });
   }
