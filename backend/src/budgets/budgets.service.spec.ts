@@ -182,28 +182,49 @@ describe('BudgetsService', () => {
   });
 
   describe('releaseReservedAmount', () => {
-    it('should decrease reservedAmount', async () => {
-      mockBudgetRepo.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 200000 });
-      mockBudgetRepo.update.mockResolvedValue({ affected: 1 });
+    it('should decrease reservedAmount using the transaction manager with a write lock', async () => {
+      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 200000 });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.releaseReservedAmount(1, 2026, null, 200000);
 
-      expect(mockBudgetRepo.update).toHaveBeenCalledWith(1, { reservedAmount: 0 });
+      expect(mockDataSource.manager.findOne).toHaveBeenCalledWith(
+        Budget,
+        expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+      );
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
     });
 
     it('should clamp to 0 when releasing more than reserved', async () => {
-      mockBudgetRepo.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 50000 });
-      mockBudgetRepo.update.mockResolvedValue({ affected: 1 });
+      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 50000 });
+      mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.releaseReservedAmount(1, 2026, null, 200000);
 
-      expect(mockBudgetRepo.update).toHaveBeenCalledWith(1, { reservedAmount: 0 });
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
     });
 
     it('should silently skip if no budget configured', async () => {
-      mockBudgetRepo.findOne.mockResolvedValue(null);
+      mockDataSource.manager.findOne.mockResolvedValue(null);
       await expect(service.releaseReservedAmount(1, 2026, null, 200000)).resolves.toBeUndefined();
-      expect(mockBudgetRepo.update).not.toHaveBeenCalled();
+      expect(mockDataSource.manager.update).not.toHaveBeenCalled();
+    });
+
+    // atomicity: cancel ส่ง tx manager มา → release ต้องใช้ manager ตัวนั้น (ไม่ใช่ default) → join cancel tx
+    it('should use the provided transaction manager (not the default) when one is passed', async () => {
+      const txManager = {
+        findOne: jest.fn().mockResolvedValue({ ...mockBudget, reservedAmount: 200000 }),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+
+      await service.releaseReservedAmount(1, 2026, null, 200000, txManager as any);
+
+      expect(txManager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
+      expect(txManager.findOne).toHaveBeenCalledWith(
+        Budget,
+        expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+      );
+      expect(mockDataSource.manager.update).not.toHaveBeenCalled();
     });
   });
 

@@ -326,18 +326,14 @@ export class PurchaseOrdersService {
         },
         manager,
       );
-      return result;
-    });
 
-    // P5-2: release reserved budget ของ PR ที่ผูกอยู่ กัน budget leak
-    // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
-    void (async () => {
-      const pr = await this.prRepository.findOne({
+      // P5-2: release reserved budget ของ PR ที่ผูกอยู่ ภายใน tx เดียวกับ cancel (atomic, กัน budget leak)
+      // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
+      const pr = await manager.findOne(PurchaseRequest, {
         where: { id: po.prId },
         select: {
-          id: true, departmentId: true, fiscalYear: true,
-          quarter: true, totalEstimatedAmount: true, status: true,
-        },
+          id: true, departmentId: true, fiscalYear: true, quarter: true, status: true,
+        }, // ตัด totalEstimatedAmount (dead field โค้ดเดิม) — release ใช้ Number(po.totalAmount) ไม่ใช่ PR estimate
       });
       if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {
         await this.budgetsService.releaseReservedAmount(
@@ -345,9 +341,12 @@ export class PurchaseOrdersService {
           pr.fiscalYear ?? new Date().getFullYear(),
           pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
           Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
+          manager,
         );
       }
-    })().catch(() => {});
+
+      return result;
+    });
 
     return saved;
   }
