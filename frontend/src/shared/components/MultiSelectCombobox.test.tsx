@@ -69,12 +69,21 @@ describe('MultiSelectCombobox', () => {
     expect(await screen.findByText('ไม่พบหมวดหมู่')).toBeInTheDocument()
   })
 
-  it('wires combobox a11y: aria-haspopup=listbox + aria-controls to the list id', async () => {
+  // a11y harmonized กับ Combobox (#88): popup เป็น Radix dialog (role="dialog") ที่ครอบ cmdk
+  // listbox → trigger ต้อง haspopup="dialog" (ไม่ใช่ "listbox" ที่ขัดกับ role จริงของ popup).
+  // ปล่อย Radix PopoverTrigger wire aria-controls/haspopup เอง (ถอด manual override) =
+  // identical pattern กับ Combobox.test.tsx (ดู TESTING.md #88).
+  it('wires combobox a11y like Combobox: aria-haspopup=dialog + aria-controls ไป dialog popup ที่ครอบ listbox', async () => {
     render(<MultiSelectCombobox id="cats" value={[]} onChange={vi.fn()} options={options} />)
     const trigger = screen.getByRole('combobox')
-    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
-    expect(trigger).toHaveAttribute('aria-controls', 'cats-listbox')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
     await userEvent.click(trigger)
-    expect(document.getElementById('cats-listbox')).toBeInTheDocument()
+    const listbox = await screen.findByRole('listbox')
+    const controls = trigger.getAttribute('aria-controls')
+    expect(controls).toBeTruthy()
+    const popup = document.getElementById(controls!)
+    expect(popup).not.toBeNull()
+    expect(popup).toHaveAttribute('role', 'dialog')
+    expect(popup).toContainElement(listbox)
   })
 })
