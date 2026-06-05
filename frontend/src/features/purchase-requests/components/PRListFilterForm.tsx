@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
@@ -65,14 +65,13 @@ export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onCle
     control,
     reset,
     setValue,
-    watch,
     formState: { errors, isDirty },
   } = useForm<PRListFilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues,
   })
 
-  const statusValue = watch('status') ?? 'all'
+  const statusValue = useWatch({ control, name: 'status' }) ?? 'all'
 
   function handleClear() {
     // ล้าง = กลับเป็นค่าว่างทั้งหมด (รวม to ที่ default = วันนี้) ไม่ใช่ reset กลับ default

@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
@@ -42,12 +42,15 @@ export function GRNListFilterForm({ pos, onSubmit, onClear }: GRNListFilterFormP
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { isDirty },
   } = useForm<GRNListFilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues,
   })
+
+  const status = useWatch({ control, name: 'status' })
+  const poId = useWatch({ control, name: 'poId' })
 
   const poOptions = [
     { value: 'all', label: 'ทุกใบสั่งซื้อ' },
@@ -65,7 +68,7 @@ export function GRNListFilterForm({ pos, onSubmit, onClear }: GRNListFilterFormP
         <div className="space-y-1">
           <Label htmlFor="status">สถานะ</Label>
           <Select
-            value={watch('status') ?? 'all'}
+            value={status ?? 'all'}
             onValueChange={(v) => setValue('status', v, { shouldDirty: true })}
           >
             <SelectTrigger id="status">
@@ -85,7 +88,7 @@ export function GRNListFilterForm({ pos, onSubmit, onClear }: GRNListFilterFormP
           <Label htmlFor="poId">ใบสั่งซื้อ (PO)</Label>
           <Combobox
             id="poId"
-            value={watch('poId') ?? 'all'}
+            value={poId ?? 'all'}
             onChange={(v) => setValue('poId', v, { shouldDirty: true })}
             options={poOptions}
             placeholder="ทุกใบสั่งซื้อ"

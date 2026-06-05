@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Dialog,
@@ -30,13 +30,14 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
     register,
     handleSubmit,
     reset,
-    watch,
     formState: { isValid },
   } = useForm<RateVendorFormValues>({
     resolver: zodResolver(rateVendorSchema),
     defaultValues: { score: 0, comment: '' },
     mode: 'onChange',
   })
+
+  const score = useWatch({ control, name: 'score' })
 
   useEffect(() => {
     if (!open) reset({ score: 0, comment: '' })
@@ -63,7 +64,7 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
                 name="score"
                 render={({ field }) => <StarRating value={field.value} onChange={field.onChange} label="คะแนน" />}
               />
-              {!watch('score') && (
+              {!score && (
                 <p className="text-sm text-muted-foreground">เลือกดาวเพื่อให้คะแนน</p>
               )}
             </div>

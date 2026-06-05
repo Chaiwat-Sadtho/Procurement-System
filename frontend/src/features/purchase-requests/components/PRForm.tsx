@@ -107,6 +107,9 @@ export function PRForm(props: PRFormProps) {
     <Form {...form}>
       <form
         className="mx-auto max-w-4xl space-y-6"
+        // react-hooks/refs false positive: handleSubmit returns an event handler — the
+        // inFlight ref inside onSave is read on submit, never during render.
+        // eslint-disable-next-line react-hooks/refs
         onSubmit={form.handleSubmit((v) => onSave(v, 'draft'))}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -195,6 +198,7 @@ export function PRForm(props: PRFormProps) {
             type="button"
             className="w-full sm:w-auto"
             disabled={!isValid || isPending}
+            // eslint-disable-next-line react-hooks/refs -- handleSubmit returns an event handler; inFlight ref in onSave is read on submit, not during render
             onClick={form.handleSubmit((v) => onSave(v, 'submit'))}
           >
             บันทึก + ส่งอนุมัติ
