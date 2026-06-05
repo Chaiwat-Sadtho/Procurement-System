@@ -40,6 +40,12 @@ describe('DateField', () => {
     expect(screen.getByPlaceholderText('วว/ดด/ปปปป')).toHaveValue('')
   })
 
+  it('value เปลี่ยนจากภายนอกเป็นวันใหม่ → sync แสดงวันใหม่', () => {
+    const { rerender } = render(<DateField id="d" value="2026-12-31" onChange={vi.fn()} />)
+    rerender(<DateField id="d" value="2025-01-15" onChange={vi.fn()} />)
+    expect(screen.getByPlaceholderText('วว/ดด/ปปปป')).toHaveValue('15/01/2568')
+  })
+
   it('เลือกวันจากปฏิทิน → emit ISO', async () => {
     const onChange = vi.fn()
     render(<DateField id="d" value="2026-12-31" onChange={onChange} />)
