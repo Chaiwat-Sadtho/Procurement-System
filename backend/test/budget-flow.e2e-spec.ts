@@ -5,6 +5,14 @@ import { DataSource } from 'typeorm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Budget } from '../src/budgets/entities/budget.entity';
+import {
+  AuthResponse,
+  IdResponse,
+  BudgetSummaryResponse,
+  PurchaseOrderResponse,
+  GoodsReceiptNoteResponse,
+  Paginated,
+} from './types';
 
 // Idempotency note: department name, user emails, vendor category name and vendor taxId
 // have UNIQUE constraints, so we tag them per-run (`tag = Date.now()`) to keep the suite
@@ -71,7 +79,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const poRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' });
-    poToken = poRes.body.access_token;
+    poToken = (poRes.body as AuthResponse).access_token;
 
     // 2. PO creates a fresh department
     const deptRes = await request(app.getHttpServer())
@@ -79,7 +87,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ name: `Budget Test Dept ${tag}` })
       .expect(201);
-    deptId = deptRes.body.id;
+    deptId = (deptRes.body as IdResponse).id;
 
     // 3. PO creates the annual budget for the dept
     const budgetRes = await request(app.getHttpServer())
@@ -87,7 +95,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ departmentId: deptId, fiscalYear, totalAmount: 500000 })
       .expect(201);
-    budgetId = budgetRes.body.id;
+    budgetId = (budgetRes.body as IdResponse).id;
 
     // 4. Register an employee in that dept, then login
     await request(app.getHttpServer())
@@ -103,7 +111,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const empLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `emp.budget.${tag}@example.com`, password: 'pass1234' });
-    employeeToken = empLogin.body.access_token;
+    employeeToken = (empLogin.body as AuthResponse).access_token;
 
     // 5. Register a manager in that dept, PO upgrades role to manager, then login
     const mgrReg = await request(app.getHttpServer())
@@ -116,7 +124,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
         departmentId: deptId,
       })
       .expect(201);
-    const managerUserId = mgrReg.body.user.id;
+    const managerUserId = (mgrReg.body as AuthResponse).user.id;
 
     await request(app.getHttpServer())
       .patch(`/api/v1/users/${managerUserId}/role`)
@@ -127,7 +135,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const mgrLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `mgr.budget.${tag}@example.com`, password: 'pass1234' });
-    managerToken = mgrLogin.body.access_token;
+    managerToken = (mgrLogin.body as AuthResponse).access_token;
 
     // 6. PO creates a vendor category + vendor (tagged) for later PO creation
     const catRes = await request(app.getHttpServer())
@@ -138,8 +146,8 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Budget Vendor ${tag}`, taxId: `B${tag}`, categoryIds: [catRes.body.id] });
-    vendorId = vendorRes.body.id;
+      .send({ name: `Budget Vendor ${tag}`, taxId: `B${tag}`, categoryIds: [(catRes.body as IdResponse).id] });
+    vendorId = (vendorRes.body as IdResponse).id;
   });
 
   afterAll(async () => {
@@ -158,7 +166,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
         items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 5000 }],
       })
       .expect(201);
-    prId = prRes.body.id;
+    prId = (prRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-requests/${prId}/submit`)
@@ -175,10 +183,11 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    expect(Number(summary.body.reservedAmount)).toBe(10000);
-    expect(Number(summary.body.usedAmount)).toBe(0);
-    expect(Number(summary.body.totalAmount)).toBe(500000);
-    expect(Number(summary.body.remaining)).toBe(490000);
+    const s = summary.body as BudgetSummaryResponse;
+    expect(Number(s.reservedAmount)).toBe(10000);
+    expect(Number(s.usedAmount)).toBe(0);
+    expect(Number(s.totalAmount)).toBe(500000);
+    expect(Number(s.remaining)).toBe(490000);
   });
 
   // --- REVIEW #2: DB-level uniqueness for annual budgets ---
@@ -208,7 +217,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
           .get(`/api/v1/audit-logs?entityType=PurchaseRequest&entityId=${prId}`)
           .set('Authorization', `Bearer ${poToken}`)
           .expect(200);
-        const found = res.body.data.map((log: { action: string }) => log.action) as string[];
+        const found = (res.body as Paginated<{ action: string }>).data.map((log) => log.action);
         return found.includes('PR_SUBMITTED') && found.includes('PR_APPROVED') ? found : undefined;
       },
       'PR_SUBMITTED + PR_APPROVED audit logs',
@@ -226,7 +235,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
           .get('/api/v1/notifications')
           .set('Authorization', `Bearer ${employeeToken}`)
           .expect(200);
-        const found = res.body.data.map((n: { type: string }) => n.type) as string[];
+        const found = (res.body as Paginated<{ type: string }>).data.map((n) => n.type);
         return found.includes('pr_approved') ? found : undefined;
       },
       'pr_approved notification',
@@ -248,9 +257,10 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       })
       .expect(201);
 
-    expect(Number(res.body.totalAmount)).toBe(10000);
-    poId = res.body.id;
-    poItemId = res.body.items[0].id;
+    const po = res.body as PurchaseOrderResponse;
+    expect(Number(po.totalAmount)).toBe(10000);
+    poId = po.id;
+    poItemId = po.items[0].id;
   });
 
   it('sends and acknowledges the PO', async () => {
@@ -276,13 +286,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       })
       .expect(201);
 
-    expect(grnRes.body.status).toBe('complete');
+    const grn = grnRes.body as GoodsReceiptNoteResponse;
+    expect(grn.status).toBe('complete');
 
     // PO auto-completes
     const poRes = await request(app.getHttpServer())
       .get(`/api/v1/purchase-orders/${poId}`)
       .set('Authorization', `Bearer ${poToken}`);
-    expect(poRes.body.status).toBe('completed');
+    expect((poRes.body as PurchaseOrderResponse).status).toBe('completed');
 
     // budgetsService.consumeAmount ran via the GRN transaction:
     // reserved 10000 released, used += 10000
@@ -291,18 +302,19 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    expect(Number(summary.body.reservedAmount)).toBe(0);
-    expect(Number(summary.body.usedAmount)).toBe(10000);
-    expect(Number(summary.body.remaining)).toBe(490000);
+    const s = summary.body as BudgetSummaryResponse;
+    expect(Number(s.reservedAmount)).toBe(0);
+    expect(Number(s.usedAmount)).toBe(10000);
+    expect(Number(s.remaining)).toBe(490000);
 
     // GRN_CREATED audit log exists for the GRN (fire-and-forget — poll until written)
     const grnActions = await waitFor(
       async () => {
         const audit = await request(app.getHttpServer())
-          .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grnRes.body.id}`)
+          .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grn.id}`)
           .set('Authorization', `Bearer ${poToken}`)
           .expect(200);
-        const found = audit.body.data.map((log: { action: string }) => log.action) as string[];
+        const found = (audit.body as Paginated<{ action: string }>).data.map((log) => log.action);
         return found.includes('GRN_CREATED') ? found : undefined;
       },
       'GRN_CREATED audit log',
@@ -319,7 +331,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ departmentId: deptId, fiscalYear, quarter: 2, totalAmount: 200000 })
       .expect(201);
-    q2BudgetId = q2Res.body.id;
+    q2BudgetId = (q2Res.body as IdResponse).id;
 
     // employee creates a Q2 PR (3 x 4000 = 12000)
     const prRes = await request(app.getHttpServer())
@@ -332,7 +344,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
         items: [{ itemName: 'Monitor', quantity: 3, unit: 'unit', estimatedUnitPrice: 4000 }],
       })
       .expect(201);
-    q2PrId = prRes.body.id;
+    q2PrId = (prRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-requests/${q2PrId}/submit`)
@@ -349,14 +361,15 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .get(`/api/v1/budgets/${q2BudgetId}/summary`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(Number(q2Summary.body.reservedAmount)).toBe(12000);
+    expect(Number((q2Summary.body as BudgetSummaryResponse).reservedAmount)).toBe(12000);
 
     // Annual budget is unaffected by the Q2 PR (still reserved 0, used 10000)
     const annualSummary = await request(app.getHttpServer())
       .get(`/api/v1/budgets/${budgetId}/summary`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(Number(annualSummary.body.reservedAmount)).toBe(0);
-    expect(Number(annualSummary.body.usedAmount)).toBe(10000);
+    const annual = annualSummary.body as BudgetSummaryResponse;
+    expect(Number(annual.reservedAmount)).toBe(0);
+    expect(Number(annual.usedAmount)).toBe(10000);
   });
 });

@@ -3,6 +3,15 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import {
+  AuthResponse,
+  IdResponse,
+  PurchaseOrderResponse,
+  GoodsReceiptNoteResponse,
+  VendorResponse,
+  VendorRatingResponse,
+  Paginated,
+} from './types';
 
 // Idempotency note: vendor category name + vendor taxId have UNIQUE constraints,
 // so we tag them per-run (`tag = Date.now()`) to keep the suite re-runnable
@@ -17,7 +26,6 @@ describe('PurchaseOrders + GRN (e2e)', () => {
   let vendorId: number;
   let prId: number;
   let poId: number;
-  let grnId: number;
   let poItemId: number;
   let deptId: number;
 
@@ -39,7 +47,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const poRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' });
-    poToken = poRes.body.access_token;
+    poToken = (poRes.body as AuthResponse).access_token;
 
     // Fresh department + annual budget so PR approve (which now reserves budget) succeeds.
     const deptRes = await request(app.getHttpServer())
@@ -47,7 +55,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send({ name: `PO E2E Dept ${tag}` })
       .expect(201);
-    deptId = deptRes.body.id;
+    deptId = (deptRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post('/api/v1/budgets')
@@ -69,7 +77,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const empRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `po-e2e-emp-${tag}@test.com`, password: 'Password123' });
-    employeeToken = empRes.body.access_token;
+    employeeToken = (empRes.body as AuthResponse).access_token;
 
     // Fresh manager in that dept (role upgraded by PO).
     const mgrReg = await request(app.getHttpServer())
@@ -83,14 +91,14 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       })
       .expect(201);
     await request(app.getHttpServer())
-      .patch(`/api/v1/users/${mgrReg.body.user.id}/role`)
+      .patch(`/api/v1/users/${(mgrReg.body as AuthResponse).user.id}/role`)
       .set('Authorization', `Bearer ${poToken}`)
       .send({ role: 'manager' })
       .expect(200);
     const mgrRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `po-e2e-mgr-${tag}@test.com`, password: 'Password123' });
-    managerToken = mgrRes.body.access_token;
+    managerToken = (mgrRes.body as AuthResponse).access_token;
 
     // Setup: สร้าง vendor category + vendor (tag กัน unique conflict)
     const catRes = await request(app.getHttpServer())
@@ -101,8 +109,8 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Test Supplier Co. ${tag}`, taxId: String(tag), categoryIds: [catRes.body.id] });
-    vendorId = vendorRes.body.id;
+      .send({ name: `Test Supplier Co. ${tag}`, taxId: String(tag), categoryIds: [(catRes.body as IdResponse).id] });
+    vendorId = (vendorRes.body as IdResponse).id;
 
     // Setup: สร้าง PR → submit → approve
     const prRes = await request(app.getHttpServer())
@@ -115,7 +123,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
           { itemName: 'Laptop A', quantity: 2, unit: 'unit', estimatedUnitPrice: 35000 },
         ],
       });
-    prId = prRes.body.id;
+    prId = (prRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-requests/${prId}/submit`)
@@ -146,11 +154,12 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body.status).toBe('draft');
-    expect(res.body.poNumber).toMatch(/^PO-\d{4}-\d{4}$/);
-    expect(Number(res.body.totalAmount)).toBe(70000);
-    poId = res.body.id;
-    poItemId = res.body.items[0].id;
+    const body = res.body as PurchaseOrderResponse;
+    expect(body.status).toBe('draft');
+    expect(body.poNumber).toMatch(/^PO-\d{4}-\d{4}$/);
+    expect(Number(body.totalAmount)).toBe(70000);
+    poId = body.id;
+    poItemId = body.items[0].id;
   });
 
   it('PO item returns prItemId = null when no prItemId supplied (nullable FK)', async () => {
@@ -158,9 +167,10 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get(`/api/v1/purchase-orders/${poId}`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    const adHoc = res.body.items.find((i: { prItemId: number | null }) => i.prItemId === null);
+    const body = res.body as PurchaseOrderResponse;
+    const adHoc = body.items.find((i) => i.prItemId === null);
     expect(adHoc).toBeDefined();
-    expect(adHoc.prItemId).toBeNull();
+    expect(adHoc?.prItemId).toBeNull();
   });
 
   it('POST /api/v1/purchase-orders — rejects PO with non-approved PR', async () => {
@@ -176,7 +186,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: draftPrRes.body.id, vendorId, expectedDeliveryDate: '2025-12-15', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }] })
+      .send({ prId: (draftPrRes.body as IdResponse).id, vendorId, expectedDeliveryDate: '2025-12-15', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }] })
       .expect(400);
   });
 
@@ -185,7 +195,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .post(`/api/v1/purchase-orders/${poId}/send`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(201);
-    expect(res.body.status).toBe('sent');
+    expect((res.body as PurchaseOrderResponse).status).toBe('sent');
   });
 
   it('POST /api/v1/purchase-orders/:id/acknowledge — transitions to acknowledged', async () => {
@@ -193,7 +203,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .post(`/api/v1/purchase-orders/${poId}/acknowledge`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(201);
-    expect(res.body.status).toBe('acknowledged');
+    expect((res.body as PurchaseOrderResponse).status).toBe('acknowledged');
   });
 
   // --- GRN: Partial Receipt ---
@@ -209,15 +219,15 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body.grnNumber).toMatch(/^GRN-\d{4}-\d{4}$/);
-    expect(res.body.status).toBe('partial');
-    grnId = res.body.id;
+    const body = res.body as GoodsReceiptNoteResponse;
+    expect(body.grnNumber).toMatch(/^GRN-\d{4}-\d{4}$/);
+    expect(body.status).toBe('partial');
 
     // ตรวจสอบ PO status เปลี่ยนเป็น partially_received
     const poRes = await request(app.getHttpServer())
       .get(`/api/v1/purchase-orders/${poId}`)
       .set('Authorization', `Bearer ${poToken}`);
-    expect(poRes.body.status).toBe('partially_received');
+    expect((poRes.body as PurchaseOrderResponse).status).toBe('partially_received');
   });
 
   // --- GRN: Complete Receipt (auto-complete PO) ---
@@ -233,14 +243,15 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body.status).toBe('complete');
+    expect((res.body as GoodsReceiptNoteResponse).status).toBe('complete');
 
     // ตรวจสอบ PO auto-completed
     const poRes = await request(app.getHttpServer())
       .get(`/api/v1/purchase-orders/${poId}`)
       .set('Authorization', `Bearer ${poToken}`);
-    expect(poRes.body.status).toBe('completed');
-    expect(poRes.body.actualDeliveryDate).toBe('2025-11-15');
+    const po = poRes.body as PurchaseOrderResponse;
+    expect(po.status).toBe('completed');
+    expect(po.actualDeliveryDate).toBe('2025-11-15');
   });
 
   // --- Vendor Rating ---
@@ -260,14 +271,15 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .send({ score: 4, comment: 'ส่งของตรงเวลา' })
       .expect(201);
 
-    expect(res.body.score).toBe(4);
-    expect(res.body.vendorId).toBe(vendorId);
+    const body = res.body as VendorRatingResponse;
+    expect(body.score).toBe(4);
+    expect(body.vendorId).toBe(vendorId);
 
     // ตรวจสอบ vendor rating_avg อัพเดท
     const vendorRes = await request(app.getHttpServer())
       .get(`/api/v1/vendors/${vendorId}`)
       .set('Authorization', `Bearer ${poToken}`);
-    expect(Number(vendorRes.body.ratingAvg)).toBe(4);
+    expect(Number((vendorRes.body as VendorResponse).ratingAvg)).toBe(4);
   });
 
   it('GET /api/v1/vendors/:id/ratings — returns paginated rating history with PO number', async () => {
@@ -276,11 +288,12 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    expect(res.body.data).toBeInstanceOf(Array);
-    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.data[0]).toHaveProperty('purchaseOrder.poNumber');
-    expect(res.body.data[0]).toHaveProperty('ratedBy.fullName');
-    expect(res.body.meta).toMatchObject({ page: 1, limit: 20 });
+    const body = res.body as Paginated<VendorRatingResponse>;
+    expect(body.data).toBeInstanceOf(Array);
+    expect(body.data.length).toBeGreaterThanOrEqual(1);
+    expect(body.data[0]).toHaveProperty('purchaseOrder.poNumber');
+    expect(body.data[0]).toHaveProperty('ratedBy.fullName');
+    expect(body.meta).toMatchObject({ page: 1, limit: 20 });
   });
 
   it('POST /api/v1/purchase-orders/:id/ratings — cannot rate twice', async () => {
@@ -296,9 +309,10 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get(`/api/v1/purchase-orders/${poId}/rating`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(res.body.poId).toBe(poId);
-    expect(res.body.score).toBe(4);
-    expect(res.body.vendorId).toBe(vendorId);
+    const body = res.body as VendorRatingResponse;
+    expect(body.poId).toBe(poId);
+    expect(body.score).toBe(4);
+    expect(body.vendorId).toBe(vendorId);
   });
 
   it('GET /api/v1/purchase-orders/:id/rating — 404 for non-existent PO', async () => {
@@ -329,8 +343,9 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get('/api/v1/goods-receipts')
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(res.body.data).toBeInstanceOf(Array);
-    expect(res.body.meta).toHaveProperty('total');
+    const body = res.body as Paginated<GoodsReceiptNoteResponse>;
+    expect(body.data).toBeInstanceOf(Array);
+    expect(body.meta).toHaveProperty('total');
   });
 
   it('GET /api/v1/purchase-orders/:id/goods-receipts — lists GRNs of specific PO', async () => {
@@ -338,8 +353,9 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get(`/api/v1/purchase-orders/${poId}/goods-receipts`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(res.body).toBeInstanceOf(Array);
-    expect(res.body.length).toBe(2);
+    const grns = res.body as GoodsReceiptNoteResponse[];
+    expect(grns).toBeInstanceOf(Array);
+    expect(grns.length).toBe(2);
   });
 
   // --- Cancel flow (separate PO) ---
@@ -350,20 +366,21 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .post('/api/v1/purchase-requests')
       .set('Authorization', `Bearer ${employeeToken}`)
       .send({ title: 'PR for cancel test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 500 }] });
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Res.body.id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Res.body.id}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    const pr2Id = (pr2Res.body as IdResponse).id;
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Id}/approve`).set('Authorization', `Bearer ${managerToken}`);
 
     const po2Res = await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: pr2Res.body.id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 500 }] });
+      .send({ prId: pr2Id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 500 }] });
 
     const cancelRes = await request(app.getHttpServer())
-      .post(`/api/v1/purchase-orders/${po2Res.body.id}/cancel`)
+      .post(`/api/v1/purchase-orders/${(po2Res.body as IdResponse).id}/cancel`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(201);
 
-    expect(cancelRes.body.status).toBe('cancelled');
+    expect((cancelRes.body as PurchaseOrderResponse).status).toBe('cancelled');
   });
 
   // --- P4-2: double-PO guard ---
@@ -394,14 +411,15 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .post('/api/v1/purchase-requests')
       .set('Authorization', `Bearer ${employeeToken}`)
       .send({ title: 'PR for PO update test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: unitPrice }] });
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${prRes.body.id}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    const newPrId = (prRes.body as IdResponse).id;
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${newPrId}/submit`).set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${newPrId}/approve`).set('Authorization', `Bearer ${managerToken}`);
     const poRes = await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: prRes.body.id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }] })
+      .send({ prId: newPrId, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }] })
       .expect(201);
-    return poRes.body.id;
+    return (poRes.body as IdResponse).id;
   };
 
   it('PATCH /api/v1/purchase-orders/:id — rejects an edit that pushes the PO total over the remaining budget, leaving the PO unchanged', async () => {
@@ -418,9 +436,10 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get(`/api/v1/purchase-orders/${draftPoId}`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(Number(after.body.totalAmount)).toBe(1000);
-    expect(after.body.items).toHaveLength(1);
-    expect(Number(after.body.items[0].unitPrice)).toBe(1000);
+    const body = after.body as PurchaseOrderResponse;
+    expect(Number(body.totalAmount)).toBe(1000);
+    expect(body.items).toHaveLength(1);
+    expect(Number(body.items[0].unitPrice)).toBe(1000);
   });
 
   it('PATCH /api/v1/purchase-orders/:id — a within-budget edit adjusts the department reserved amount by the total delta', async () => {
@@ -460,7 +479,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    const rows = res.body.data as Array<{ id: number; status: string }>;
+    const rows = (res.body as Paginated<PurchaseOrderResponse>).data;
     expect(rows).toBeInstanceOf(Array);
     // positive: the acknowledged PO we just created IS returned by the filter
     expect(rows.some((po) => po.id === ackPoId && po.status === 'acknowledged')).toBe(true);
@@ -479,7 +498,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get('/api/v1/purchase-orders?limit=100')
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    const allRows = all.body.data as Array<{ status: string }>;
+    const allRows = (all.body as Paginated<PurchaseOrderResponse>).data;
     expect(allRows.some((po) => po.status === 'completed')).toBe(true);
   });
 
@@ -489,7 +508,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    const rows = res.body.data as Array<{ status: string }>;
+    const rows = (res.body as Paginated<GoodsReceiptNoteResponse>).data;
     expect(rows).toBeInstanceOf(Array);
     expect(rows.length).toBeGreaterThanOrEqual(1);
     for (const grn of rows) {
@@ -505,7 +524,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
 
-    const rows = res.body.data as Array<{ status: string }>;
+    const rows = (res.body as Paginated<GoodsReceiptNoteResponse>).data;
     expect(rows).toBeInstanceOf(Array);
     expect(rows.length).toBeGreaterThanOrEqual(1);
     for (const grn of rows) {

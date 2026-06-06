@@ -3,6 +3,12 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import {
+  AuthResponse,
+  IdResponse,
+  PurchaseRequestResponse,
+  Paginated,
+} from './types';
 
 describe('Purchase Requests (e2e)', () => {
   let app: INestApplication;
@@ -42,7 +48,7 @@ describe('Purchase Requests (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' })
       .expect(201);
-    procurementToken = procRes.body.access_token;
+    procurementToken = (procRes.body as AuthResponse).access_token;
 
     // Create a fresh department with its own annual budget so that PR approve
     // (which now reserves budget via budgetsService.reserveAmount) succeeds.
@@ -51,7 +57,7 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .send({ name: `PR E2E Dept ${tag}` })
       .expect(201);
-    deptId = deptRes.body.id;
+    deptId = (deptRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post('/api/v1/budgets')
@@ -74,7 +80,7 @@ describe('Purchase Requests (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: `pr-e2e-emp-${tag}@test.com`, password: 'Password123' })
       .expect(201);
-    employeeToken = empRes.body.access_token;
+    employeeToken = (empRes.body as AuthResponse).access_token;
 
     // Register a fresh manager in that dept, PO upgrades role, then login.
     const mgrReg = await request(app.getHttpServer())
@@ -88,7 +94,7 @@ describe('Purchase Requests (e2e)', () => {
       })
       .expect(201);
     await request(app.getHttpServer())
-      .patch(`/api/v1/users/${mgrReg.body.user.id}/role`)
+      .patch(`/api/v1/users/${(mgrReg.body as AuthResponse).user.id}/role`)
       .set('Authorization', `Bearer ${procurementToken}`)
       .send({ role: 'manager' })
       .expect(200);
@@ -96,7 +102,7 @@ describe('Purchase Requests (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: `pr-e2e-mgr-${tag}@test.com`, password: 'Password123' })
       .expect(201);
-    managerToken = mgrRes.body.access_token;
+    managerToken = (mgrRes.body as AuthResponse).access_token;
 
     // Register a second employee (default role = employee) to test cross-user access.
     // Unique email per run keeps re-runs from colliding on the unique constraint.
@@ -110,7 +116,7 @@ describe('Purchase Requests (e2e)', () => {
         departmentId: deptId,
       })
       .expect(201);
-    otherEmployeeToken = otherRes.body.access_token;
+    otherEmployeeToken = (otherRes.body as AuthResponse).access_token;
   });
 
   afterAll(async () => {
@@ -124,12 +130,13 @@ describe('Purchase Requests (e2e)', () => {
       .send(createPrBody)
       .expect(201);
 
-    expect(res.body.status).toBe('draft');
-    expect(res.body.prNumber).toMatch(/^PR-\d{4}-\d{4}$/);
-    expect(Number(res.body.totalEstimatedAmount)).toBe(70000);
-    expect(res.body.items).toHaveLength(1);
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.status).toBe('draft');
+    expect(body.prNumber).toMatch(/^PR-\d{4}-\d{4}$/);
+    expect(Number(body.totalEstimatedAmount)).toBe(70000);
+    expect(body.items).toHaveLength(1);
 
-    prId = res.body.id;
+    prId = body.id;
   });
 
   it('draft PR returns approvedAt/approvedBy/rejectReason = null', async () => {
@@ -137,9 +144,10 @@ describe('Purchase Requests (e2e)', () => {
       .get(`/api/v1/purchase-requests/${prId}`)
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(200);
-    expect(res.body.approvedAt).toBeNull();
-    expect(res.body.approvedBy).toBeNull();
-    expect(res.body.rejectReason).toBeNull();
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.approvedAt).toBeNull();
+    expect(body.approvedBy).toBeNull();
+    expect(body.rejectReason).toBeNull();
   });
 
   it('POST /api/v1/purchase-requests — rejects empty items array', async () => {
@@ -156,9 +164,10 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.meta).toMatchObject({ page: 1, limit: 20 });
-    expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
+    const body = res.body as Paginated<PurchaseRequestResponse>;
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.meta).toMatchObject({ page: 1, limit: 20 });
+    expect(body.meta.total).toBeGreaterThanOrEqual(1);
   });
 
   it('GET /api/v1/purchase-requests/:id — employee accesses own PR', async () => {
@@ -167,8 +176,9 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(200);
 
-    expect(res.body.id).toBe(prId);
-    expect(res.body.items).toBeDefined();
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.id).toBe(prId);
+    expect(body.items).toBeDefined();
   });
 
   it('PATCH /api/v1/purchase-requests/:id — employee updates draft PR', async () => {
@@ -183,8 +193,9 @@ describe('Purchase Requests (e2e)', () => {
       })
       .expect(200);
 
-    expect(res.body.title).toBe('ขอซื้อคอมพิวเตอร์ (แก้ไข)');
-    expect(Number(res.body.totalEstimatedAmount)).toBe(140000);
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.title).toBe('ขอซื้อคอมพิวเตอร์ (แก้ไข)');
+    expect(Number(body.totalEstimatedAmount)).toBe(140000);
   });
 
   it('POST /api/v1/purchase-requests/:id/submit — employee submits', async () => {
@@ -193,7 +204,7 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(201);
 
-    expect(res.body.status).toBe('submitted');
+    expect((res.body as PurchaseRequestResponse).status).toBe('submitted');
   });
 
   it('POST /api/v1/purchase-requests/:id/submit — cannot submit twice', async () => {
@@ -217,9 +228,10 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(201);
 
-    expect(res.body.status).toBe('approved');
-    expect(res.body.approvedBy).toBeDefined();
-    expect(res.body.approvedAt).toBeDefined();
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.status).toBe('approved');
+    expect(body.approvedBy).toBeDefined();
+    expect(body.approvedAt).toBeDefined();
   });
 
   it('DELETE /api/v1/purchase-requests/:id — cannot delete approved PR', async () => {
@@ -235,7 +247,7 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .send(createPrBody)
       .expect(201);
-    const rejectPrId: number = createRes.body.id;
+    const rejectPrId: number = (createRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-requests/${rejectPrId}/submit`)
@@ -248,8 +260,9 @@ describe('Purchase Requests (e2e)', () => {
       .send({ reason: 'งบประมาณไม่เพียงพอ' })
       .expect(201);
 
-    expect(res.body.status).toBe('rejected');
-    expect(res.body.rejectReason).toMatch(/งบประมาณไม่เพียงพอ/);
+    const body = res.body as PurchaseRequestResponse;
+    expect(body.status).toBe('rejected');
+    expect(body.rejectReason).toMatch(/งบประมาณไม่เพียงพอ/);
   });
 
   it('DELETE /api/v1/purchase-requests/:id — employee deletes own fresh draft', async () => {
@@ -258,7 +271,7 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .send(createPrBody)
       .expect(201);
-    const freshPrId: number = createRes.body.id;
+    const freshPrId: number = (createRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .delete(`/api/v1/purchase-requests/${freshPrId}`)
@@ -296,8 +309,9 @@ describe('Purchase Requests (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
+    const body = res.body as Paginated<PurchaseRequestResponse>;
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.meta.total).toBeGreaterThanOrEqual(1);
   });
 
   // Gap-closer: requesterName must run on real Postgres to prove TypeORM maps
@@ -310,14 +324,14 @@ describe('Purchase Requests (e2e)', () => {
       .query({ requesterName: 'PR Employee' })
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
-    expect(full.body.meta.total).toBeGreaterThanOrEqual(1);
+    expect((full.body as Paginated<PurchaseRequestResponse>).meta.total).toBeGreaterThanOrEqual(1);
 
     const partial = await request(app.getHttpServer())
       .get('/api/v1/purchase-requests')
       .query({ requesterName: 'Employee' })
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
-    expect(partial.body.meta.total).toBeGreaterThanOrEqual(1);
+    expect((partial.body as Paginated<PurchaseRequestResponse>).meta.total).toBeGreaterThanOrEqual(1);
 
     // negative control: a name nobody has must return 0 — proves the WHERE actually discriminates
     const none = await request(app.getHttpServer())
@@ -325,7 +339,7 @@ describe('Purchase Requests (e2e)', () => {
       .query({ requesterName: 'NoSuchRequesterZZZ' })
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
-    expect(none.body.meta.total).toBe(0);
+    expect((none.body as Paginated<PurchaseRequestResponse>).meta.total).toBe(0);
   });
 
   // --- eligibleForPo flag (raw NOT EXISTS must hit real Postgres) ---
@@ -346,7 +360,7 @@ describe('Purchase Requests (e2e)', () => {
           items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 1000 }],
         })
         .expect(201);
-      const id: number = createRes.body.id;
+      const id: number = (createRes.body as IdResponse).id;
       await request(app.getHttpServer())
         .post(`/api/v1/purchase-requests/${id}/submit`)
         .set('Authorization', `Bearer ${employeeToken}`)
@@ -365,7 +379,7 @@ describe('Purchase Requests (e2e)', () => {
         .query({ eligibleForPo: 'true', limit: 200 })
         .set('Authorization', `Bearer ${procurementToken}`)
         .expect(200);
-      return new Set<number>(res.body.data.map((pr: { id: number }) => pr.id));
+      return new Set<number>((res.body as Paginated<PurchaseRequestResponse>).data.map((pr) => pr.id));
     };
 
     beforeAll(async () => {
@@ -377,9 +391,9 @@ describe('Purchase Requests (e2e)', () => {
       const vendorRes = await request(app.getHttpServer())
         .post('/api/v1/vendors')
         .set('Authorization', `Bearer ${procurementToken}`)
-        .send({ name: `Eligible Vendor ${eligTag}`, taxId: `el${eligTag}`, categoryIds: [catRes.body.id] })
+        .send({ name: `Eligible Vendor ${eligTag}`, taxId: `el${eligTag}`, categoryIds: [(catRes.body as IdResponse).id] })
         .expect(201);
-      elVendorId = vendorRes.body.id;
+      elVendorId = (vendorRes.body as IdResponse).id;
     });
 
     it('approved PR with a department and no PO appears in the eligible list', async () => {
@@ -397,7 +411,7 @@ describe('Purchase Requests (e2e)', () => {
           items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
         })
         .expect(201);
-      const draftId: number = draftRes.body.id;
+      const draftId: number = (draftRes.body as IdResponse).id;
 
       const submittedRes = await request(app.getHttpServer())
         .post('/api/v1/purchase-requests')
@@ -408,7 +422,7 @@ describe('Purchase Requests (e2e)', () => {
           items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
         })
         .expect(201);
-      const submittedId: number = submittedRes.body.id;
+      const submittedId: number = (submittedRes.body as IdResponse).id;
       await request(app.getHttpServer())
         .post(`/api/v1/purchase-requests/${submittedId}/submit`)
         .set('Authorization', `Bearer ${employeeToken}`)
@@ -433,7 +447,7 @@ describe('Purchase Requests (e2e)', () => {
           items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
         })
         .expect(201);
-      const poId: number = poRes.body.id;
+      const poId: number = (poRes.body as IdResponse).id;
       expect(await eligibleIds()).not.toContain(id);
 
       await request(app.getHttpServer())
@@ -452,8 +466,9 @@ describe('Purchase Requests (e2e)', () => {
         .query({ eligibleForPo: 'true', limit: 200 })
         .set('Authorization', `Bearer ${procurementToken}`)
         .expect(200);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      for (const pr of res.body.data as Array<{ departmentId: number | null }>) {
+      const body = res.body as Paginated<PurchaseRequestResponse>;
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      for (const pr of body.data) {
         expect(pr.departmentId).not.toBeNull();
       }
     });
