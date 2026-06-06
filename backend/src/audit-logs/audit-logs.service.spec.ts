@@ -6,7 +6,7 @@ import { AuditLog } from './entities/audit-log.entity';
 describe('AuditLogsService.log', () => {
   let service: AuditLogsService;
   const mockRepo = {
-    create: jest.fn((dto) => dto),
+    create: jest.fn((dto: Partial<AuditLog>) => dto),
     save: jest.fn((entry) => Promise.resolve({ id: 1, ...entry })),
   };
 

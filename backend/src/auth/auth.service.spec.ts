@@ -181,7 +181,7 @@ describe('AuthService', () => {
         .mockResolvedValueOnce({ ...editable, middleName: null });
       mockUserRepository.save.mockResolvedValue(editable);
 
-      await service.updateProfile(1, { middleName: null as any });
+      await service.updateProfile(1, { middleName: null as unknown as string });
 
       expect(editable.middleName).toBeNull();
     });

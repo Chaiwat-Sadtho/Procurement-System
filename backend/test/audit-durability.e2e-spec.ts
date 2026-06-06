@@ -5,6 +5,13 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AuditLogsService } from '../src/audit-logs/audit-logs.service';
 import { PrStatus } from '../src/purchase-requests/entities/purchase-request.entity';
+import {
+  AuthResponse,
+  IdResponse,
+  PurchaseRequestResponse,
+  PurchaseOrderResponse,
+  BudgetSummaryResponse,
+} from './types';
 
 // ADR-0001: the audit row is written INSIDE the business transaction. If the audit write
 // fails, the whole action must roll back. We prove that by overriding AuditLogsService.log
@@ -34,16 +41,15 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
         // The 2nd arg (manager) MUST be present: each of the 7 audit call-sites passes the tx
         // EntityManager so the write joins the action's transaction. A call-site that forgot it would
         // make the success/control paths below throw here and fail — locking in the manager-passing.
-        log: jest.fn(async (params: { action: string }, manager?: unknown) => {
+        log: jest.fn((params: { action: string }, manager?: unknown): void => {
           if (!manager) {
             throw new Error(`audit log() called without a transaction manager for ${params.action}`);
           }
           if (throwOnAction && params.action === throwOnAction) {
             throw new Error(`audit write failed (test) for ${params.action}`);
           }
-          return undefined;
         }),
-        findAll: jest.fn(async () => ({
+        findAll: jest.fn(() => ({
           data: [],
           meta: { page: 1, limit: 50, total: 0, totalPages: 0 },
         })),
@@ -59,21 +65,21 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
     const poRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' });
-    poToken = poRes.body.access_token;
+    poToken = (poRes.body as AuthResponse).access_token;
 
     const deptRes = await request(app.getHttpServer())
       .post('/api/v1/departments')
       .set('Authorization', `Bearer ${poToken}`)
       .send({ name: `Audit Durability Dept ${tag}` })
       .expect(201);
-    deptId = deptRes.body.id;
+    deptId = (deptRes.body as IdResponse).id;
 
     const budgetRes = await request(app.getHttpServer())
       .post('/api/v1/budgets')
       .set('Authorization', `Bearer ${poToken}`)
       .send({ departmentId: deptId, fiscalYear, totalAmount: 500000 })
       .expect(201);
-    budgetId = budgetRes.body.id;
+    budgetId = (budgetRes.body as IdResponse).id;
 
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -88,7 +94,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
     const empLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `emp.audit.${tag}@example.com`, password: 'pass1234' });
-    employeeToken = empLogin.body.access_token;
+    employeeToken = (empLogin.body as AuthResponse).access_token;
 
     const mgrReg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -101,14 +107,14 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       })
       .expect(201);
     await request(app.getHttpServer())
-      .patch(`/api/v1/users/${mgrReg.body.user.id}/role`)
+      .patch(`/api/v1/users/${(mgrReg.body as AuthResponse).user.id}/role`)
       .set('Authorization', `Bearer ${poToken}`)
       .send({ role: 'manager' })
       .expect(200);
     const mgrLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: `mgr.audit.${tag}@example.com`, password: 'pass1234' });
-    managerToken = mgrLogin.body.access_token;
+    managerToken = (mgrLogin.body as AuthResponse).access_token;
 
     // vendor (tagged) for the PO.create / GRN.create rollback tests
     const catRes = await request(app.getHttpServer())
@@ -118,8 +124,8 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Audit Durability Vendor ${tag}`, taxId: `AD${tag}`, categoryIds: [catRes.body.id] });
-    vendorId = vendorRes.body.id;
+      .send({ name: `Audit Durability Vendor ${tag}`, taxId: `AD${tag}`, categoryIds: [(catRes.body as IdResponse).id] });
+    vendorId = (vendorRes.body as IdResponse).id;
   });
 
   afterEach(() => {
@@ -140,7 +146,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
         items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 5000 }],
       })
       .expect(201);
-    return res.body.id;
+    return (res.body as IdResponse).id;
   }
 
   async function getPrStatus(id: number, token: string): Promise<string> {
@@ -148,7 +154,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .get(`/api/v1/purchase-requests/${id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    return res.body.status;
+    return (res.body as PurchaseRequestResponse).status;
   }
 
   async function reserved(): Promise<number> {
@@ -156,7 +162,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .get(`/api/v1/budgets/${budgetId}/summary`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    return Number(res.body.reservedAmount);
+    return Number((res.body as BudgetSummaryResponse).reservedAmount);
   }
 
   async function used(): Promise<number> {
@@ -164,7 +170,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .get(`/api/v1/budgets/${budgetId}/summary`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    return Number(res.body.usedAmount);
+    return Number((res.body as BudgetSummaryResponse).usedAmount);
   }
 
   async function createApprovedPr(title: string): Promise<number> {
@@ -265,7 +271,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .set('Authorization', `Bearer ${poToken}`)
       .send(poBody)
       .expect(201);
-    expect(Number(ok.body.totalAmount)).toBe(12000);
+    expect(Number((ok.body as PurchaseOrderResponse).totalAmount)).toBe(12000);
     expect(await reserved()).toBe(reservedBefore + 2000);
   });
 
@@ -283,8 +289,9 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
         items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', unitPrice: 5000 }],
       })
       .expect(201);
-    const poId = poRes.body.id;
-    const poItemId = poRes.body.items[0].id;
+    const createdPo = poRes.body as PurchaseOrderResponse;
+    const poId = createdPo.id;
+    const poItemId = createdPo.items[0].id;
 
     await request(app.getHttpServer())
       .post(`/api/v1/purchase-orders/${poId}/send`)
@@ -310,7 +317,7 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .get(`/api/v1/purchase-orders/${poId}`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    expect(po.body.status).toBe('acknowledged');
+    expect((po.body as PurchaseOrderResponse).status).toBe('acknowledged');
     expect(await reserved()).toBe(reservedBefore);
     expect(await used()).toBe(usedBefore);
   });

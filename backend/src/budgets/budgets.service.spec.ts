@@ -142,7 +142,7 @@ describe('BudgetsService', () => {
       expect(mockNotificationsService.sendToMany).toHaveBeenCalledWith(
         [5],
         expect.objectContaining({
-          title: expect.stringContaining('Engineering'),
+          title: expect.stringContaining('Engineering') as unknown,
         }),
       );
     });
@@ -175,7 +175,7 @@ describe('BudgetsService', () => {
       expect(mockDataSource.manager.findOne).toHaveBeenCalledWith(
         Budget,
         expect.objectContaining({
-          where: expect.objectContaining({ departmentId: 1, fiscalYear: 2026, quarter: 2 }),
+          where: expect.objectContaining({ departmentId: 1, fiscalYear: 2026, quarter: 2 }) as unknown,
         }),
       );
     });

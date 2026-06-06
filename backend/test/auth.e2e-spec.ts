@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AuthResponse } from './types';
 
 // Idempotency note (test-isolation fix): register + PATCH /me persist to the real
 // DB. We tag the email with a per-run value (`tag = Date.now()`) so the suite is
@@ -50,8 +51,9 @@ describe('Auth (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body).toHaveProperty('access_token');
-    expect(res.body.user).toHaveProperty('fullName', 'John Michael Doe');
+    const body = res.body as AuthResponse;
+    expect(body).toHaveProperty('access_token');
+    expect(body.user).toHaveProperty('fullName', 'John Michael Doe');
   });
 
   it('POST /api/v1/auth/register — rejects missing departmentId', async () => {
@@ -67,8 +69,9 @@ describe('Auth (e2e)', () => {
       .send({ email, password: 'Password123' })
       .expect(201);
 
-    expect(res.body).toHaveProperty('access_token');
-    accessToken = res.body.access_token;
+    const body = res.body as AuthResponse;
+    expect(body).toHaveProperty('access_token');
+    accessToken = body.access_token;
   });
 
   it('POST /api/v1/auth/login — rejects wrong password', async () => {

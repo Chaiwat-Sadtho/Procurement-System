@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AuthResponse, UserResponse } from './types';
 
 describe('Users / Auth security (e2e)', () => {
   let app: INestApplication;
@@ -25,19 +26,19 @@ describe('Users / Auth security (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'employee@company.com', password: 'Password123' })
       .expect(201);
-    employeeToken = empRes.body.access_token;
+    employeeToken = (empRes.body as AuthResponse).access_token;
 
     const procRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' })
       .expect(201);
-    procurementToken = procRes.body.access_token;
+    procurementToken = (procRes.body as AuthResponse).access_token;
 
     const mgrRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'manager@company.com', password: 'Password123' })
       .expect(201);
-    managerToken = mgrRes.body.access_token;
+    managerToken = (mgrRes.body as AuthResponse).access_token;
   });
 
   afterAll(async () => {
@@ -57,8 +58,9 @@ describe('Users / Auth security (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThanOrEqual(3);
+    const users = res.body as UserResponse[];
+    expect(Array.isArray(users)).toBe(true);
+    expect(users.length).toBeGreaterThanOrEqual(3);
   });
 
   it('GET /api/v1/users — Manager can list users (scoped to same department)', async () => {
@@ -67,8 +69,9 @@ describe('Users / Auth security (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    const deptIds = new Set(res.body.map((u: { departmentId: number | null }) => u.departmentId));
+    const users = res.body as UserResponse[];
+    expect(Array.isArray(users)).toBe(true);
+    const deptIds = new Set(users.map((u) => u.departmentId));
     expect(deptIds.size).toBe(1);
   });
 
@@ -86,7 +89,7 @@ describe('Users / Auth security (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body.user.role).toBe('employee');
+    expect((res.body as AuthResponse).user.role).toBe('employee');
   });
 
   it('PATCH /api/v1/auth/me/password — rejects wrong current password', async () => {
@@ -98,7 +101,7 @@ describe('Users / Auth security (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch('/api/v1/auth/me/password')
-      .set('Authorization', `Bearer ${reg.body.access_token}`)
+      .set('Authorization', `Bearer ${(reg.body as AuthResponse).access_token}`)
       .send({ currentPassword: 'WrongPass123', newPassword: 'NewPass123' })
       .expect(401);
   });
@@ -109,7 +112,7 @@ describe('Users / Auth security (e2e)', () => {
       .post('/api/v1/auth/register')
       .send({ email, password: 'Password123', firstName: 'Deact', lastName: 'Me', departmentId: 1 })
       .expect(201);
-    const userId = reg.body.user.id;
+    const userId = (reg.body as AuthResponse).user.id;
 
     // PO deactivates the user
     await request(app.getHttpServer())
@@ -131,7 +134,9 @@ describe('Users / Auth security (e2e)', () => {
       .get('/api/v1/users')
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
-    const po = list.body.find((u: { email: string }) => u.email === 'procurement@company.com');
+    const users = list.body as UserResponse[];
+    const po = users.find((u) => u.email === 'procurement@company.com');
+    if (!po) throw new Error('seed procurement user not found');
 
     await request(app.getHttpServer())
       .patch(`/api/v1/users/${po.id}/status`)
