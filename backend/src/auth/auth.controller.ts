@@ -6,7 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser } from './decorators/current-user.decorator';
+import { CurrentUser, type CurrentUserPayload } from './decorators/current-user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -29,7 +29,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@CurrentUser() user: any) {
+  getMe(@CurrentUser() user: CurrentUserPayload) {
     return this.authService.getProfile(user.id);
   }
 
@@ -37,7 +37,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')
-  updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
+  updateProfile(@CurrentUser() user: CurrentUserPayload, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(user.id, dto);
   }
 
@@ -45,7 +45,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me/password')
-  changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
+  changePassword(@CurrentUser() user: CurrentUserPayload, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(user.id, dto);
   }
 }
