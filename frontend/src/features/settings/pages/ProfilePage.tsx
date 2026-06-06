@@ -8,12 +8,7 @@ import type { User } from '@/shared/types'
 import { settingsApi } from '@/features/settings/api'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Button } from '@/shared/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
   Form,
   FormControl,

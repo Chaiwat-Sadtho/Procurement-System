@@ -43,8 +43,24 @@ const multiValues: GrnFormValues = {
   receivedDate: '',
   notes: '',
   items: [
-    { poItemId: 11, itemName: 'A4 Paper', ordered: 10, alreadyReceived: 4, remaining: 6, good: '6', damaged: '0' },
-    { poItemId: 12, itemName: 'Ink', ordered: 4, alreadyReceived: 4, remaining: 0, good: '0', damaged: '0' },
+    {
+      poItemId: 11,
+      itemName: 'A4 Paper',
+      ordered: 10,
+      alreadyReceived: 4,
+      remaining: 6,
+      good: '6',
+      damaged: '0',
+    },
+    {
+      poItemId: 12,
+      itemName: 'Ink',
+      ordered: 4,
+      alreadyReceived: 4,
+      remaining: 0,
+      good: '0',
+      damaged: '0',
+    },
   ],
 }
 

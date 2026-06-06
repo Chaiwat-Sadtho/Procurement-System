@@ -53,7 +53,10 @@ describe('BudgetsService', () => {
         BudgetsService,
         { provide: getRepositoryToken(Budget), useValue: mockBudgetRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
-        { provide: getRepositoryToken(Department), useValue: mockDepartmentRepo },
+        {
+          provide: getRepositoryToken(Department),
+          useValue: mockDepartmentRepo,
+        },
         { provide: getDataSourceToken(), useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },
       ],
@@ -83,7 +86,11 @@ describe('BudgetsService', () => {
     it('should throw ConflictException if budget already exists', async () => {
       mockBudgetRepo.findOne.mockResolvedValue(mockBudget);
       await expect(
-        service.create({ departmentId: 1, fiscalYear: 2026, totalAmount: 1000000 }),
+        service.create({
+          departmentId: 1,
+          fiscalYear: 2026,
+          totalAmount: 1000000,
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -93,10 +100,16 @@ describe('BudgetsService', () => {
     it('should map a 23505 unique-violation on save to ConflictException', async () => {
       mockBudgetRepo.findOne.mockResolvedValue(null);
       mockBudgetRepo.create.mockReturnValue({ ...mockBudget });
-      mockBudgetRepo.save.mockRejectedValue(Object.assign(new Error('duplicate key'), { code: '23505' }));
+      mockBudgetRepo.save.mockRejectedValue(
+        Object.assign(new Error('duplicate key'), { code: '23505' }),
+      );
 
       await expect(
-        service.create({ departmentId: 1, fiscalYear: 2026, totalAmount: 1000000 }),
+        service.create({
+          departmentId: 1,
+          fiscalYear: 2026,
+          totalAmount: 1000000,
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -108,11 +121,9 @@ describe('BudgetsService', () => {
 
       await service.reserveAmount(1, 2026, null, 200000);
 
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
-        Budget,
-        1,
-        { reservedAmount: 200000 },
-      );
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 200000,
+      });
     });
 
     it('should throw NotFoundException when no budget configured', async () => {
@@ -123,16 +134,23 @@ describe('BudgetsService', () => {
     it('should throw BadRequestException when exceeds available budget', async () => {
       // available = 1000000 - 900000 - 50000 = 50000, requesting 100000
       mockDataSource.manager.findOne.mockResolvedValue({
-        ...mockBudget, reservedAmount: 900000, usedAmount: 50000,
+        ...mockBudget,
+        reservedAmount: 900000,
+        usedAmount: 50000,
       });
-      await expect(service.reserveAmount(1, 2026, null, 100000)).rejects.toThrow(BadRequestException);
+      await expect(service.reserveAmount(1, 2026, null, 100000)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     // Minor #2: budget warning ต้องบอกชื่อแผนกในข้อความ (procurement officer รับแจ้งหลาย dept ต้องแยกออก)
     it('should include the department name in the warning notification', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
-      mockDepartmentRepo.findOne.mockResolvedValue({ id: 1, name: 'Engineering' });
+      mockDepartmentRepo.findOne.mockResolvedValue({
+        id: 1,
+        name: 'Engineering',
+      });
       mockUserRepo.find.mockResolvedValue([{ id: 5 }]);
 
       // committed 850000/1000000 = 85% > 80% → trigger warning
@@ -152,7 +170,10 @@ describe('BudgetsService', () => {
     it('should log a warning (not throw) when the budget-warning notification fails', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
-      mockDepartmentRepo.findOne.mockResolvedValue({ id: 1, name: 'Engineering' });
+      mockDepartmentRepo.findOne.mockResolvedValue({
+        id: 1,
+        name: 'Engineering',
+      });
       mockUserRepo.find.mockResolvedValue([{ id: 5 }]);
       mockNotificationsService.sendToMany.mockRejectedValue(new Error('notify down'));
       const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
@@ -167,7 +188,10 @@ describe('BudgetsService', () => {
 
     // P5-3: quarter เป็นเลข → where ต้อง match quarter ตรง ไม่ใช่ IsNull
     it('should query budget row matching the quarter when quarter is set', async () => {
-      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, quarter: 2 });
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget,
+        quarter: 2,
+      });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.reserveAmount(1, 2026, 2, 200000);
@@ -175,7 +199,11 @@ describe('BudgetsService', () => {
       expect(mockDataSource.manager.findOne).toHaveBeenCalledWith(
         Budget,
         expect.objectContaining({
-          where: expect.objectContaining({ departmentId: 1, fiscalYear: 2026, quarter: 2 }) as unknown,
+          where: expect.objectContaining({
+            departmentId: 1,
+            fiscalYear: 2026,
+            quarter: 2,
+          }) as unknown,
         }),
       );
     });
@@ -183,7 +211,10 @@ describe('BudgetsService', () => {
 
   describe('releaseReservedAmount', () => {
     it('should decrease reservedAmount via the default manager with a write lock', async () => {
-      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 200000 });
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: 200000,
+      });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.releaseReservedAmount(1, 2026, null, 200000);
@@ -192,16 +223,23 @@ describe('BudgetsService', () => {
         Budget,
         expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
       );
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 0,
+      });
     });
 
     it('should clamp to 0 when releasing more than reserved', async () => {
-      mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget, reservedAmount: 50000 });
+      mockDataSource.manager.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: 50000,
+      });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.releaseReservedAmount(1, 2026, null, 200000);
 
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 0,
+      });
     });
 
     it('should silently skip if no budget configured', async () => {
@@ -219,7 +257,9 @@ describe('BudgetsService', () => {
 
       await service.releaseReservedAmount(1, 2026, null, 200000, txManager as any);
 
-      expect(txManager.update).toHaveBeenCalledWith(Budget, 1, { reservedAmount: 0 });
+      expect(txManager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 0,
+      });
       expect(txManager.findOne).toHaveBeenCalledWith(
         Budget,
         expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
@@ -231,15 +271,18 @@ describe('BudgetsService', () => {
   describe('consumeAmount', () => {
     it('should decrease reserved and increase used', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({
-        ...mockBudget, reservedAmount: 300000, usedAmount: 100000,
+        ...mockBudget,
+        reservedAmount: 300000,
+        usedAmount: 100000,
       });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.consumeAmount(1, 2026, null, 300000, 280000);
 
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
-        Budget, 1, { reservedAmount: 0, usedAmount: 380000 },
-      );
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 0,
+        usedAmount: 380000,
+      });
     });
 
     it('should silently skip if no budget configured', async () => {
@@ -252,37 +295,45 @@ describe('BudgetsService', () => {
   describe('adjustReservedAmount', () => {
     it('should increase reserved by a positive delta within budget', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({
-        ...mockBudget, reservedAmount: 1200, usedAmount: 0,
+        ...mockBudget,
+        reservedAmount: 1200,
+        usedAmount: 0,
       });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.adjustReservedAmount(1, 2026, null, 300);
 
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
-        Budget, 1, { reservedAmount: 1500 },
-      );
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 1500,
+      });
     });
 
     it('should throw BadRequestException when positive delta exceeds available budget', async () => {
       // available = 1000000 - 900000 - 50000 = 50000, delta +100000
       mockDataSource.manager.findOne.mockResolvedValue({
-        ...mockBudget, reservedAmount: 900000, usedAmount: 50000,
+        ...mockBudget,
+        reservedAmount: 900000,
+        usedAmount: 50000,
       });
-      await expect(service.adjustReservedAmount(1, 2026, null, 100000)).rejects.toThrow(BadRequestException);
+      await expect(service.adjustReservedAmount(1, 2026, null, 100000)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockDataSource.manager.update).not.toHaveBeenCalled();
     });
 
     it('should decrease reserved by a negative delta without validating availability', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({
-        ...mockBudget, reservedAmount: 1200, usedAmount: 0,
+        ...mockBudget,
+        reservedAmount: 1200,
+        usedAmount: 0,
       });
       mockDataSource.manager.update.mockResolvedValue({ affected: 1 });
 
       await service.adjustReservedAmount(1, 2026, null, -200);
 
-      expect(mockDataSource.manager.update).toHaveBeenCalledWith(
-        Budget, 1, { reservedAmount: 1000 },
-      );
+      expect(mockDataSource.manager.update).toHaveBeenCalledWith(Budget, 1, {
+        reservedAmount: 1000,
+      });
     });
 
     it('should skip silently when no budget configured', async () => {
@@ -301,7 +352,10 @@ describe('BudgetsService', () => {
   describe('getSummary', () => {
     it('should return budget summary with remaining calculation', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({
-        ...mockBudget, totalAmount: 1000000, reservedAmount: 200000, usedAmount: 300000,
+        ...mockBudget,
+        totalAmount: 1000000,
+        reservedAmount: 200000,
+        usedAmount: 300000,
       });
 
       const result = await service.getSummary(1);

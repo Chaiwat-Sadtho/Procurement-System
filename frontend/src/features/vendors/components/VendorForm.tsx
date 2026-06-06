@@ -76,7 +76,10 @@ export function VendorForm(props: VendorFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ชื่อผู้ขาย<RequiredMark /></FormLabel>
+              <FormLabel>
+                ชื่อผู้ขาย
+                <RequiredMark />
+              </FormLabel>
               <FormControl>
                 <Input placeholder="เช่น บริษัท ไอทีซัพพลาย จำกัด" {...field} />
               </FormControl>

@@ -11,7 +11,10 @@ const itemSchema = z.object({
     .min(1, 'กรุณาระบุจำนวน')
     // Number.isFinite also rejects NaN and Infinity ('1e999'), so the latter cannot leak into the
     // mapped payload (Number(Infinity) -> JSON null -> backend 400).
-    .refine((v) => Number.isFinite(Number(v)) && Number(v) >= 0.01, 'จำนวนต้องมากกว่าหรือเท่ากับ 0.01'),
+    .refine(
+      (v) => Number.isFinite(Number(v)) && Number(v) >= 0.01,
+      'จำนวนต้องมากกว่าหรือเท่ากับ 0.01',
+    ),
   unit: z.string().trim().min(1, 'กรุณาระบุหน่วย').max(50, 'ไม่เกิน 50 ตัวอักษร'),
   unitPrice: z
     .string()

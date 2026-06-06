@@ -19,8 +19,14 @@ export function PRDetailPage() {
   const prId = Number(id)
   const validId = Number.isInteger(prId) && prId > 0
 
-  const { data: pr, isLoading, isError, submitMutation, approveMutation, rejectMutation } =
-    usePurchaseRequest(validId ? prId : 0)
+  const {
+    data: pr,
+    isLoading,
+    isError,
+    submitMutation,
+    approveMutation,
+    rejectMutation,
+  } = usePurchaseRequest(validId ? prId : 0)
   const { data: user } = useCurrentUser()
   const { deleteMutation } = usePRMutations()
 

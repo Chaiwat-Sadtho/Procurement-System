@@ -12,15 +12,39 @@ vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: useCurrentUser
 
 // isolate the page's guard computation from the inline controls
 vi.mock('../components/UserRoleSelect', () => ({
-  UserRoleSelect: ({ user, disabled, disabledReason }: { user: User; disabled?: boolean; disabledReason?: string }) => (
-    <div data-testid={`role-${user.id}`} data-disabled={String(!!disabled)} data-reason={disabledReason ?? ''}>
+  UserRoleSelect: ({
+    user,
+    disabled,
+    disabledReason,
+  }: {
+    user: User
+    disabled?: boolean
+    disabledReason?: string
+  }) => (
+    <div
+      data-testid={`role-${user.id}`}
+      data-disabled={String(!!disabled)}
+      data-reason={disabledReason ?? ''}
+    >
       {user.role}
     </div>
   ),
 }))
 vi.mock('../components/UserStatusToggle', () => ({
-  UserStatusToggle: ({ user, disabled, disabledReason }: { user: User; disabled?: boolean; disabledReason?: string }) => (
-    <div data-testid={`status-${user.id}`} data-disabled={String(!!disabled)} data-reason={disabledReason ?? ''}>
+  UserStatusToggle: ({
+    user,
+    disabled,
+    disabledReason,
+  }: {
+    user: User
+    disabled?: boolean
+    disabledReason?: string
+  }) => (
+    <div
+      data-testid={`status-${user.id}`}
+      data-disabled={String(!!disabled)}
+      data-reason={disabledReason ?? ''}
+    >
       {String(user.isActive)}
     </div>
   ),
@@ -46,7 +70,12 @@ function makeUser(over: Partial<User>): User {
   }
 }
 
-const ACTOR = makeUser({ id: 99, role: 'procurement_officer', fullName: 'Actor PO', email: 'actor@company.com' })
+const ACTOR = makeUser({
+  id: 99,
+  role: 'procurement_officer',
+  fullName: 'Actor PO',
+  email: 'actor@company.com',
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -54,7 +83,13 @@ beforeEach(() => {
 })
 
 function mockUsers(over: Partial<ReturnType<typeof useUsersMock>> = {}) {
-  useUsersMock.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn(), ...over })
+  useUsersMock.mockReturnValue({
+    data: [],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    ...over,
+  })
 }
 
 describe('UsersPage', () => {
@@ -85,8 +120,19 @@ describe('UsersPage', () => {
   it('renders rows with fullName, email and department, and a total summary', () => {
     mockUsers({
       data: [
-        makeUser({ id: 1, fullName: 'สมชาย ใจดี', email: 'somchai@company.com', department: { id: 2, name: 'จัดซื้อ', createdAt: '' } }),
-        makeUser({ id: 2, fullName: 'สมหญิง รักงาน', email: 'somying@company.com', department: null, departmentId: null }),
+        makeUser({
+          id: 1,
+          fullName: 'สมชาย ใจดี',
+          email: 'somchai@company.com',
+          department: { id: 2, name: 'จัดซื้อ', createdAt: '' },
+        }),
+        makeUser({
+          id: 2,
+          fullName: 'สมหญิง รักงาน',
+          email: 'somying@company.com',
+          department: null,
+          departmentId: null,
+        }),
       ],
     })
     render(<UsersPage />)
@@ -115,7 +161,9 @@ describe('UsersPage', () => {
 
   it('disables the only active procurement officer (last-active-PO guard)', () => {
     // currentUser is a manager-less PO not in the list; the single active PO below is the last one
-    useCurrentUserMock.mockReturnValue({ data: makeUser({ id: 1000, role: 'procurement_officer' }) })
+    useCurrentUserMock.mockReturnValue({
+      data: makeUser({ id: 1000, role: 'procurement_officer' }),
+    })
     mockUsers({
       data: [
         makeUser({ id: 1, role: 'procurement_officer', isActive: true }),

@@ -34,7 +34,10 @@ export function VendorRatingHistory({ vendorId }: VendorRatingHistoryProps) {
       {isLoading ? (
         <ListLoadingState testId="vendor-rating-history-loading" rows={3} />
       ) : isError ? (
-        <ListErrorState message={getApiErrorMessage(error, 'โหลดประวัติคะแนนไม่สำเร็จ')} onRetry={() => refetch()} />
+        <ListErrorState
+          message={getApiErrorMessage(error, 'โหลดประวัติคะแนนไม่สำเร็จ')}
+          onRetry={() => refetch()}
+        />
       ) : (
         <>
           <div className="rounded-md border overflow-x-auto">
@@ -55,12 +58,17 @@ export function VendorRatingHistory({ vendorId }: VendorRatingHistoryProps) {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <StarRating value={r.score} readOnly />
-                          <span className="text-xs text-muted-foreground" aria-hidden="true">({r.score}/5)</span>
+                          <span className="text-xs text-muted-foreground" aria-hidden="true">
+                            ({r.score}/5)
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{r.comment ?? '—'}</TableCell>
                       <TableCell>
-                        <RowLink to={`/purchase-orders/${r.poId}`} className="font-mono text-primary">
+                        <RowLink
+                          to={`/purchase-orders/${r.poId}`}
+                          className="font-mono text-primary"
+                        >
                           {r.purchaseOrder.poNumber}
                         </RowLink>
                       </TableCell>

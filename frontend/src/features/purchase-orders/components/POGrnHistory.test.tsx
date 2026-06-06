@@ -26,9 +26,7 @@ const grns: GoodsReceiptSummary[] = [
     receivedDate: '2026-03-08',
     status: 'partial',
     notes: null,
-    items: [
-      { id: 3, grnId: 32, poItemId: 201, receivedQuantity: '5', condition: 'good' },
-    ],
+    items: [{ id: 3, grnId: 32, poItemId: 201, receivedQuantity: '5', condition: 'good' }],
     createdAt: '2026-03-08T00:00:00Z',
   },
 ]

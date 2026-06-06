@@ -24,7 +24,13 @@ interface RateVendorDialogProps {
   isPending?: boolean
 }
 
-export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, isPending = false }: RateVendorDialogProps) {
+export function RateVendorDialog({
+  open,
+  onOpenChange,
+  vendorName,
+  onConfirm,
+  isPending = false,
+}: RateVendorDialogProps) {
   const {
     control,
     register,
@@ -54,7 +60,9 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
         >
           <DialogHeader>
             <DialogTitle>ให้คะแนนผู้ขาย: {vendorName}</DialogTitle>
-            <DialogDescription>ให้คะแนนความพึงพอใจหลังรับของครบ (ให้คะแนนได้ครั้งเดียว)</DialogDescription>
+            <DialogDescription>
+              ให้คะแนนความพึงพอใจหลังรับของครบ (ให้คะแนนได้ครั้งเดียว)
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1">
@@ -62,11 +70,11 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
               <Controller
                 control={control}
                 name="score"
-                render={({ field }) => <StarRating value={field.value} onChange={field.onChange} label="คะแนน" />}
+                render={({ field }) => (
+                  <StarRating value={field.value} onChange={field.onChange} label="คะแนน" />
+                )}
               />
-              {!score && (
-                <p className="text-sm text-muted-foreground">เลือกดาวเพื่อให้คะแนน</p>
-              )}
+              {!score && <p className="text-sm text-muted-foreground">เลือกดาวเพื่อให้คะแนน</p>}
             </div>
             <div className="space-y-1">
               <Label htmlFor="rating-comment">ความคิดเห็น (ไม่บังคับ)</Label>
@@ -74,7 +82,12 @@ export function RateVendorDialog({ open, onOpenChange, vendorName, onConfirm, is
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
               ยกเลิก
             </Button>
             <Button type="submit" disabled={!isValid || isPending}>

@@ -1,5 +1,9 @@
 import {
-  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Like, QueryFailedError } from 'typeorm';
@@ -68,9 +72,7 @@ export class GoodsReceiptsService {
       const grnItems = dto.items.map((dtoItem) => {
         const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
         if (!poItem) {
-          throw new BadRequestException(
-            `PO item ${dtoItem.poItemId} not found in PO ${dto.poId}`,
-          );
+          throw new BadRequestException(`PO item ${dtoItem.poItemId} not found in PO ${dto.poId}`);
         }
         // ของชำรุดไม่นับเป็นของที่รับจริง — เฉพาะ condition=good เท่านั้นที่นับเข้า receivedQuantity
         const effectiveQty =
@@ -137,7 +139,13 @@ export class GoodsReceiptsService {
       if (allReceived) {
         const prData = await manager.findOne(PurchaseRequest, {
           where: { id: po.prId },
-          select: { id: true, departmentId: true, fiscalYear: true, quarter: true, totalEstimatedAmount: true },
+          select: {
+            id: true,
+            departmentId: true,
+            fiscalYear: true,
+            quarter: true,
+            totalEstimatedAmount: true,
+          },
         });
         if (prData && prData.departmentId != null) {
           // P5-5: ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
@@ -164,7 +172,11 @@ export class GoodsReceiptsService {
           action: 'GRN_CREATED',
           entityType: 'GoodsReceiptNote',
           entityId: savedGrn.id,
-          newValue: { grnNumber: savedGrn.grnNumber, poId: dto.poId, poCompleted: allReceived },
+          newValue: {
+            grnNumber: savedGrn.grnNumber,
+            poId: dto.poId,
+            poCompleted: allReceived,
+          },
         },
         manager,
       );
@@ -174,22 +186,25 @@ export class GoodsReceiptsService {
 
     // notification หลัง transaction commit (best-effort)
     if (poCompleted) {
-      void this.notificationsService.send({
-        userId: receivedBy,
-        title: 'PO รับของครบแล้ว',
-        message: `GRN ${grn.grnNumber} บันทึกแล้ว — PO รับของครบแล้ว`,
-        type: NotificationType.GRN_CREATED,
-        referenceId: grn.id,
-        referenceType: 'GoodsReceiptNote',
-      }).catch((err) => this.logger.warn('notification failed: GRN_CREATED', err));
+      void this.notificationsService
+        .send({
+          userId: receivedBy,
+          title: 'PO รับของครบแล้ว',
+          message: `GRN ${grn.grnNumber} บันทึกแล้ว — PO รับของครบแล้ว`,
+          type: NotificationType.GRN_CREATED,
+          referenceId: grn.id,
+          referenceType: 'GoodsReceiptNote',
+        })
+        .catch((err) => this.logger.warn('notification failed: GRN_CREATED', err));
     }
 
     return grn;
   }
 
-  async findAll(
-    query: GrnQueryDto,
-  ): Promise<{ data: GoodsReceiptNote[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  async findAll(query: GrnQueryDto): Promise<{
+    data: GoodsReceiptNote[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const { page = 1, limit = 20, poId, status } = query;
 
     const qb = this.grnRepository
@@ -206,7 +221,10 @@ export class GoodsReceiptsService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(id: number): Promise<GoodsReceiptNote> {

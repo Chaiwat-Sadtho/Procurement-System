@@ -162,7 +162,9 @@ describe('PRDetailPage', () => {
 
   it('shows a success toast when approve succeeds', async () => {
     const { approveMutation } = mockHook()
-    approveMutation.mutate.mockImplementation((_vars: unknown, opts: { onSuccess: () => void }) => opts.onSuccess())
+    approveMutation.mutate.mockImplementation((_vars: unknown, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
     setUser()
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'อนุมัติ' }))
@@ -182,8 +184,8 @@ describe('PRDetailPage', () => {
 
   it('shows an error toast when a mutation fails', async () => {
     const { approveMutation } = mockHook()
-    approveMutation.mutate.mockImplementation((_vars: unknown, opts: { onError: (e: unknown) => void }) =>
-      opts.onError(new Error('x')),
+    approveMutation.mutate.mockImplementation(
+      (_vars: unknown, opts: { onError: (e: unknown) => void }) => opts.onError(new Error('x')),
     )
     setUser()
     renderPage()
@@ -211,7 +213,9 @@ describe('PRDetailPage', () => {
   it('deletes the draft after confirming and navigates to the list', async () => {
     mockHook({ data: { ...mockPR, id: 3, status: 'draft', requesterId: 10 } })
     const { deleteMutation } = setMutations()
-    deleteMutation.mutate.mockImplementation((_id: number, opts: { onSuccess: () => void }) => opts.onSuccess())
+    deleteMutation.mutate.mockImplementation((_id: number, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
     setUser({ ...managerUser, id: 10, role: 'employee' })
     renderPage('3')
     await userEvent.click(screen.getByRole('button', { name: 'ลบร่าง' }))

@@ -13,7 +13,12 @@ function renderForm(props: Partial<React.ComponentProps<typeof VendorListFilterF
   const onSubmit = vi.fn()
   const onClear = vi.fn()
   const utils = render(
-    <VendorListFilterForm categories={categories} onSubmit={onSubmit} onClear={onClear} {...props} />,
+    <VendorListFilterForm
+      categories={categories}
+      onSubmit={onSubmit}
+      onClear={onClear}
+      {...props}
+    />,
   )
   return { ...utils, onSubmit, onClear }
 }

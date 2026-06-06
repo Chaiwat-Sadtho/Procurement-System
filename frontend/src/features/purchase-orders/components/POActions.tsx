@@ -55,12 +55,7 @@ export function POActions({ po, user, onEdit, onSend, onAcknowledge, onCancel }:
   return (
     <div className="grid grid-cols-12 gap-2">
       {buttons.map((b) => (
-        <Button
-          key={b.key}
-          variant={b.variant}
-          className={cn('w-full', span)}
-          onClick={b.onClick}
-        >
+        <Button key={b.key} variant={b.variant} className={cn('w-full', span)} onClick={b.onClick}>
           {b.label}
         </Button>
       ))}

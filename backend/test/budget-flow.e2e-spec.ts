@@ -146,7 +146,11 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Budget Vendor ${tag}`, taxId: `B${tag}`, categoryIds: [(catRes.body as IdResponse).id] });
+      .send({
+        name: `Budget Vendor ${tag}`,
+        taxId: `B${tag}`,
+        categoryIds: [(catRes.body as IdResponse).id],
+      });
     vendorId = (vendorRes.body as IdResponse).id;
   });
 
@@ -163,7 +167,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
       .send({
         title: `Budget flow PR #1 ${tag}`,
         requiredDate: '2026-12-31',
-        items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 5000 }],
+        items: [
+          {
+            itemName: 'Laptop',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 5000,
+          },
+        ],
       })
       .expect(201);
     prId = (prRes.body as IdResponse).id;
@@ -211,17 +222,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
   // --- AUDIT: PR_SUBMITTED + PR_APPROVED logged ---
 
   it('records audit logs for PR_SUBMITTED and PR_APPROVED', async () => {
-    const actions = await waitFor(
-      async () => {
-        const res = await request(app.getHttpServer())
-          .get(`/api/v1/audit-logs?entityType=PurchaseRequest&entityId=${prId}`)
-          .set('Authorization', `Bearer ${poToken}`)
-          .expect(200);
-        const found = (res.body as Paginated<{ action: string }>).data.map((log) => log.action);
-        return found.includes('PR_SUBMITTED') && found.includes('PR_APPROVED') ? found : undefined;
-      },
-      'PR_SUBMITTED + PR_APPROVED audit logs',
-    );
+    const actions = await waitFor(async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/audit-logs?entityType=PurchaseRequest&entityId=${prId}`)
+        .set('Authorization', `Bearer ${poToken}`)
+        .expect(200);
+      const found = (res.body as Paginated<{ action: string }>).data.map((log) => log.action);
+      return found.includes('PR_SUBMITTED') && found.includes('PR_APPROVED') ? found : undefined;
+    }, 'PR_SUBMITTED + PR_APPROVED audit logs');
     expect(actions).toContain('PR_SUBMITTED');
     expect(actions).toContain('PR_APPROVED');
   });
@@ -229,17 +237,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
   // --- NOTIFICATION: employee notified of approval ---
 
   it('sends a pr_approved notification to the employee', async () => {
-    const types = await waitFor(
-      async () => {
-        const res = await request(app.getHttpServer())
-          .get('/api/v1/notifications')
-          .set('Authorization', `Bearer ${employeeToken}`)
-          .expect(200);
-        const found = (res.body as Paginated<{ type: string }>).data.map((n) => n.type);
-        return found.includes('pr_approved') ? found : undefined;
-      },
-      'pr_approved notification',
-    );
+    const types = await waitFor(async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/notifications')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .expect(200);
+      const found = (res.body as Paginated<{ type: string }>).data.map((n) => n.type);
+      return found.includes('pr_approved') ? found : undefined;
+    }, 'pr_approved notification');
     expect(types).toContain('pr_approved');
   });
 
@@ -308,17 +313,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     expect(Number(s.remaining)).toBe(490000);
 
     // GRN_CREATED audit log exists for the GRN (fire-and-forget — poll until written)
-    const grnActions = await waitFor(
-      async () => {
-        const audit = await request(app.getHttpServer())
-          .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grn.id}`)
-          .set('Authorization', `Bearer ${poToken}`)
-          .expect(200);
-        const found = (audit.body as Paginated<{ action: string }>).data.map((log) => log.action);
-        return found.includes('GRN_CREATED') ? found : undefined;
-      },
-      'GRN_CREATED audit log',
-    );
+    const grnActions = await waitFor(async () => {
+      const audit = await request(app.getHttpServer())
+        .get(`/api/v1/audit-logs?entityType=GoodsReceiptNote&entityId=${grn.id}`)
+        .set('Authorization', `Bearer ${poToken}`)
+        .expect(200);
+      const found = (audit.body as Paginated<{ action: string }>).data.map((log) => log.action);
+      return found.includes('GRN_CREATED') ? found : undefined;
+    }, 'GRN_CREATED audit log');
     expect(grnActions).toContain('GRN_CREATED');
   });
 
@@ -329,7 +331,12 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     const q2Res = await request(app.getHttpServer())
       .post('/api/v1/budgets')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ departmentId: deptId, fiscalYear, quarter: 2, totalAmount: 200000 })
+      .send({
+        departmentId: deptId,
+        fiscalYear,
+        quarter: 2,
+        totalAmount: 200000,
+      })
       .expect(201);
     q2BudgetId = (q2Res.body as IdResponse).id;
 
@@ -341,7 +348,14 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
         title: `Budget flow Q2 PR ${tag}`,
         requiredDate: '2026-06-30',
         quarter: 2,
-        items: [{ itemName: 'Monitor', quantity: 3, unit: 'unit', estimatedUnitPrice: 4000 }],
+        items: [
+          {
+            itemName: 'Monitor',
+            quantity: 3,
+            unit: 'unit',
+            estimatedUnitPrice: 4000,
+          },
+        ],
       })
       .expect(201);
     q2PrId = (prRes.body as IdResponse).id;

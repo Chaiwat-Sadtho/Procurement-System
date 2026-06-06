@@ -11,11 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/shared/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/shared/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import type { ComboboxOption } from './Combobox'
 
 interface MultiSelectComboboxProps {

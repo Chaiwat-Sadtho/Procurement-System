@@ -110,7 +110,12 @@ export function PRListPage() {
         }
       />
 
-      <PRListFilterForm showRequester={showRequester} initialStatus={urlStatus} onSubmit={handleSubmit} onClear={handleClear} />
+      <PRListFilterForm
+        showRequester={showRequester}
+        initialStatus={urlStatus}
+        onSubmit={handleSubmit}
+        onClear={handleClear}
+      />
 
       {filters === null ? (
         <p className="text-center py-12 text-muted-foreground">
@@ -166,11 +171,7 @@ export function PRListPage() {
                             <Button asChild variant="ghost" size="sm">
                               <Link to={`/purchase-requests/${pr.id}/edit`}>แก้ไข</Link>
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteTarget(pr)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(pr)}>
                               ลบ
                             </Button>
                           </>

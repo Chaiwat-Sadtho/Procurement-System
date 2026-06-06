@@ -28,7 +28,10 @@ export function POFormPage() {
   if (!isEdit) {
     return (
       <div>
-        <PageHeader title="สร้างใบสั่งซื้อ" description="เลือกใบขอซื้อที่อนุมัติแล้วและกรอกรายละเอียด" />
+        <PageHeader
+          title="สร้างใบสั่งซื้อ"
+          description="เลือกใบขอซื้อที่อนุมัติแล้วและกรอกรายละเอียด"
+        />
         <POForm mode="create" defaultValues={createDefaultValues()} />
       </div>
     )
@@ -44,10 +47,7 @@ export function POFormPage() {
 
   if (po.status !== 'draft') {
     return (
-      <Notice
-        message="แก้ไขได้เฉพาะใบสั่งซื้อที่เป็นฉบับร่าง"
-        to={`/purchase-orders/${po.id}`}
-      />
+      <Notice message="แก้ไขได้เฉพาะใบสั่งซื้อที่เป็นฉบับร่าง" to={`/purchase-orders/${po.id}`} />
     )
   }
 
@@ -56,7 +56,13 @@ export function POFormPage() {
       <PageHeader title={`แก้ไข ${po.poNumber}`} description="แก้ไขฉบับร่างใบสั่งซื้อ" />
       {/* key={po.id} forces a remount when navigating edit -> edit between two ids,
           so react-hook-form re-seeds from the new PO's defaultValues instead of keeping stale prefill */}
-      <POForm key={po.id} mode="edit" poId={po.id} pr={po.purchaseRequest} defaultValues={poToFormValues(po)} />
+      <POForm
+        key={po.id}
+        mode="edit"
+        poId={po.id}
+        pr={po.purchaseRequest}
+        defaultValues={poToFormValues(po)}
+      />
     </div>
   )
 }

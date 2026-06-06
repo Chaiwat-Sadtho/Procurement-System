@@ -150,7 +150,10 @@ export function POForm(props: POFormProps) {
             name="prId"
             render={({ field }) => (
               <FormItem>
-                <Label htmlFor="po-pr">ใบขอซื้อ (PR)<RequiredMark /></Label>
+                <Label htmlFor="po-pr">
+                  ใบขอซื้อ (PR)
+                  <RequiredMark />
+                </Label>
                 <div data-testid="po-pr-field">
                   <Combobox
                     id="po-pr"
@@ -171,7 +174,10 @@ export function POForm(props: POFormProps) {
             name="vendorId"
             render={({ field }) => (
               <FormItem>
-                <Label htmlFor="po-vendor">ผู้ขาย<RequiredMark /></Label>
+                <Label htmlFor="po-vendor">
+                  ผู้ขาย
+                  <RequiredMark />
+                </Label>
                 <div data-testid="po-vendor-field">
                   <Combobox
                     id="po-vendor"
@@ -220,7 +226,10 @@ export function POForm(props: POFormProps) {
           name="expectedDeliveryDate"
           render={({ field, fieldState }) => (
             <div className="space-y-1">
-              <Label htmlFor="expectedDeliveryDate">กำหนดส่งมอบ<RequiredMark /></Label>
+              <Label htmlFor="expectedDeliveryDate">
+                กำหนดส่งมอบ
+                <RequiredMark />
+              </Label>
               <DateField
                 id="expectedDeliveryDate"
                 value={field.value}

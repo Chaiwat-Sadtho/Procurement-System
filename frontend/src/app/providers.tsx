@@ -15,7 +15,12 @@ const queryClient = new QueryClient({
 
 export function Providers() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem={false}
+      disableTransitionOnChange
+    >
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
         <Toaster />

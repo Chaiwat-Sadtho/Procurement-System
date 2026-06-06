@@ -20,7 +20,10 @@ describe('VendorCategoriesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VendorCategoriesService,
-        { provide: getRepositoryToken(VendorCategory), useValue: mockCategoryRepo },
+        {
+          provide: getRepositoryToken(VendorCategory),
+          useValue: mockCategoryRepo,
+        },
       ],
     }).compile();
     service = module.get<VendorCategoriesService>(VendorCategoriesService);

@@ -11,10 +11,20 @@ vi.mock('../api', () => ({
 import { purchaseOrdersApi } from '../api'
 import { useRateVendor } from './useRateVendor'
 
-const created = { id: 9, poId: 7, vendorId: 3, score: 4, comment: null, ratedBy: 2, createdAt: '2026-06-01T00:00:00Z' } as VendorRating
+const created = {
+  id: 9,
+  poId: 7,
+  vendorId: 3,
+  score: 4,
+  comment: null,
+  ratedBy: 2,
+  createdAt: '2026-06-01T00:00:00Z',
+} as VendorRating
 
 function makeQc() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
 }
 function makeWrapper(qc: QueryClient) {
   return function wrapper({ children }: { children: ReactNode }) {

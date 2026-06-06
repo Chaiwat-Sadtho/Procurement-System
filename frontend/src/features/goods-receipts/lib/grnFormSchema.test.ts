@@ -61,30 +61,42 @@ describe('grnFormSchema', () => {
   })
 
   it('rejects negative good', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '-1', damaged: '0' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '-1', damaged: '0' })] })).success,
+    ).toBe(false)
   })
 
   it('rejects negative damaged', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '-1' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '-1' })] })).success,
+    ).toBe(false)
   })
 
   it('rejects good + damaged exceeding remaining (FE-bound stricter than backend)', () => {
     // remaining 10, good 7 + damaged 4 = 11 > 10
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '7', damaged: '4' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '7', damaged: '4' })] })).success,
+    ).toBe(false)
   })
 
   it('accepts good + damaged exactly equal to remaining', () => {
     // remaining 10, good 6 + damaged 4 = 10
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '6', damaged: '4' })] })).success).toBe(true)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '6', damaged: '4' })] })).success,
+    ).toBe(true)
   })
 
   it('treats blank good/damaged as 0 (no emitted item from this line)', () => {
     // single line both blank → form-level refine should fail (no emitted item), proving blanks coerce to 0
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '', damaged: '' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '', damaged: '' })] })).success,
+    ).toBe(false)
   })
 
   it('rejects when no line has any quantity (ArrayMinSize 1 — zero emitted DTO items)', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '0' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '0' })] })).success,
+    ).toBe(false)
   })
 
   it('rejects when items array is empty (no emitted item)', () => {
@@ -104,11 +116,15 @@ describe('grnFormSchema', () => {
   // emitted-check must mirror the mapper's 0.01 floor: a sub-0.01 value would map to an
   // empty items[] that the backend rejects via @ArrayMinSize(1) — so the schema must reject it FE-side.
   it('rejects a line whose only quantity is below the 0.01 floor (good 0.005)', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '0.005', damaged: '0' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '0.005', damaged: '0' })] })).success,
+    ).toBe(false)
   })
 
   it('rejects a line whose only quantity is below the 0.01 floor (damaged 0.005)', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '0.005' })] })).success).toBe(false)
+    expect(
+      grnFormSchema.safeParse(values({ items: [line({ good: '0', damaged: '0.005' })] })).success,
+    ).toBe(false)
   })
 
   // Regression lock: unlike poFormSchema, every numeric read here flows through safeNum, whose
@@ -117,16 +133,24 @@ describe('grnFormSchema', () => {
   // assert the emitted-refine message specifically: if safeNum lost its guard, Infinity would survive,
   // trip the `> remaining` bound instead, and this message assertion would fail before Infinity leaks.
   it('coerces a non-finite good (1e999 -> Infinity -> 0) so the only line fails the emitted refine, not the bound', () => {
-    const result = grnFormSchema.safeParse(values({ items: [line({ good: '1e999', damaged: '0' })] }))
+    const result = grnFormSchema.safeParse(
+      values({ items: [line({ good: '1e999', damaged: '0' })] }),
+    )
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues.map((i) => i.message)).toEqual(['ต้องระบุจำนวนรับอย่างน้อย 1 รายการ'])
+      expect(result.error.issues.map((i) => i.message)).toEqual([
+        'ต้องระบุจำนวนรับอย่างน้อย 1 รายการ',
+      ])
     }
   })
 
   // float-safe bound: 0.1 + 0.2 === 0.30000000000000004 must NOT reject an at-bound receive
   it('accepts an at-bound receive despite float imprecision (remaining 0.3, good 0.1 + damaged 0.2)', () => {
-    expect(grnFormSchema.safeParse(values({ items: [line({ remaining: 0.3, good: '0.1', damaged: '0.2' })] })).success).toBe(true)
+    expect(
+      grnFormSchema.safeParse(
+        values({ items: [line({ remaining: 0.3, good: '0.1', damaged: '0.2' })] }),
+      ).success,
+    ).toBe(true)
   })
 })
 
@@ -171,7 +195,9 @@ describe('toCreatePayload — damaged-split mapper (4 cases)', () => {
   })
 
   it('emits exactly at the 0.01 floor (good = 0.01)', () => {
-    const out = toCreatePayload(values({ items: [line({ good: '0.01', damaged: '0', remaining: 10 })] }))
+    const out = toCreatePayload(
+      values({ items: [line({ good: '0.01', damaged: '0', remaining: 10 })] }),
+    )
     expect(out.items).toEqual([{ poItemId: 11, receivedQuantity: 0.01, condition: 'good' }])
   })
 
@@ -213,11 +239,41 @@ describe('createDefaultValues', () => {
     notes: null,
     items: [
       // remaining 10 (none received) → good prefilled '10'
-      { id: 11, poId: 7, prItemId: null, itemName: 'กระดาษ A4', quantity: '10.00', unit: 'รีม', unitPrice: '0', totalPrice: '0', receivedQuantity: '0.00' },
+      {
+        id: 11,
+        poId: 7,
+        prItemId: null,
+        itemName: 'กระดาษ A4',
+        quantity: '10.00',
+        unit: 'รีม',
+        unitPrice: '0',
+        totalPrice: '0',
+        receivedQuantity: '0.00',
+      },
       // partially received: ordered 5, received 2 → remaining 3 → good '3'
-      { id: 12, poId: 7, prItemId: null, itemName: 'ปากกา', quantity: '5.00', unit: 'ด้าม', unitPrice: '0', totalPrice: '0', receivedQuantity: '2.00' },
+      {
+        id: 12,
+        poId: 7,
+        prItemId: null,
+        itemName: 'ปากกา',
+        quantity: '5.00',
+        unit: 'ด้าม',
+        unitPrice: '0',
+        totalPrice: '0',
+        receivedQuantity: '2.00',
+      },
       // fully received: ordered 4, received 4 → remaining 0 → line DROPPED
-      { id: 13, poId: 7, prItemId: null, itemName: 'หมึก', quantity: '4.00', unit: 'ขวด', unitPrice: '0', totalPrice: '0', receivedQuantity: '4.00' },
+      {
+        id: 13,
+        poId: 7,
+        prItemId: null,
+        itemName: 'หมึก',
+        quantity: '4.00',
+        unit: 'ขวด',
+        unitPrice: '0',
+        totalPrice: '0',
+        receivedQuantity: '4.00',
+      },
     ],
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
@@ -262,7 +318,17 @@ describe('createDefaultValues', () => {
     const floaty = {
       ...po,
       items: [
-        { id: 21, poId: 7, prItemId: null, itemName: 'น้ำมัน', quantity: '10.10', unit: 'ลิตร', unitPrice: '0', totalPrice: '0', receivedQuantity: '0.30' },
+        {
+          id: 21,
+          poId: 7,
+          prItemId: null,
+          itemName: 'น้ำมัน',
+          quantity: '10.10',
+          unit: 'ลิตร',
+          unitPrice: '0',
+          totalPrice: '0',
+          receivedQuantity: '0.30',
+        },
       ],
     } as unknown as PurchaseOrder
     const d = createDefaultValues(floaty)

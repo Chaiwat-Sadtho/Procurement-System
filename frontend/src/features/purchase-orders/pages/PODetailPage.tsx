@@ -61,7 +61,13 @@ export function PODetailPage() {
 
   const DIALOG_COPY: Record<
     POAction,
-    { title: string; description: string; confirmLabel: string; success: string; destructive: boolean }
+    {
+      title: string
+      description: string
+      confirmLabel: string
+      success: string
+      destructive: boolean
+    }
   > = {
     send: {
       title: 'ยืนยันการส่งใบสั่งซื้อ',

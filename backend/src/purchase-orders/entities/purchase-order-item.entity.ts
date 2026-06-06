@@ -44,6 +44,12 @@ export class PurchaseOrderItem {
   totalPrice: number;
 
   @ApiProperty()
-  @Column({ name: 'received_quantity', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'received_quantity',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   receivedQuantity: number;
 }

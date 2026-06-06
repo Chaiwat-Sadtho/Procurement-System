@@ -81,7 +81,10 @@ describe('PurchaseRequestsService', () => {
       providers: [
         PurchaseRequestsService,
         { provide: getRepositoryToken(PurchaseRequest), useValue: mockPrRepo },
-        { provide: getRepositoryToken(PurchaseRequestItem), useValue: mockPrItemRepo },
+        {
+          provide: getRepositoryToken(PurchaseRequestItem),
+          useValue: mockPrItemRepo,
+        },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: BudgetsService, useValue: mockBudgetsService },
@@ -98,18 +101,32 @@ describe('PurchaseRequestsService', () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.count.mockResolvedValue(0);
       const mockItem = {
-        itemName: 'Laptop', quantity: 2, unit: 'unit',
-        estimatedUnitPrice: 30000, estimatedTotalPrice: 60000,
+        itemName: 'Laptop',
+        quantity: 2,
+        unit: 'unit',
+        estimatedUnitPrice: 30000,
+        estimatedTotalPrice: 60000,
       };
       mockPrItemRepo.create.mockReturnValue(mockItem);
-      const createdPr = { ...mockDraftPr, items: [mockItem], totalEstimatedAmount: 60000 };
+      const createdPr = {
+        ...mockDraftPr,
+        items: [mockItem],
+        totalEstimatedAmount: 60000,
+      };
       mockPrRepo.create.mockReturnValue(createdPr);
       mockPrRepo.save.mockResolvedValue(createdPr);
 
       const result = await service.create(1, {
         title: 'Test PR',
         requiredDate: '2025-12-31',
-        items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 30000 }],
+        items: [
+          {
+            itemName: 'Laptop',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 30000,
+          },
+        ],
       });
 
       expect(result.status).toBe(PrStatus.DRAFT);
@@ -121,7 +138,10 @@ describe('PurchaseRequestsService', () => {
       const year = new Date().getFullYear();
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.count.mockResolvedValue(2);
-      mockPrRepo.findOne.mockResolvedValue({ id: 3, prNumber: `PR-${year}-0003` });
+      mockPrRepo.findOne.mockResolvedValue({
+        id: 3,
+        prNumber: `PR-${year}-0003`,
+      });
 
       let generatedPrNumber = '';
       mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
@@ -134,7 +154,14 @@ describe('PurchaseRequestsService', () => {
       await service.create(1, {
         title: 'Test PR',
         requiredDate: '2026-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+        items: [
+          {
+            itemName: 'Item',
+            quantity: 1,
+            unit: 'unit',
+            estimatedUnitPrice: 100,
+          },
+        ],
       });
 
       // MAX+1 = 0004 (ไม่ใช่ count+1 = 0003 ที่จะชน unique constraint)
@@ -157,7 +184,14 @@ describe('PurchaseRequestsService', () => {
       await service.create(1, {
         title: 'Decimal PR',
         requiredDate: '2025-12-31',
-        items: [{ itemName: 'X', quantity: 1.03, unit: 'unit', estimatedUnitPrice: 1.5 }],
+        items: [
+          {
+            itemName: 'X',
+            quantity: 1.03,
+            unit: 'unit',
+            estimatedUnitPrice: 1.5,
+          },
+        ],
       });
 
       expect(saved.items[0].estimatedTotalPrice).toBe(1.55);
@@ -170,15 +204,29 @@ describe('PurchaseRequestsService', () => {
         service.create(999, {
           title: 'Test',
           requiredDate: '2025-12-31',
-          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+          items: [
+            {
+              itemName: 'Item',
+              quantity: 1,
+              unit: 'unit',
+              estimatedUnitPrice: 100,
+            },
+          ],
         }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequest when requester has no department', async () => {
-      mockUserRepo.findOne.mockResolvedValue({ ...mockUser, departmentId: null });
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockUser,
+        departmentId: null,
+      });
       await expect(
-        service.create(1, { title: 'x', requiredDate: '2026-01-01', items: [] } as never),
+        service.create(1, {
+          title: 'x',
+          requiredDate: '2026-01-01',
+          items: [],
+        } as never),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -222,13 +270,22 @@ describe('PurchaseRequestsService', () => {
     });
 
     it('should throw ForbiddenException when manager from different department', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: 1 });
-      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: 2 });
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        departmentId: 1,
+      });
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockManager,
+        departmentId: 2,
+      });
       await expect(service.approve(1, 2)).rejects.toThrow(ForbiddenException);
     });
 
     it('should reserve annual budget (quarter null) when approving a PR without quarter', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: null });
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        quarter: null,
+      });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
 
       await service.approve(1, 2);
@@ -272,17 +329,23 @@ describe('PurchaseRequestsService', () => {
 
     it('should throw BadRequestException when rejecting non-submitted PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr });
-      await expect(
-        service.reject(1, 2, { reason: 'No budget' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.reject(1, 2, { reason: 'No budget' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequest when rejecting a PR with null department', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
-      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
-      await expect(
-        service.reject(1, 2, { reason: 'No budget' }),
-      ).rejects.toThrow(BadRequestException);
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        departmentId: null,
+      });
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockManager,
+        departmentId: null,
+      });
+      await expect(service.reject(1, 2, { reason: 'No budget' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -302,23 +365,29 @@ describe('PurchaseRequestsService', () => {
   describe('findOne access control', () => {
     it('should allow employee to access own PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, requesterId: 1 });
-      const result = await service.findOne(1, { id: 1, role: UserRole.EMPLOYEE });
+      const result = await service.findOne(1, {
+        id: 1,
+        role: UserRole.EMPLOYEE,
+      });
       expect(result.id).toBe(1);
     });
 
     it('should throw ForbiddenException when employee accesses another users PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, requesterId: 99 });
-      await expect(
-        service.findOne(1, { id: 1, role: UserRole.EMPLOYEE }),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, { id: 1, role: UserRole.EMPLOYEE })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ForbiddenException when manager accesses PR from different department', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, departmentId: 1 });
-      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: 2 });
-      await expect(
-        service.findOne(1, { id: 2, role: UserRole.MANAGER }),
-      ).rejects.toThrow(ForbiddenException);
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockManager,
+        departmentId: 2,
+      });
+      await expect(service.findOne(1, { id: 2, role: UserRole.MANAGER })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should load department relation so PR detail can show department name', async () => {
@@ -329,7 +398,10 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.findOne.mockResolvedValue(prWithDept);
 
-      const result = await service.findOne(1, { id: 1, role: UserRole.EMPLOYEE });
+      const result = await service.findOne(1, {
+        id: 1,
+        role: UserRole.EMPLOYEE,
+      });
 
       expect(mockPrRepo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -342,8 +414,14 @@ describe('PurchaseRequestsService', () => {
 
   describe('null department guards', () => {
     it('approve throws BadRequest when PR has null department', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, departmentId: null });
-      mockUserRepo.findOne.mockResolvedValue({ ...mockManager, departmentId: null });
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        departmentId: null,
+      });
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockManager,
+        departmentId: null,
+      });
       await expect(service.approve(1, 2)).rejects.toThrow(BadRequestException);
     });
 
@@ -357,10 +435,14 @@ describe('PurchaseRequestsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
-      mockUserRepo.findOne.mockResolvedValue({ id: 2, role: UserRole.MANAGER, departmentId: null });
-      await expect(
-        service.findAll({ id: 2, role: UserRole.MANAGER }, {} as never),
-      ).rejects.toThrow(ForbiddenException);
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 2,
+        role: UserRole.MANAGER,
+        departmentId: null,
+      });
+      await expect(service.findAll({ id: 2, role: UserRole.MANAGER }, {} as never)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -376,15 +458,13 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        { prNumber: '0001' } as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
+        prNumber: '0001',
+      } as any);
 
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        'pr.prNumber ILIKE :prNumber',
-        { prNumber: '%0001%' },
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.prNumber ILIKE :prNumber', {
+        prNumber: '%0001%',
+      });
     });
 
     it('filters by requesterId (exact match)', async () => {
@@ -398,15 +478,11 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        { requesterId: 5 } as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
+        requesterId: 5,
+      } as any);
 
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        'pr.requesterId = :requesterId',
-        { requesterId: 5 },
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.requesterId = :requesterId', { requesterId: 5 });
     });
 
     it('Manager scope + requesterId stack independently in andWhere', async () => {
@@ -421,19 +497,16 @@ describe('PurchaseRequestsService', () => {
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
       mockUserRepo.findOne.mockResolvedValue({ id: 2, departmentId: 1 });
 
-      await service.findAll(
-        { id: 2, role: UserRole.MANAGER },
-        { requesterId: 99 } as any,
-      );
+      await service.findAll({ id: 2, role: UserRole.MANAGER }, {
+        requesterId: 99,
+      } as any);
 
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        'pr.departmentId = :deptId',
-        { deptId: 1 },
-      );
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        'pr.requesterId = :requesterId',
-        { requesterId: 99 },
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.departmentId = :deptId', {
+        deptId: 1,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.requesterId = :requesterId', {
+        requesterId: 99,
+      });
     });
 
     it('filters by requesterName (CONCAT_WS of requester name ILIKE)', async () => {
@@ -447,10 +520,9 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        { requesterName: 'สมชาย' } as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
+        requesterName: 'สมชาย',
+      } as any);
 
       expect(qb.andWhere).toHaveBeenCalledWith(
         "CONCAT_WS(' ', requester.firstName, requester.middleName, requester.lastName) ILIKE :requesterName",
@@ -473,10 +545,9 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        { eligibleForPo: true } as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
+        eligibleForPo: true,
+      } as any);
 
       expect(qb.andWhere).toHaveBeenCalledWith('pr.status = :eligibleStatus', {
         eligibleStatus: PrStatus.APPROVED,
@@ -492,14 +563,13 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        { eligibleForPo: false } as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
+        eligibleForPo: false,
+      } as any);
 
       expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
-      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
-        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      const calledWithNotExists = qb.andWhere.mock.calls.some(
+        (c: unknown[]) => typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
       );
       expect(calledWithNotExists).toBe(false);
     });
@@ -508,14 +578,11 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(
-        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
-        {} as any,
-      );
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {} as any);
 
       expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
-      const calledWithNotExists = qb.andWhere.mock.calls.some((c: unknown[]) =>
-        typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
+      const calledWithNotExists = qb.andWhere.mock.calls.some(
+        (c: unknown[]) => typeof c[0] === 'string' && c[0].includes('NOT EXISTS'),
       );
       expect(calledWithNotExists).toBe(false);
     });

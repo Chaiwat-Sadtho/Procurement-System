@@ -4,12 +4,7 @@ import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { BudgetsService } from '../src/budgets/budgets.service';
-import {
-  AuthResponse,
-  IdResponse,
-  BudgetSummaryResponse,
-  PurchaseOrderResponse,
-} from './types';
+import { AuthResponse, IdResponse, BudgetSummaryResponse, PurchaseOrderResponse } from './types';
 
 // PO.cancel releases the PR's reserved budget INSIDE the cancel transaction. If the release
 // fails, the whole cancel must roll back (PO keeps its status, budget stays reserved) instead
@@ -99,7 +94,11 @@ describe('PO.cancel budget release atomicity (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `POcancel Atomicity Vendor ${tag}`, taxId: `PC${tag}`, categoryIds: [(catRes.body as IdResponse).id] });
+      .send({
+        name: `POcancel Atomicity Vendor ${tag}`,
+        taxId: `PC${tag}`,
+        categoryIds: [(catRes.body as IdResponse).id],
+      });
     vendorId = (vendorRes.body as IdResponse).id;
   });
 
@@ -122,7 +121,14 @@ describe('PO.cancel budget release atomicity (e2e)', () => {
       .send({
         title,
         requiredDate: '2026-12-31',
-        items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 5000 }],
+        items: [
+          {
+            itemName: 'Laptop',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 5000,
+          },
+        ],
       })
       .expect(201);
     const prId = (draft.body as IdResponse).id;

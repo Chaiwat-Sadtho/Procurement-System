@@ -13,10 +13,7 @@ describe('AuditLogsService.log', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuditLogsService,
-        { provide: getRepositoryToken(AuditLog), useValue: mockRepo },
-      ],
+      providers: [AuditLogsService, { provide: getRepositoryToken(AuditLog), useValue: mockRepo }],
     }).compile();
     service = module.get<AuditLogsService>(AuditLogsService);
   });
@@ -42,11 +39,17 @@ describe('AuditLogsService.log', () => {
   });
 
   it('saves through the transaction manager when one is given (joins the caller tx)', async () => {
-    const manager = { save: jest.fn((_entity, entry) => Promise.resolve(entry)) };
+    const manager = {
+      save: jest.fn((_entity, entry) => Promise.resolve(entry)),
+    };
     await service.log(params, manager as never);
     expect(manager.save).toHaveBeenCalledWith(
       AuditLog,
-      expect.objectContaining({ action: 'PR_SUBMITTED', entityId: 9, oldValue: null }),
+      expect.objectContaining({
+        action: 'PR_SUBMITTED',
+        entityId: 9,
+        oldValue: null,
+      }),
     );
     // mutation-proven: the repository path must NOT run when a manager is supplied
     expect(mockRepo.save).not.toHaveBeenCalled();

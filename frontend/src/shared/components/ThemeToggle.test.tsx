@@ -20,9 +20,7 @@ describe('ThemeToggle', () => {
 
   it('shows a control to switch to dark mode when in light mode', async () => {
     renderToggle()
-    expect(
-      await screen.findByRole('button', { name: /switch to dark mode/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument()
   })
 
   it('switches to dark mode when clicked', async () => {
@@ -32,9 +30,7 @@ describe('ThemeToggle', () => {
     const toggle = await screen.findByRole('button', { name: /switch to dark mode/i })
     await user.click(toggle)
 
-    expect(
-      await screen.findByRole('button', { name: /switch to light mode/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /switch to light mode/i })).toBeInTheDocument()
     expect(document.documentElement).toHaveClass('dark')
   })
 })

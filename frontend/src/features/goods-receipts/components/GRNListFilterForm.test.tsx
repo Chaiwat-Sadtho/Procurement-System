@@ -6,7 +6,12 @@ import { GRNListFilterForm } from './GRNListFilterForm'
 
 const pos: ReceivablePO[] = [
   { id: 7, poNumber: 'PO-2026-0007', vendor: { id: 1, name: 'Acme Co' }, status: 'acknowledged' },
-  { id: 8, poNumber: 'PO-2026-0008', vendor: { id: 2, name: 'Beta Ltd' }, status: 'partially_received' },
+  {
+    id: 8,
+    poNumber: 'PO-2026-0008',
+    vendor: { id: 2, name: 'Beta Ltd' },
+    status: 'partially_received',
+  },
 ]
 
 function renderForm(props: Partial<React.ComponentProps<typeof GRNListFilterForm>> = {}) {
@@ -22,9 +27,7 @@ describe('GRNListFilterForm', () => {
   it('submits default all/all sentinels when nothing changed', async () => {
     const { onSubmit } = renderForm()
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'all', poId: 'all' }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ status: 'all', poId: 'all' }))
   })
 
   it('renders the status options with Thai labels', async () => {

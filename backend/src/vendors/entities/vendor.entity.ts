@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { VendorCategory } from './vendor-category.entity';
@@ -16,7 +21,13 @@ export class Vendor {
   name: string;
 
   @ApiProperty({ example: '0105563123456', nullable: true })
-  @Column({ name: 'tax_id', type: 'varchar', length: 20, nullable: true, unique: true })
+  @Column({
+    name: 'tax_id',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    unique: true,
+  })
   taxId: string | null;
 
   @ApiProperty({ nullable: true })
@@ -40,7 +51,13 @@ export class Vendor {
   blacklistReason: string | null;
 
   @ApiProperty({ nullable: true })
-  @Column({ name: 'rating_avg', type: 'decimal', precision: 3, scale: 2, nullable: true })
+  @Column({
+    name: 'rating_avg',
+    type: 'decimal',
+    precision: 3,
+    scale: 2,
+    nullable: true,
+  })
   ratingAvg: number | null;
 
   @ApiProperty({ type: () => [VendorCategory] })

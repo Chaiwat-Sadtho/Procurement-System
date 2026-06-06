@@ -27,7 +27,12 @@ interface RejectReasonDialogProps {
   isPending?: boolean
 }
 
-export function RejectReasonDialog({ open, onOpenChange, onConfirm, isPending = false }: RejectReasonDialogProps) {
+export function RejectReasonDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  isPending = false,
+}: RejectReasonDialogProps) {
   const {
     register,
     handleSubmit,
@@ -56,7 +61,12 @@ export function RejectReasonDialog({ open, onOpenChange, onConfirm, isPending = 
             <p className="text-sm text-destructive min-h-[1.25rem]">{errors.reason?.message}</p>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
               ยกเลิก
             </Button>
             <Button type="submit" variant="destructive" disabled={isPending}>

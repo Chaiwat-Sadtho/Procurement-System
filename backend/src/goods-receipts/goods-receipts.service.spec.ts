@@ -14,16 +14,22 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const mockPoItem: Partial<PurchaseOrderItem> = {
-  id: 1, quantity: 2, receivedQuantity: 0, itemName: 'Laptop',
+  id: 1,
+  quantity: 2,
+  receivedQuantity: 0,
+  itemName: 'Laptop',
 };
 
 const mockAcknowledgedPo: Partial<PurchaseOrder> = {
-  id: 1, status: PoStatus.ACKNOWLEDGED,
+  id: 1,
+  status: PoStatus.ACKNOWLEDGED,
   items: [mockPoItem as PurchaseOrderItem],
 };
 
 const mockGrn: Partial<GoodsReceiptNote> = {
-  id: 1, grnNumber: 'GRN-2025-0001', poId: 1,
+  id: 1,
+  grnNumber: 'GRN-2025-0001',
+  poId: 1,
 };
 
 // mock สำหรับ transaction — เราต้องจำลอง DataSource.transaction()
@@ -57,7 +63,9 @@ const mockGrnRepo = {
 
 const mockBudgetsService = { consumeAmount: jest.fn() };
 const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
-const mockNotificationsService = { send: jest.fn().mockResolvedValue(undefined) };
+const mockNotificationsService = {
+  send: jest.fn().mockResolvedValue(undefined),
+};
 
 describe('GoodsReceiptsService', () => {
   let service: GoodsReceiptsService;
@@ -66,7 +74,10 @@ describe('GoodsReceiptsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GoodsReceiptsService,
-        { provide: getRepositoryToken(GoodsReceiptNote), useValue: mockGrnRepo },
+        {
+          provide: getRepositoryToken(GoodsReceiptNote),
+          useValue: mockGrnRepo,
+        },
         { provide: getRepositoryToken(GoodsReceiptItem), useValue: {} },
         { provide: getRepositoryToken(PurchaseOrder), useValue: {} },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: {} },
@@ -94,7 +105,9 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       await service.create(1, {
         poId: 1,
@@ -120,7 +133,9 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       await service.create(1, {
         poId: 1,
@@ -145,13 +160,19 @@ describe('GoodsReceiptsService', () => {
         }
         if (entity === PurchaseRequest) {
           return Promise.resolve({
-            id: 7, departmentId: 3, fiscalYear: 2025, quarter: 2, totalEstimatedAmount: 1200,
+            id: 7,
+            departmentId: 3,
+            fiscalYear: 2025,
+            quarter: 2,
+            totalEstimatedAmount: 1200,
           });
         }
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       await service.create(1, {
         poId: 1,
@@ -161,7 +182,12 @@ describe('GoodsReceiptsService', () => {
 
       // P5-6: reserved สะท้อนยอด PO จริง → consume release ยอด PO (1000) ไม่ใช่ PR estimate (1200), usedToAdd=PO amount
       expect(mockBudgetsService.consumeAmount).toHaveBeenCalledWith(
-        3, 2025, 2, 1000, 1000, manager,
+        3,
+        2025,
+        2,
+        1000,
+        1000,
+        manager,
       );
       // audit + notification ยิงหลัง commit
       expect(mockAuditLogsService.log).toHaveBeenCalledWith(
@@ -187,14 +213,18 @@ describe('GoodsReceiptsService', () => {
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
           return Promise.resolve({
-            ...mockAcknowledgedPo, prId: 7, totalAmount: 1000,
+            ...mockAcknowledgedPo,
+            prId: 7,
+            totalAmount: 1000,
             items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
           });
         }
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       await service.create(1, {
         poId: 1,
@@ -216,7 +246,9 @@ describe('GoodsReceiptsService', () => {
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
           return Promise.resolve({
-            ...mockAcknowledgedPo, prId: 7, totalAmount: 1000,
+            ...mockAcknowledgedPo,
+            prId: 7,
+            totalAmount: 1000,
             items: [{ id: 1, quantity: 2, receivedQuantity: 0 }],
           });
         }
@@ -224,7 +256,9 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
       const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
 
       await expect(
@@ -241,14 +275,21 @@ describe('GoodsReceiptsService', () => {
     });
 
     it('should throw BadRequest if PO is not in receivable status', async () => {
-      const manager = createMockEntityManager({ ...mockAcknowledgedPo, status: PoStatus.DRAFT });
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      const manager = createMockEntityManager({
+        ...mockAcknowledgedPo,
+        status: PoStatus.DRAFT,
+      });
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
-      await expect(service.create(1, {
-        poId: 1,
-        receivedDate: '2025-11-15',
-        items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequest on over-receipt (received > ordered) (P4-3)', async () => {
@@ -262,14 +303,18 @@ describe('GoodsReceiptsService', () => {
         }
         return Promise.resolve(null);
       });
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       // PO item สั่ง 2 แต่รับ 5 → ต้องโยน BadRequest
-      await expect(service.create(1, {
-        poId: 1,
-        receivedDate: '2025-11-15',
-        items: [{ poItemId: 1, receivedQuantity: 5, condition: ItemCondition.GOOD }],
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [{ poItemId: 1, receivedQuantity: 5, condition: ItemCondition.GOOD }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should scope GRN running number lookup to current year (yearly reset)', async () => {
@@ -284,7 +329,9 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       await service.create(1, {
         poId: 1,
@@ -315,13 +362,21 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       // รับครบ 2 ชิ้น แต่ทั้งหมดชำรุด → ไม่นับเป็นของที่รับจริง
       await service.create(1, {
         poId: 1,
         receivedDate: '2025-11-15',
-        items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.DAMAGED }],
+        items: [
+          {
+            poItemId: 1,
+            receivedQuantity: 2,
+            condition: ItemCondition.DAMAGED,
+          },
+        ],
       });
 
       const savedPoItemCalls = savedAs<PurchaseOrderItem>(manager.save, PurchaseOrderItem);
@@ -342,17 +397,21 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       // poItem 1 สั่ง 2 — payload เดียวส่งซ้ำ 2 บรรทัด (2 + 1 = 3) ต้องโยน BadRequest แม้แต่ละบรรทัดไม่เกิน
-      await expect(service.create(1, {
-        poId: 1,
-        receivedDate: '2025-11-15',
-        items: [
-          { poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD },
-          { poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD },
-        ],
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [
+            { poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD },
+            { poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should keep PO partially_received when one of several items is not fully received', async () => {
@@ -370,7 +429,9 @@ describe('GoodsReceiptsService', () => {
         return Promise.resolve(null);
       });
       manager.save.mockResolvedValue(mockGrn);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
       // item 1 รับครบ (2/2) แต่ item 2 รับแค่ 1/2 → PO ต้องยังเป็น partially_received
       await service.create(1, {
@@ -400,13 +461,17 @@ describe('GoodsReceiptsService', () => {
       const dbErr = new QueryFailedError('insert', [], new Error('dup'));
       (dbErr as { code?: string }).code = '23505';
       manager.save.mockRejectedValue(dbErr);
-      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
+        cb(manager),
+      );
 
-      await expect(service.create(1, {
-        poId: 1,
-        receivedDate: '2025-11-15',
-        items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
-      })).rejects.toThrow(ConflictException);
+      await expect(
+        service.create(1, {
+          poId: 1,
+          receivedDate: '2025-11-15',
+          items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
+        }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

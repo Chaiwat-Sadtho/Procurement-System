@@ -47,7 +47,12 @@ export function VendorFormPage() {
       <PageHeader title="แก้ไขผู้ขาย" description="แก้ไขข้อมูลผู้ขาย" />
       {/* key={vendor.id} forces a remount when navigating edit -> edit between two ids,
           so react-hook-form re-seeds from the new vendor's defaultValues instead of keeping stale prefill */}
-      <VendorForm key={vendor.id} mode="edit" vendorId={vendor.id} defaultValues={vendorToFormValues(vendor)} />
+      <VendorForm
+        key={vendor.id}
+        mode="edit"
+        vendorId={vendor.id}
+        defaultValues={vendorToFormValues(vendor)}
+      />
     </div>
   )
 }

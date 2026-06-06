@@ -25,7 +25,9 @@ export function DashboardPage() {
         title="Dashboard"
         action={
           isEmployee ? (
-            <Button asChild><Link to="/purchase-requests/new">New PR</Link></Button>
+            <Button asChild>
+              <Link to="/purchase-requests/new">New PR</Link>
+            </Button>
           ) : undefined
         }
       />

@@ -16,9 +16,7 @@ const validValues: POFormValues = {
   vendorId: 3,
   expectedDeliveryDate: '2026-07-15',
   notes: 'ส่งที่ชั้น 5',
-  items: [
-    { prItemId: 11, itemName: 'กระดาษ A4', quantity: '10', unit: 'รีม', unitPrice: '120.5' },
-  ],
+  items: [{ prItemId: 11, itemName: 'กระดาษ A4', quantity: '10', unit: 'รีม', unitPrice: '120.5' }],
 }
 
 describe('poFormSchema', () => {
@@ -51,35 +49,86 @@ describe('poFormSchema', () => {
   })
 
   it('rejects empty itemName / unit', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], itemName: '' }] }).success).toBe(false)
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unit: '' }] }).success).toBe(false)
+    expect(
+      poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], itemName: '' }] })
+        .success,
+    ).toBe(false)
+    expect(
+      poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unit: '' }] })
+        .success,
+    ).toBe(false)
   })
 
   it('rejects itemName over 255 / unit over 50 chars', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], itemName: 'a'.repeat(256) }] }).success).toBe(false)
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unit: 'a'.repeat(51) }] }).success).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], itemName: 'a'.repeat(256) }],
+      }).success,
+    ).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], unit: 'a'.repeat(51) }],
+      }).success,
+    ).toBe(false)
   })
 
   it('rejects quantity below 0.01 and accepts decimals', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '0' }] }).success).toBe(false)
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '0.009' }] }).success).toBe(false)
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '2.5' }] }).success).toBe(true)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '0' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '0.009' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '2.5' }],
+      }).success,
+    ).toBe(true)
   })
 
   it('rejects negative unitPrice, accepts 0', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unitPrice: '-1' }] }).success).toBe(false)
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unitPrice: '0' }] }).success).toBe(true)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], unitPrice: '-1' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], unitPrice: '0' }],
+      }).success,
+    ).toBe(true)
   })
 
   // '1e999' parses to Infinity, which passed the bare `>= 0.01` / `>= 0` refines and then
   // serialized to null in JSON.stringify (backend then 400s). The schema must reject non-finite
   // input FE-side with a clear message instead of leaking Infinity into the payload.
   it('rejects non-finite quantity (1e999 -> Infinity)', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '1e999' }] }).success).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '1e999' }],
+      }).success,
+    ).toBe(false)
   })
 
   it('rejects non-finite unitPrice (1e999 -> Infinity)', () => {
-    expect(poFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unitPrice: '1e999' }] }).success).toBe(false)
+    expect(
+      poFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], unitPrice: '1e999' }],
+      }).success,
+    ).toBe(false)
   })
 
   it('requires at least one item', () => {
@@ -94,9 +143,7 @@ describe('toCreatePayload', () => {
       vendorId: 3,
       expectedDeliveryDate: '2026-07-15',
       notes: 'ส่งที่ชั้น 5',
-      items: [
-        { prItemId: 11, itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', unitPrice: 120.5 },
-      ],
+      items: [{ prItemId: 11, itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', unitPrice: 120.5 }],
     })
   })
 
@@ -120,9 +167,7 @@ describe('toUpdatePayload', () => {
     expect(out).toEqual({
       expectedDeliveryDate: '2026-07-15',
       notes: 'ส่งที่ชั้น 5',
-      items: [
-        { prItemId: 11, itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', unitPrice: 120.5 },
-      ],
+      items: [{ prItemId: 11, itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', unitPrice: 120.5 }],
     })
   })
 
@@ -145,14 +190,26 @@ describe('poToFormValues', () => {
     notes: null,
     items: [
       {
-        id: 21, poId: 1, prItemId: 11, itemName: 'กระดาษ A4',
-        quantity: '10.00', unit: 'รีม', unitPrice: '120.50',
-        totalPrice: '1205.00', receivedQuantity: '0.00',
+        id: 21,
+        poId: 1,
+        prItemId: 11,
+        itemName: 'กระดาษ A4',
+        quantity: '10.00',
+        unit: 'รีม',
+        unitPrice: '120.50',
+        totalPrice: '1205.00',
+        receivedQuantity: '0.00',
       },
       {
-        id: 22, poId: 1, prItemId: null, itemName: 'ปากกา',
-        quantity: '5.00', unit: 'ด้าม', unitPrice: '15.00',
-        totalPrice: '75.00', receivedQuantity: '0.00',
+        id: 22,
+        poId: 1,
+        prItemId: null,
+        itemName: 'ปากกา',
+        quantity: '5.00',
+        unit: 'ด้าม',
+        unitPrice: '15.00',
+        totalPrice: '75.00',
+        receivedQuantity: '0.00',
       },
     ],
     createdAt: '2026-06-01T00:00:00Z',
@@ -166,7 +223,11 @@ describe('poToFormValues', () => {
     expect(v.expectedDeliveryDate).toBe('2026-07-15')
     expect(v.notes).toBe('')
     expect(v.items[0]).toEqual({
-      prItemId: 11, itemName: 'กระดาษ A4', quantity: '10', unit: 'รีม', unitPrice: '120.5',
+      prItemId: 11,
+      itemName: 'กระดาษ A4',
+      quantity: '10',
+      unit: 'รีม',
+      unitPrice: '120.5',
     })
   })
 

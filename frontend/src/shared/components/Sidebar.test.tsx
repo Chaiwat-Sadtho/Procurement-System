@@ -165,7 +165,10 @@ describe('Sidebar nav — group toggle, a11y and persistence', () => {
 
     // Remount on a non-purchasing route so auto-expand does not override persistence.
     renderSidebar('procurement_officer', '/dashboard')
-    expect(screen.getByRole('button', { name: 'จัดซื้อ' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'จัดซื้อ' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
     expect(screen.queryByRole('link', { name: 'Purchase Orders' })).not.toBeInTheDocument()
   })
 })

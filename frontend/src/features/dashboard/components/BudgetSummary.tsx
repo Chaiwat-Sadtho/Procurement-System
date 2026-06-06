@@ -82,7 +82,9 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
 
       {isLoading ? (
         <div data-testid="budget-summary-loading" className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground">ยังไม่มีงบสำหรับปีนี้</p>
@@ -97,13 +99,17 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
                 <CardContent className="pt-4">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="text-sm font-medium">{b.department?.name ?? `แผนก #${b.departmentId}`}</p>
+                      <p className="text-sm font-medium">
+                        {b.department?.name ?? `แผนก #${b.departmentId}`}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {b.quarter ? `Q${b.quarter}` : 'Annual'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium">{formatCurrency(used)} / {formatCurrency(b.totalAmount)}</p>
+                      <p className="text-sm font-medium">
+                        {formatCurrency(used)} / {formatCurrency(b.totalAmount)}
+                      </p>
                       <p
                         data-testid={warn ? `budget-warn-${b.id}` : undefined}
                         className={`text-xs ${warn ? 'text-destructive font-medium' : 'text-muted-foreground'}`}

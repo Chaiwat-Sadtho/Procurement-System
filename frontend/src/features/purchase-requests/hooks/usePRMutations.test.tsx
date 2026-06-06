@@ -19,7 +19,9 @@ import { usePRMutations } from './usePRMutations'
 const fakePR = { id: 7 } as PurchaseRequest
 
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 }
 
@@ -57,7 +59,9 @@ describe('usePRMutations', () => {
 
   it('delete drops the stale detail-cache entry for that id', async () => {
     vi.mocked(purchaseRequestsApi.remove).mockResolvedValue(undefined)
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
     qc.setQueryData(['purchase-request', 4], { id: 4 } as PurchaseRequest)
     function localWrapper({ children }: { children: ReactNode }) {
       return <QueryClientProvider client={qc}>{children}</QueryClientProvider>

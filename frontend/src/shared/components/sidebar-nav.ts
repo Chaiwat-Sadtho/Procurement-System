@@ -26,8 +26,18 @@ export const navItems: NavEntry[] = [
     kind: 'group',
     label: 'จัดซื้อ',
     children: [
-      { kind: 'link', label: 'Purchase Requests', path: '/purchase-requests', allowedRoles: ALL_ROLES },
-      { kind: 'link', label: 'Purchase Orders', path: '/purchase-orders', allowedRoles: STAFF_ROLES },
+      {
+        kind: 'link',
+        label: 'Purchase Requests',
+        path: '/purchase-requests',
+        allowedRoles: ALL_ROLES,
+      },
+      {
+        kind: 'link',
+        label: 'Purchase Orders',
+        path: '/purchase-orders',
+        allowedRoles: STAFF_ROLES,
+      },
       { kind: 'link', label: 'Goods Receipts', path: '/goods-receipts', allowedRoles: STAFF_ROLES },
     ],
   },

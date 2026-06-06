@@ -69,34 +69,49 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
       await expect(
-        service.register({ email: 'test@test.com', password: 'password123' } as never),
+        service.register({
+          email: 'test@test.com',
+          password: 'password123',
+        } as never),
       ).rejects.toThrow(ConflictException);
     });
 
     it('throws BadRequest when departmentId missing', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
       await expect(
-        service.register({ email: 'x@test.com', password: 'password123' } as never),
+        service.register({
+          email: 'x@test.com',
+          password: 'password123',
+        } as never),
       ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('login', () => {
     it('should return token when credentials are valid', async () => {
-      const userWithHash = { ...mockUser, passwordHash: await bcrypt.hash('password123', 10) };
+      const userWithHash = {
+        ...mockUser,
+        passwordHash: await bcrypt.hash('password123', 10),
+      };
       mockUserRepository.createQueryBuilder.mockReturnValue({
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(userWithHash),
       });
 
-      const result = await service.login({ email: 'test@test.com', password: 'password123' });
+      const result = await service.login({
+        email: 'test@test.com',
+        password: 'password123',
+      });
 
       expect(result).toHaveProperty('access_token');
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
-      const userWithHash = { ...mockUser, passwordHash: await bcrypt.hash('correctPass', 10) };
+      const userWithHash = {
+        ...mockUser,
+        passwordHash: await bcrypt.hash('correctPass', 10),
+      };
       mockUserRepository.createQueryBuilder.mockReturnValue({
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -115,9 +130,9 @@ describe('AuthService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(
-        service.login({ email: 'notexist@test.com', password: 'pass' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: 'notexist@test.com', password: 'pass' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when account is deactivated', async () => {
@@ -189,9 +204,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException when user not found', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.updateProfile(999, { firstName: 'X' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.updateProfile(999, { firstName: 'X' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

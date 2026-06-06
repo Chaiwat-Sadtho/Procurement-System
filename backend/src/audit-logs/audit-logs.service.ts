@@ -32,9 +32,10 @@ export class AuditLogsService {
     return manager ? manager.save(AuditLog, entry) : this.auditLogRepository.save(entry);
   }
 
-  async findAll(
-    query: AuditLogQueryDto,
-  ): Promise<{ data: AuditLog[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  async findAll(query: AuditLogQueryDto): Promise<{
+    data: AuditLog[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const { page = 1, limit = 50, entityType, entityId, action, userId, from, to } = query;
 
     const qb = this.auditLogRepository
@@ -54,6 +55,9 @@ export class AuditLogsService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 }
