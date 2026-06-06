@@ -1,9 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { BudgetsService } from './budgets.service';
 import { Budget } from './entities/budget.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { Department } from '../departments/entities/department.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -17,6 +22,9 @@ const mockBudget = {
   usedAmount: 0,
 };
 
+const poUser = { id: 10, role: UserRole.PROCUREMENT_OFFICER };
+const managerUser = { id: 20, role: UserRole.MANAGER };
+
 const mockBudgetRepo = {
   findOne: jest.fn(),
   find: jest.fn(),
@@ -27,6 +35,7 @@ const mockBudgetRepo = {
 
 const mockUserRepo = {
   find: jest.fn().mockResolvedValue([]),
+  findOne: jest.fn(),
 };
 
 const mockDepartmentRepo = {
@@ -64,6 +73,7 @@ describe('BudgetsService', () => {
     service = module.get<BudgetsService>(BudgetsService);
     jest.clearAllMocks();
     mockUserRepo.find.mockResolvedValue([]);
+    mockUserRepo.findOne.mockResolvedValue(null);
     mockNotificationsService.sendToMany.mockResolvedValue(undefined);
   });
 
@@ -358,7 +368,7 @@ describe('BudgetsService', () => {
         usedAmount: 300000,
       });
 
-      const result = await service.getSummary(1);
+      const result = await service.getSummary(1, poUser);
 
       expect(result.remaining).toBe(500000);
       expect(result.usagePercent).toBe(50);
@@ -366,7 +376,54 @@ describe('BudgetsService', () => {
 
     it('should throw NotFoundException if budget not found', async () => {
       mockBudgetRepo.findOne.mockResolvedValue(null);
-      await expect(service.getSummary(999)).rejects.toThrow(NotFoundException);
+      await expect(service.getSummary(999, poUser)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll (role scoping)', () => {
+    it('PO sees budgets across departments (no dept filter forced)', async () => {
+      mockBudgetRepo.find.mockResolvedValue([mockBudget]);
+      await service.findAll({ fiscalYear: 2026 }, poUser);
+      expect(mockBudgetRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { fiscalYear: 2026 } }),
+      );
+    });
+
+    it('manager is forced to own department (query departmentId ignored)', async () => {
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 7 });
+      mockBudgetRepo.find.mockResolvedValue([]);
+      await service.findAll({ fiscalYear: 2026, departmentId: 999 }, managerUser);
+      expect(mockBudgetRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { fiscalYear: 2026, departmentId: 7 } }),
+      );
+    });
+
+    it('manager without a department is forbidden', async () => {
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: null });
+      await expect(service.findAll({ fiscalYear: 2026 }, managerUser)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('getSummary (role scoping)', () => {
+    it('manager cannot read a summary from another department', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({ ...mockBudget, departmentId: 1 });
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
+      await expect(service.getSummary(1, managerUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('manager can read a summary from their own department', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({
+        ...mockBudget,
+        departmentId: 2,
+        totalAmount: 1000000,
+        reservedAmount: 0,
+        usedAmount: 0,
+      });
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
+      const result = await service.getSummary(1, managerUser);
+      expect(result.remaining).toBe(1000000);
     });
   });
 });

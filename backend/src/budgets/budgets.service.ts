@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
@@ -66,10 +67,20 @@ export class BudgetsService {
     }
   }
 
-  async findAll(query: BudgetQueryDto): Promise<Budget[]> {
+  async findAll(
+    query: BudgetQueryDto,
+    user: { id: number; role: UserRole },
+  ): Promise<Budget[]> {
     const where: FindOptionsWhere<Budget> = {};
-    if (query.departmentId) where.departmentId = query.departmentId;
     if (query.fiscalYear) where.fiscalYear = query.fiscalYear;
+
+    if (user.role === UserRole.MANAGER) {
+      // manager: บังคับแผนกตัวเอง (override query.departmentId)
+      where.departmentId = await this.resolveManagerDeptId(user);
+    } else if (query.departmentId) {
+      where.departmentId = query.departmentId;
+    }
+
     return this.budgetRepository.find({
       where,
       relations: { department: true },
@@ -99,12 +110,16 @@ export class BudgetsService {
     return this.budgetRepository.save(budget);
   }
 
-  async getSummary(id: number): Promise<Budget & { remaining: number; usagePercent: number }> {
+  async getSummary(
+    id: number,
+    user: { id: number; role: UserRole },
+  ): Promise<Budget & { remaining: number; usagePercent: number }> {
     const budget = await this.budgetRepository.findOne({
       where: { id },
       relations: { department: true },
     });
     if (!budget) throw new NotFoundException(`Budget ${id} not found`);
+    await this.assertCanAccessDept(budget.departmentId, user);
 
     const reserved = Number(budget.reservedAmount);
     const used = Number(budget.usedAmount);
@@ -132,6 +147,29 @@ export class BudgetsService {
   // P5-3: label period ใช้ใน NotFound message
   private periodLabel(quarter: number | null): string {
     return quarter == null ? 'รายปี (annual)' : `Q${quarter}`;
+  }
+
+  // manager เห็นเฉพาะแผนกตัวเอง — โหลด full user จาก DB (JWT อาจ stale) แล้วคืน departmentId
+  // mirror purchase-requests.service.applyRoleScope (manager branch)
+  private async resolveManagerDeptId(user: { id: number; role: UserRole }): Promise<number> {
+    const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
+    if (!fullUser) throw new NotFoundException('User not found');
+    if (fullUser.departmentId == null) {
+      throw new ForbiddenException('ผู้ใช้ระดับ manager ต้องสังกัดแผนก');
+    }
+    return fullUser.departmentId;
+  }
+
+  // detail-scope: manager เข้าถึงงบของแผนกอื่นไม่ได้ (ใช้ร่วม getSummary + getTransactions)
+  private async assertCanAccessDept(
+    departmentId: number,
+    user: { id: number; role: UserRole },
+  ): Promise<void> {
+    if (user.role !== UserRole.MANAGER) return;
+    const deptId = await this.resolveManagerDeptId(user);
+    if (departmentId !== deptId) {
+      throw new ForbiddenException('ไม่สามารถเข้าถึงงบประมาณของแผนกอื่น');
+    }
   }
 
   async reserveAmount(
