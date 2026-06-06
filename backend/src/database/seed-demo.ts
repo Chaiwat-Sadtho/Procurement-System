@@ -269,7 +269,7 @@ function pushContrib(
 // สร้าง GRN ตามแผนรับของ (completed=รับครบ, partially_received=รับ 60%, splitGrn=2 ใบ, damaged=+1 item ชำรุด)
 async function seedReceipts(
   ds: DataSource,
-  grnRepo: Repository<any>,
+  grnRepo: Repository<GoodsReceiptNote>,
   poItemRepo: Repository<any>,
   poItems: PurchaseOrderItem[],
   po: PurchaseOrder,

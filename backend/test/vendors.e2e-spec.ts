@@ -3,6 +3,12 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import {
+  AuthResponse,
+  VendorCategoryResponse,
+  VendorResponse,
+  Paginated,
+} from './types';
 
 // Idempotency note (P3 correction): category name and vendor taxId have UNIQUE
 // constraints. We tag both with a per-run value (`tag = Date.now()`) so the suite
@@ -37,19 +43,19 @@ describe('Vendors (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'procurement@company.com', password: 'Password123' })
       .expect(201);
-    procurementToken = procRes.body.access_token;
+    procurementToken = (procRes.body as AuthResponse).access_token;
 
     const mgrRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'manager@company.com', password: 'Password123' })
       .expect(201);
-    managerToken = mgrRes.body.access_token;
+    managerToken = (mgrRes.body as AuthResponse).access_token;
 
     const empRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'employee@company.com', password: 'Password123' })
       .expect(201);
-    employeeToken = empRes.body.access_token;
+    employeeToken = (empRes.body as AuthResponse).access_token;
   });
 
   afterAll(async () => {
@@ -65,8 +71,9 @@ describe('Vendors (e2e)', () => {
       .send({ name: categoryName })
       .expect(201);
 
-    expect(res.body.name).toBe(categoryName);
-    categoryId = res.body.id;
+    const body = res.body as VendorCategoryResponse;
+    expect(body.name).toBe(categoryName);
+    categoryId = body.id;
   });
 
   it('POST /api/v1/vendor-categories — duplicate name → 409', async () => {
@@ -83,8 +90,9 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${employeeToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThanOrEqual(1);
+    const categories = res.body as VendorCategoryResponse[];
+    expect(Array.isArray(categories)).toBe(true);
+    expect(categories.length).toBeGreaterThanOrEqual(1);
   });
 
   it('POST /api/v1/vendor-categories — employee → 403', async () => {
@@ -110,10 +118,11 @@ describe('Vendors (e2e)', () => {
       })
       .expect(201);
 
-    expect(res.body.name).toBe(`บริษัท ไอทีซัพพลาย จำกัด ${tag}`);
-    expect(res.body.isBlacklisted).toBe(false);
-    expect(res.body.categories).toHaveLength(1);
-    vendorId = res.body.id;
+    const body = res.body as VendorResponse;
+    expect(body.name).toBe(`บริษัท ไอทีซัพพลาย จำกัด ${tag}`);
+    expect(body.isBlacklisted).toBe(false);
+    expect(body.categories).toHaveLength(1);
+    vendorId = body.id;
   });
 
   it('POST /api/v1/vendors — duplicate taxId → 409', async () => {
@@ -146,8 +155,9 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.meta).toMatchObject({ page: 1, limit: 20 });
+    const body = res.body as Paginated<VendorResponse>;
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.meta).toMatchObject({ page: 1, limit: 20 });
   });
 
   it('GET /api/v1/vendors — manager → 200, data array', async () => {
@@ -156,7 +166,7 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(Array.isArray((res.body as Paginated<VendorResponse>).data)).toBe(true);
   });
 
   it('GET /api/v1/vendors — employee → 403', async () => {
@@ -172,8 +182,9 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(Array.isArray(res.body.data)).toBe(true);
-    for (const vendor of res.body.data) {
+    const body = res.body as Paginated<VendorResponse>;
+    expect(Array.isArray(body.data)).toBe(true);
+    for (const vendor of body.data) {
       expect(vendor.isBlacklisted).toBe(false);
     }
   });
@@ -184,8 +195,9 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(res.body.id).toBe(vendorId);
-    expect(Array.isArray(res.body.categories)).toBe(true);
+    const body = res.body as VendorResponse;
+    expect(body.id).toBe(vendorId);
+    expect(Array.isArray(body.categories)).toBe(true);
   });
 
   it('PATCH /api/v1/vendors/:id — PO updates phone', async () => {
@@ -195,7 +207,7 @@ describe('Vendors (e2e)', () => {
       .send({ phone: '02-999-8888' })
       .expect(200);
 
-    expect(res.body.phone).toBe('02-999-8888');
+    expect((res.body as VendorResponse).phone).toBe('02-999-8888');
   });
 
   // --- Blacklist ---
@@ -207,8 +219,9 @@ describe('Vendors (e2e)', () => {
       .send({ reason: 'ส่งสินค้าไม่ตรงสเปค 3 ครั้งติดต่อกัน' })
       .expect(201);
 
-    expect(res.body.isBlacklisted).toBe(true);
-    expect(res.body.blacklistReason).toBe('ส่งสินค้าไม่ตรงสเปค 3 ครั้งติดต่อกัน');
+    const body = res.body as VendorResponse;
+    expect(body.isBlacklisted).toBe(true);
+    expect(body.blacklistReason).toBe('ส่งสินค้าไม่ตรงสเปค 3 ครั้งติดต่อกัน');
   });
 
   it('POST /api/v1/vendors/:id/blacklist — blacklist again → 400', async () => {
@@ -225,8 +238,9 @@ describe('Vendors (e2e)', () => {
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
 
-    expect(res.body.isBlacklisted).toBe(false);
-    expect(res.body.blacklistReason).toBeNull();
+    const body = res.body as VendorResponse;
+    expect(body.isBlacklisted).toBe(false);
+    expect(body.blacklistReason).toBeNull();
   });
 
   it('DELETE /api/v1/vendors/:id/blacklist — unblacklist non-blacklisted → 400', async () => {

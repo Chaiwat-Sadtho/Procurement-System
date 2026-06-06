@@ -31,11 +31,7 @@ export class BudgetsService {
 
   async create(dto: CreateBudgetDto): Promise<Budget> {
     const existing = await this.budgetRepository.findOne({
-      where: {
-        departmentId: dto.departmentId,
-        fiscalYear: dto.fiscalYear,
-        quarter: dto.quarter != null ? (dto.quarter as any) : (IsNull() as any),
-      },
+      where: this.budgetWhere(dto.departmentId, dto.fiscalYear, dto.quarter ?? null),
     });
     if (existing) {
       throw new ConflictException(
@@ -117,11 +113,17 @@ export class BudgetsService {
 
   // P5-3: where clause กลางสำหรับ reserve/release/consume — เล็ง budget row ตาม quarter
   // quarter == null → งบรายปี (IsNull), 1-4 → ไตรมาสนั้น (match ตรง ไม่มี fallback)
-  private budgetWhere(departmentId: number, fiscalYear: number, quarter: number | null) {
+  private budgetWhere(
+    departmentId: number,
+    fiscalYear: number,
+    quarter: number | null,
+  ): FindOptionsWhere<Budget> {
     return {
       departmentId,
       fiscalYear,
-      quarter: (quarter == null ? IsNull() : quarter) as any,
+      quarter: (quarter == null
+        ? IsNull()
+        : quarter) as FindOptionsWhere<Budget>['quarter'],
     };
   }
 

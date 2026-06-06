@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { PurchaseOrder, PoStatus } from './entities/purchase-order.entity';
 import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
@@ -80,7 +80,7 @@ describe('PurchaseOrdersService', () => {
     // create เปิด transaction (budget adjust + PO save atomic) — helper จำลอง manager.save
     const mockTxSave = (saveImpl: jest.Mock) => {
       const manager = { save: saveImpl };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
       return manager;
     };
 
@@ -111,8 +111,8 @@ describe('PurchaseOrdersService', () => {
       mockPoRepo.findOne.mockResolvedValue(null);
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
       mockPoRepo.count.mockResolvedValue(0);
-      mockPoItemRepo.create.mockImplementation((e) => e);
-      mockPoRepo.create.mockImplementation((e) => e);
+      mockPoItemRepo.create.mockImplementation((e: PurchaseOrderItem) => e);
+      mockPoRepo.create.mockImplementation((e: PurchaseOrder) => e);
       mockTxSave(jest.fn().mockImplementation((_entity, e) => Promise.resolve(e)));
 
       const result = await service.create(1, {
@@ -245,7 +245,7 @@ describe('PurchaseOrdersService', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
       const manager = { save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }) };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
       // mutation-proof: status-save joins the tx (manager.save), not the bare repo
@@ -265,7 +265,7 @@ describe('PurchaseOrdersService', () => {
         save: jest.fn().mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue(null), // PR lookup ใน tx → ไม่เจอ → ไม่ release
       };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
       const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
       // mutation-proof: status-save joins the tx (manager.save), not the bare repo
@@ -291,7 +291,7 @@ describe('PurchaseOrdersService', () => {
           id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
 
       await service.cancel(1, 1);
 
@@ -308,7 +308,7 @@ describe('PurchaseOrdersService', () => {
           id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.SUBMITTED,
         }),
       };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
 
       const result = await service.cancel(1, 1);
 
@@ -325,7 +325,7 @@ describe('PurchaseOrdersService', () => {
           id: 1, departmentId: null, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
 
       const result = await service.cancel(1, 1);
 
@@ -342,7 +342,7 @@ describe('PurchaseOrdersService', () => {
           id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
       mockBudgetsService.releaseReservedAmount.mockRejectedValueOnce(new Error('release failed'));
 
       await expect(service.cancel(1, 1)).rejects.toThrow('release failed');
@@ -384,7 +384,7 @@ describe('PurchaseOrdersService', () => {
         save: jest.fn().mockImplementation((_e: unknown, data: unknown) => Promise.resolve(data)),
       };
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo, items: [{ id: 9 }] });
-      mockDataSource.transaction.mockImplementation(async (cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
 
       const result = await service.update(1, {
         items: [

@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AuthResponse, DepartmentResponse, PurchaseRequestResponse } from './types';
 
 describe('Purchase Requests Stats (e2e)', () => {
   let app: INestApplication;
@@ -18,13 +19,13 @@ describe('Purchase Requests Stats (e2e)', () => {
 
   async function login(email: string): Promise<string> {
     const res = await http().post('/api/v1/auth/login').send({ email, password: 'Password123' }).expect(201);
-    return res.body.access_token;
+    return (res.body as AuthResponse).access_token;
   }
 
   async function setupDept(name: string): Promise<number> {
     const res = await http().post('/api/v1/departments')
       .set('Authorization', `Bearer ${procurementToken}`).send({ name }).expect(201);
-    const deptId = res.body.id;
+    const deptId = (res.body as DepartmentResponse).id;
     await http().post('/api/v1/budgets')
       .set('Authorization', `Bearer ${procurementToken}`)
       .send({ departmentId: deptId, fiscalYear, totalAmount: 1000000 }).expect(201);
@@ -40,7 +41,7 @@ describe('Purchase Requests Stats (e2e)', () => {
   async function registerManager(email: string, departmentId: number): Promise<string> {
     const reg = await http().post('/api/v1/auth/register')
       .send({ email, password: 'Password123', firstName: 'M', lastName: 'G', departmentId }).expect(201);
-    await http().patch(`/api/v1/users/${reg.body.user.id}/role`)
+    await http().patch(`/api/v1/users/${(reg.body as AuthResponse).user.id}/role`)
       .set('Authorization', `Bearer ${procurementToken}`).send({ role: 'manager' }).expect(200);
     return login(email);
   }
@@ -53,7 +54,7 @@ describe('Purchase Requests Stats (e2e)', () => {
         requiredDate: '2025-12-31',
         items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 1000 }],
       }).expect(201);
-    return res.body.id;
+    return (res.body as PurchaseRequestResponse).id;
   }
 
   async function getStats(token: string) {

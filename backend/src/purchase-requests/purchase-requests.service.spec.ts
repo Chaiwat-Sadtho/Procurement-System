@@ -70,7 +70,7 @@ const mockNotificationsService = {
 // approve() ใช้ dataSource.transaction(cb) — mock ให้รัน cb พร้อม fake EntityManager
 const mockTxManager = { save: jest.fn((_, e) => Promise.resolve(e)) };
 const mockDataSource = {
-  transaction: jest.fn((cb) => cb(mockTxManager)),
+  transaction: jest.fn((cb: (m: typeof mockTxManager) => unknown) => cb(mockTxManager)),
 };
 
 describe('PurchaseRequestsService', () => {
@@ -125,7 +125,7 @@ describe('PurchaseRequestsService', () => {
 
       let generatedPrNumber = '';
       mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
-      mockPrRepo.create.mockImplementation((entity) => {
+      mockPrRepo.create.mockImplementation((entity: PurchaseRequest) => {
         generatedPrNumber = entity.prNumber;
         return { ...mockDraftPr, prNumber: entity.prNumber };
       });
@@ -146,10 +146,10 @@ describe('PurchaseRequestsService', () => {
     it('should compute item total with decimal precision (1.03 × 1.5 = 1.55)', async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.count.mockResolvedValue(0);
-      mockPrItemRepo.create.mockImplementation((e) => e);
-      let saved: any;
-      mockPrRepo.create.mockImplementation((e) => e);
-      mockPrRepo.save.mockImplementation((e) => {
+      mockPrItemRepo.create.mockImplementation((e: PurchaseRequestItem) => e);
+      let saved!: PurchaseRequest;
+      mockPrRepo.create.mockImplementation((e: PurchaseRequest) => e);
+      mockPrRepo.save.mockImplementation((e: PurchaseRequest) => {
         saved = e;
         return Promise.resolve(e);
       });
@@ -333,7 +333,7 @@ describe('PurchaseRequestsService', () => {
 
       expect(mockPrRepo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
-          relations: expect.objectContaining({ department: true }),
+          relations: expect.objectContaining({ department: true }) as unknown,
         }),
       );
       expect(result.department).toEqual({ id: 1, name: 'IT' });
