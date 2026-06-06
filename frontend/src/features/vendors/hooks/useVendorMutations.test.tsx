@@ -16,11 +16,18 @@ import { useVendorMutations } from './useVendorMutations'
 
 const fakeVendor = { id: 9 } as Vendor
 const payload: VendorPayload = {
-  name: 'ACME', taxId: null, email: null, phone: null, address: null, categoryIds: [1],
+  name: 'ACME',
+  taxId: null,
+  email: null,
+  phone: null,
+  address: null,
+  categoryIds: [1],
 }
 
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 }
 

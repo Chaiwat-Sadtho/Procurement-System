@@ -8,10 +8,7 @@ import { purchaseOrdersApi } from '../api'
  * mutation flips this section to read-only via prefix-cascade invalidation.
  * Caller gates `enabled` on PO being completed (only completed POs can be rated).
  */
-export function useVendorRatingForPo(
-  poId: number,
-  { enabled = true }: QueryEnabledOptions = {},
-) {
+export function useVendorRatingForPo(poId: number, { enabled = true }: QueryEnabledOptions = {}) {
   return useQuery({
     queryKey: ['purchase-order', poId, 'rating'],
     queryFn: () => purchaseOrdersApi.getRating(poId),

@@ -23,7 +23,13 @@ describe('ConfirmDialog', () => {
   it('calls onConfirm when the confirm button is clicked', async () => {
     const onConfirm = vi.fn()
     render(
-      <ConfirmDialog open onOpenChange={() => {}} title="t" confirmLabel="ยืนยันอนุมัติ" onConfirm={onConfirm} />,
+      <ConfirmDialog
+        open
+        onOpenChange={() => {}}
+        title="t"
+        confirmLabel="ยืนยันอนุมัติ"
+        onConfirm={onConfirm}
+      />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'ยืนยันอนุมัติ' }))
     expect(onConfirm).toHaveBeenCalledOnce()
@@ -31,7 +37,14 @@ describe('ConfirmDialog', () => {
 
   it('disables both buttons when isPending', () => {
     render(
-      <ConfirmDialog open onOpenChange={() => {}} title="t" confirmLabel="ยืนยันอนุมัติ" onConfirm={() => {}} isPending />,
+      <ConfirmDialog
+        open
+        onOpenChange={() => {}}
+        title="t"
+        confirmLabel="ยืนยันอนุมัติ"
+        onConfirm={() => {}}
+        isPending
+      />,
     )
     expect(screen.getByRole('button', { name: 'ยืนยันอนุมัติ' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'ยกเลิก' })).toBeDisabled()
@@ -39,7 +52,13 @@ describe('ConfirmDialog', () => {
 
   it('renders nothing when closed', () => {
     render(
-      <ConfirmDialog open={false} onOpenChange={() => {}} title="hidden-title" confirmLabel="ยืนยันอนุมัติ" onConfirm={() => {}} />,
+      <ConfirmDialog
+        open={false}
+        onOpenChange={() => {}}
+        title="hidden-title"
+        confirmLabel="ยืนยันอนุมัติ"
+        onConfirm={() => {}}
+      />,
     )
     expect(screen.queryByText('hidden-title')).not.toBeInTheDocument()
   })

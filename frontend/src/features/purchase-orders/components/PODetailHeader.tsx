@@ -78,7 +78,9 @@ export function PODetailHeader({ po, actions }: PODetailHeaderProps) {
           <MetaItem
             label="ยอดรวม"
             value={
-              <span className="font-mono tabular-nums">{formatCurrency(Number(po.totalAmount))}</span>
+              <span className="font-mono tabular-nums">
+                {formatCurrency(Number(po.totalAmount))}
+              </span>
             }
           />
         </dl>

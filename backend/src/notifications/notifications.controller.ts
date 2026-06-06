@@ -1,6 +1,13 @@
 import {
-  Controller, Get, Patch, Param, Query,
-  UseGuards, ParseIntPipe, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -31,10 +38,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Mark notification ว่าอ่านแล้ว' })
   @Patch(':id/read')
   @HttpCode(HttpStatus.OK)
-  markRead(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { id: number },
-  ) {
+  markRead(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { id: number }) {
     return this.notificationsService.markRead(id, user.id);
   }
 }

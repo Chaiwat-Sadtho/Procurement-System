@@ -33,7 +33,10 @@ export class NotificationsService {
     return this.notificationRepository.save(notification);
   }
 
-  async sendToMany(userIds: number[], params: Omit<SendNotificationParams, 'userId'>): Promise<void> {
+  async sendToMany(
+    userIds: number[],
+    params: Omit<SendNotificationParams, 'userId'>,
+  ): Promise<void> {
     if (userIds.length === 0) return;
     const notifications = userIds.map((userId) =>
       this.notificationRepository.create({
@@ -52,7 +55,10 @@ export class NotificationsService {
   async findAll(
     userId: number,
     query: NotificationQueryDto,
-  ): Promise<{ data: Notification[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  ): Promise<{
+    data: Notification[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const { page = 1, limit = 20, unreadOnly } = query;
 
     const qb = this.notificationRepository
@@ -67,11 +73,16 @@ export class NotificationsService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async markRead(id: number, userId: number): Promise<Notification | null> {
-    const notification = await this.notificationRepository.findOne({ where: { id, userId } });
+    const notification = await this.notificationRepository.findOne({
+      where: { id, userId },
+    });
     if (!notification) return null;
     notification.isRead = true;
     return this.notificationRepository.save(notification);

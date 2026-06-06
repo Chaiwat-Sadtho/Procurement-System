@@ -3,12 +3,7 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import {
-  AuthResponse,
-  IdResponse,
-  PurchaseRequestResponse,
-  Paginated,
-} from './types';
+import { AuthResponse, IdResponse, PurchaseRequestResponse, Paginated } from './types';
 
 describe('Purchase Requests (e2e)', () => {
   let app: INestApplication;
@@ -28,7 +23,12 @@ describe('Purchase Requests (e2e)', () => {
     title: 'ขอซื้อคอมพิวเตอร์',
     requiredDate: '2025-12-31',
     items: [
-      { itemName: 'MacBook Pro', quantity: 1, unit: 'unit', estimatedUnitPrice: 70000 },
+      {
+        itemName: 'MacBook Pro',
+        quantity: 1,
+        unit: 'unit',
+        estimatedUnitPrice: 70000,
+      },
     ],
   };
 
@@ -188,7 +188,12 @@ describe('Purchase Requests (e2e)', () => {
       .send({
         title: 'ขอซื้อคอมพิวเตอร์ (แก้ไข)',
         items: [
-          { itemName: 'MacBook Pro', quantity: 2, unit: 'unit', estimatedUnitPrice: 70000 },
+          {
+            itemName: 'MacBook Pro',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 70000,
+          },
         ],
       })
       .expect(200);
@@ -331,7 +336,9 @@ describe('Purchase Requests (e2e)', () => {
       .query({ requesterName: 'Employee' })
       .set('Authorization', `Bearer ${procurementToken}`)
       .expect(200);
-    expect((partial.body as Paginated<PurchaseRequestResponse>).meta.total).toBeGreaterThanOrEqual(1);
+    expect((partial.body as Paginated<PurchaseRequestResponse>).meta.total).toBeGreaterThanOrEqual(
+      1,
+    );
 
     // negative control: a name nobody has must return 0 — proves the WHERE actually discriminates
     const none = await request(app.getHttpServer())
@@ -357,7 +364,14 @@ describe('Purchase Requests (e2e)', () => {
         .send({
           title,
           requiredDate: '2025-12-31',
-          items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 1000 }],
+          items: [
+            {
+              itemName: 'Eligible Item',
+              quantity: 1,
+              unit: 'unit',
+              estimatedUnitPrice: 1000,
+            },
+          ],
         })
         .expect(201);
       const id: number = (createRes.body as IdResponse).id;
@@ -379,7 +393,9 @@ describe('Purchase Requests (e2e)', () => {
         .query({ eligibleForPo: 'true', limit: 200 })
         .set('Authorization', `Bearer ${procurementToken}`)
         .expect(200);
-      return new Set<number>((res.body as Paginated<PurchaseRequestResponse>).data.map((pr) => pr.id));
+      return new Set<number>(
+        (res.body as Paginated<PurchaseRequestResponse>).data.map((pr) => pr.id),
+      );
     };
 
     beforeAll(async () => {
@@ -391,7 +407,11 @@ describe('Purchase Requests (e2e)', () => {
       const vendorRes = await request(app.getHttpServer())
         .post('/api/v1/vendors')
         .set('Authorization', `Bearer ${procurementToken}`)
-        .send({ name: `Eligible Vendor ${eligTag}`, taxId: `el${eligTag}`, categoryIds: [(catRes.body as IdResponse).id] })
+        .send({
+          name: `Eligible Vendor ${eligTag}`,
+          taxId: `el${eligTag}`,
+          categoryIds: [(catRes.body as IdResponse).id],
+        })
         .expect(201);
       elVendorId = (vendorRes.body as IdResponse).id;
     });
@@ -408,7 +428,14 @@ describe('Purchase Requests (e2e)', () => {
         .send({
           title: 'Eligible: draft hidden',
           requiredDate: '2025-12-31',
-          items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+          items: [
+            {
+              itemName: 'X',
+              quantity: 1,
+              unit: 'unit',
+              estimatedUnitPrice: 100,
+            },
+          ],
         })
         .expect(201);
       const draftId: number = (draftRes.body as IdResponse).id;
@@ -419,7 +446,14 @@ describe('Purchase Requests (e2e)', () => {
         .send({
           title: 'Eligible: submitted hidden',
           requiredDate: '2025-12-31',
-          items: [{ itemName: 'X', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+          items: [
+            {
+              itemName: 'X',
+              quantity: 1,
+              unit: 'unit',
+              estimatedUnitPrice: 100,
+            },
+          ],
         })
         .expect(201);
       const submittedId: number = (submittedRes.body as IdResponse).id;
@@ -444,7 +478,14 @@ describe('Purchase Requests (e2e)', () => {
           prId: id,
           vendorId: elVendorId,
           expectedDeliveryDate: '2025-12-15',
-          items: [{ itemName: 'Eligible Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+          items: [
+            {
+              itemName: 'Eligible Item',
+              quantity: 1,
+              unit: 'unit',
+              unitPrice: 1000,
+            },
+          ],
         })
         .expect(201);
       const poId: number = (poRes.body as IdResponse).id;

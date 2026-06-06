@@ -96,11 +96,20 @@ function setupMocks({
   isLoading = false,
 }: {
   user?: User
-  prData?: { data: PurchaseRequest[]; meta: { page: number; limit: number; total: number; totalPages: number } } | undefined
+  prData?:
+    | {
+        data: PurchaseRequest[]
+        meta: { page: number; limit: number; total: number; totalPages: number }
+      }
+    | undefined
   isLoading?: boolean
 }) {
-  vi.mocked(useCurrentUser).mockReturnValue({ data: user, isLoading: false } as ReturnType<typeof useCurrentUser>)
-  vi.mocked(usePurchaseRequests).mockReturnValue({ data: prData, isLoading } as ReturnType<typeof usePurchaseRequests>)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: user, isLoading: false } as ReturnType<
+    typeof useCurrentUser
+  >)
+  vi.mocked(usePurchaseRequests).mockReturnValue({ data: prData, isLoading } as ReturnType<
+    typeof usePurchaseRequests
+  >)
 }
 
 function setMutations() {
@@ -235,7 +244,10 @@ describe('PRListPage', () => {
   it('shows New PR button only for employee role', () => {
     setupMocks({
       user: { ...baseUser, role: 'employee' },
-      prData: { data: [] as PurchaseRequest[], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
+      prData: {
+        data: [] as PurchaseRequest[],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      },
     })
 
     renderPage()

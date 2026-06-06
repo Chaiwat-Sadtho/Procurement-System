@@ -94,9 +94,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('GET /api/v1/auth/me — rejects unauthenticated', async () => {
-    await request(app.getHttpServer())
-      .get('/api/v1/auth/me')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
   });
 
   it('PATCH /api/v1/auth/me — updates name fields and recomputes fullName', async () => {

@@ -8,7 +8,9 @@ vi.mock('../hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('../components/PRForm', () => ({
   PRForm: (props: { mode: string; defaultValues: { title: string } }) => (
-    <div data-testid="prform">mode={props.mode}|title={props.defaultValues.title}</div>
+    <div data-testid="prform">
+      mode={props.mode}|title={props.defaultValues.title}
+    </div>
   ),
 }))
 
@@ -43,8 +45,24 @@ function renderAt(path: string) {
 }
 
 const draftPR = {
-  id: 3, title: 'ของเดิม', status: 'draft', requesterId: 10, quarter: 2, requiredDate: '2026-08-15',
-  items: [{ id: 1, prId: 3, itemName: 'หมึก', description: null, quantity: 5, unit: 'กล่อง', estimatedUnitPrice: 300, estimatedTotalPrice: 1500 }],
+  id: 3,
+  title: 'ของเดิม',
+  status: 'draft',
+  requesterId: 10,
+  quarter: 2,
+  requiredDate: '2026-08-15',
+  items: [
+    {
+      id: 1,
+      prId: 3,
+      itemName: 'หมึก',
+      description: null,
+      quantity: 5,
+      unit: 'กล่อง',
+      estimatedUnitPrice: 300,
+      estimatedTotalPrice: 1500,
+    },
+  ],
 } as unknown as PurchaseRequest
 
 describe('PRFormPage', () => {

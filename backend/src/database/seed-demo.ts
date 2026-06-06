@@ -8,12 +8,25 @@ import { VendorCategory } from '../vendors/entities/vendor-category.entity';
 import { Vendor } from '../vendors/entities/vendor.entity';
 import { Budget } from '../budgets/entities/budget.entity';
 import {
-  EXTRA_DEPARTMENTS, EXTRA_USERS, VENDOR_CATEGORIES, VENDORS,
-  BUDGET_PERIODS, budgetTotalFor, CATALOG, PR_SCENARIOS, PrScenario,
+  EXTRA_DEPARTMENTS,
+  EXTRA_USERS,
+  VENDOR_CATEGORIES,
+  VENDORS,
+  BUDGET_PERIODS,
+  budgetTotalFor,
+  CATALOG,
+  PR_SCENARIOS,
+  PrScenario,
 } from './seed-demo-data';
 import * as bcrypt from 'bcrypt';
 import { itemTotal, sumMoney } from '../common/money';
-import { applyReserve, applyAdjust, applyConsume, applyRelease, round2 } from '../common/budget-math';
+import {
+  applyReserve,
+  applyAdjust,
+  applyConsume,
+  applyRelease,
+  round2,
+} from '../common/budget-math';
 import { formatRunningNumber } from '../common/running-number';
 import { VendorRating } from '../vendors/entities/vendor-rating.entity';
 import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
@@ -21,7 +34,10 @@ import { PurchaseRequestItem } from '../purchase-requests/entities/purchase-requ
 import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { GoodsReceiptNote, GrnStatus } from '../goods-receipts/entities/goods-receipt-note.entity';
-import { GoodsReceiptItem, ItemCondition } from '../goods-receipts/entities/goods-receipt-item.entity';
+import {
+  GoodsReceiptItem,
+  ItemCondition,
+} from '../goods-receipts/entities/goods-receipt-item.entity';
 import { UserRole } from '../users/entities/user.entity';
 
 // วันที่กลางไตรมาส (fy=ปีปฏิทิน, quarter 1-4) — deterministic, คืน 'YYYY-MM-DD'
@@ -33,7 +49,13 @@ function quarterDate(fy: number, quarter: number, dayOffset = 0): string {
 
 // backdate created_at (+ updated_at ถ้ามี) ให้ time-series กราฟมีเรื่องราวข้ามปีงบ
 // (@CreateDateColumn ถูก ORM เซ็ตเป็น now ตอน insert — ต้อง UPDATE ตรงหลังบันทึก)
-async function backdate(ds: DataSource, table: string, id: number, date: string, hasUpdated = true): Promise<void> {
+async function backdate(
+  ds: DataSource,
+  table: string,
+  id: number,
+  date: string,
+  hasUpdated = true,
+): Promise<void> {
   const cols = hasUpdated ? `created_at = $1, updated_at = $1` : `created_at = $1`;
   await ds.query(`UPDATE ${table} SET ${cols} WHERE id = $2`, [`${date}T03:00:00.000Z`, id]);
 }
@@ -53,8 +75,12 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const password = await bcrypt.hash('Password123', 10);
   await userRepo.save(
     EXTRA_USERS.map((u) => ({
-      email: u.email, passwordHash: password, firstName: u.firstName, lastName: u.lastName,
-      role: u.role, departmentId: deptId.get(u.dept)!,
+      email: u.email,
+      passwordHash: password,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      role: u.role,
+      departmentId: deptId.get(u.dept)!,
     })),
   );
 
@@ -68,8 +94,12 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const vendorRepo = ds.getRepository(Vendor);
   await vendorRepo.save(
     VENDORS.map((v) => ({
-      name: v.name, taxId: v.taxId, email: v.email, phone: v.phone,
-      isBlacklisted: v.isBlacklisted ?? false, blacklistReason: v.blacklistReason ?? null,
+      name: v.name,
+      taxId: v.taxId,
+      email: v.email,
+      phone: v.phone,
+      isBlacklisted: v.isBlacklisted ?? false,
+      blacklistReason: v.blacklistReason ?? null,
       ratingAvg: null,
       categories: v.categories.map((c) => catByName.get(c)!),
     })),
@@ -81,9 +111,12 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   for (const d of allDepts) {
     for (const p of BUDGET_PERIODS) {
       budgetRows.push({
-        departmentId: d.id, fiscalYear: p.fy, quarter: p.quarter,
+        departmentId: d.id,
+        fiscalYear: p.fy,
+        quarter: p.quarter,
         totalAmount: budgetTotalFor(d.name, p.fy, p.quarter),
-        reservedAmount: 0, usedAmount: 0,
+        reservedAmount: 0,
+        usedAmount: 0,
       });
     }
   }
@@ -91,13 +124,15 @@ export async function seedDemo(ds: DataSource): Promise<void> {
 
   // 7) เตรียม lookup users (requester=EMPLOYEE ใน dept, approver=MANAGER ใน dept, creator=PROCUREMENT_OFFICER)
   const allUsers = await userRepo.find();
-  const empByDept = new Map<number, number>();      // deptId → userId (EMPLOYEE คนแรก)
-  const mgrByDept = new Map<number, number>();      // deptId → userId (MANAGER คนแรก)
+  const empByDept = new Map<number, number>(); // deptId → userId (EMPLOYEE คนแรก)
+  const mgrByDept = new Map<number, number>(); // deptId → userId (MANAGER คนแรก)
   let procurementId = 0;
   for (const u of allUsers) {
     if (u.departmentId == null) continue;
-    if (u.role === UserRole.EMPLOYEE && !empByDept.has(u.departmentId)) empByDept.set(u.departmentId, u.id);
-    if (u.role === UserRole.MANAGER && !mgrByDept.has(u.departmentId)) mgrByDept.set(u.departmentId, u.id);
+    if (u.role === UserRole.EMPLOYEE && !empByDept.has(u.departmentId))
+      empByDept.set(u.departmentId, u.id);
+    if (u.role === UserRole.MANAGER && !mgrByDept.has(u.departmentId))
+      mgrByDept.set(u.departmentId, u.id);
     if (u.role === UserRole.PROCUREMENT_OFFICER && !procurementId) procurementId = u.id;
   }
 
@@ -117,7 +152,11 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   };
 
   // เก็บ contribution ต่อ budget row เพื่อ simulate ทีหลัง: key `deptId|fy|quarter`
-  type Contribution = { kind: 'reserve' | 'active' | 'completed' | 'cancelled'; est: number; poTotal: number };
+  type Contribution = {
+    kind: 'reserve' | 'active' | 'completed' | 'cancelled';
+    est: number;
+    poTotal: number;
+  };
   const contribByBudget = new Map<string, Contribution[]>();
   const ratingsToAvg = new Map<number, number[]>(); // vendorId → scores
 
@@ -150,7 +189,9 @@ export async function seedDemo(ds: DataSource): Promise<void> {
         quarter: sc.quarter,
         totalEstimatedAmount: est,
         approvedBy: isApproved ? mgrByDept.get(dId)! : undefined,
-        approvedAt: isApproved ? new Date(`${quarterDate(sc.fy, sc.quarter, 3)}T03:00:00.000Z`) : undefined,
+        approvedAt: isApproved
+          ? new Date(`${quarterDate(sc.fy, sc.quarter, 3)}T03:00:00.000Z`)
+          : undefined,
         fiscalYear: isApproved ? sc.fy : undefined,
         rejectReason: sc.status === PrStatus.REJECTED ? sc.rejectReason! : undefined,
         items: prItems,
@@ -161,7 +202,11 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     if (!sc.po) {
       if (isApproved) {
         // approved ไม่มี PO → reserved += est
-        pushContrib(contribByBudget, dId, sc.fy, sc.quarter, { kind: 'reserve', est, poTotal: 0 });
+        pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
+          kind: 'reserve',
+          est,
+          poTotal: 0,
+        });
       }
       continue;
     }
@@ -193,15 +238,30 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       }),
     )) as PurchaseOrder;
     await backdate(ds, 'purchase_orders', po.id, quarterDate(sc.fy, sc.quarter, 5));
-    const savedPoItems = await poItemRepo.find({ where: { poId: po.id }, order: { id: 'ASC' } });
+    const savedPoItems = await poItemRepo.find({
+      where: { poId: po.id },
+      order: { id: 'ASC' },
+    });
 
     // budget contribution ตามสถานะ PO
     if (sc.po.status === PoStatus.COMPLETED) {
-      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, { kind: 'completed', est, poTotal });
+      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
+        kind: 'completed',
+        est,
+        poTotal,
+      });
     } else if (sc.po.status === PoStatus.CANCELLED) {
-      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, { kind: 'cancelled', est, poTotal });
+      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
+        kind: 'cancelled',
+        est,
+        poTotal,
+      });
     } else {
-      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, { kind: 'active', est, poTotal });
+      pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
+        kind: 'active',
+        est,
+        poTotal,
+      });
     }
 
     // ----- GRN -----
@@ -211,8 +271,11 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     if (sc.po.status === PoStatus.COMPLETED && sc.po.rating != null) {
       await ratingRepo.save(
         ratingRepo.create({
-          vendorId: po.vendorId, poId: po.id, score: sc.po.rating,
-          comment: `ประเมินจาก ${po.poNumber}`, ratedBy: procurementId,
+          vendorId: po.vendorId,
+          poId: po.id,
+          score: sc.po.rating,
+          comment: `ประเมินจาก ${po.poNumber}`,
+          ratedBy: procurementId,
         }),
       );
       const arr = ratingsToAvg.get(po.vendorId) ?? [];
@@ -223,7 +286,9 @@ export async function seedDemo(ds: DataSource): Promise<void> {
 
   // 8) budget reconcile — simulate lifecycle ต่อ budget row ด้วย budget-math (ค่าตรงกับ app)
   const allBudgets = await budgetRepo.find();
-  const budgetByKey = new Map(allBudgets.map((b) => [`${b.departmentId}|${b.fiscalYear}|${b.quarter}`, b]));
+  const budgetByKey = new Map(
+    allBudgets.map((b) => [`${b.departmentId}|${b.fiscalYear}|${b.quarter}`, b]),
+  );
   for (const [key, contribs] of contribByBudget) {
     let reserved = 0;
     let used = 0;
@@ -244,7 +309,11 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       }
     }
     const b = budgetByKey.get(key);
-    if (b) await budgetRepo.update(b.id, { reservedAmount: reserved, usedAmount: used });
+    if (b)
+      await budgetRepo.update(b.id, {
+        reservedAmount: reserved,
+        usedAmount: used,
+      });
   }
 
   // 9) vendor.ratingAvg = round2(avg(scores))
@@ -256,9 +325,22 @@ export async function seedDemo(ds: DataSource): Promise<void> {
 
 // push contribution helper (top-level, นอก seedDemo)
 function pushContrib(
-  map: Map<string, Array<{ kind: 'reserve' | 'active' | 'completed' | 'cancelled'; est: number; poTotal: number }>>,
-  deptId: number, fy: number, quarter: number,
-  c: { kind: 'reserve' | 'active' | 'completed' | 'cancelled'; est: number; poTotal: number },
+  map: Map<
+    string,
+    Array<{
+      kind: 'reserve' | 'active' | 'completed' | 'cancelled';
+      est: number;
+      poTotal: number;
+    }>
+  >,
+  deptId: number,
+  fy: number,
+  quarter: number,
+  c: {
+    kind: 'reserve' | 'active' | 'completed' | 'cancelled';
+    est: number;
+    poTotal: number;
+  },
 ): void {
   const key = `${deptId}|${fy}|${quarter}`;
   const arr = map.get(key) ?? [];
@@ -295,17 +377,25 @@ async function seedReceipts(
   if (po.status === PoStatus.COMPLETED) {
     if (sc.po!.splitGrn) {
       const firstHalf = poItems.map((pi) => ({
-        poItemId: pi.id, receivedQuantity: Math.floor(Number(pi.quantity) / 2), condition: ItemCondition.GOOD,
+        poItemId: pi.id,
+        receivedQuantity: Math.floor(Number(pi.quantity) / 2),
+        condition: ItemCondition.GOOD,
       }));
       await saveGrn(GrnStatus.PARTIAL, firstHalf);
       const secondHalf = poItems.map((pi) => ({
-        poItemId: pi.id, receivedQuantity: Number(pi.quantity) - Math.floor(Number(pi.quantity) / 2), condition: ItemCondition.GOOD,
+        poItemId: pi.id,
+        receivedQuantity: Number(pi.quantity) - Math.floor(Number(pi.quantity) / 2),
+        condition: ItemCondition.GOOD,
       }));
       await saveGrn(GrnStatus.COMPLETE, secondHalf);
     } else {
       await saveGrn(
         GrnStatus.COMPLETE,
-        poItems.map((pi) => ({ poItemId: pi.id, receivedQuantity: Number(pi.quantity), condition: ItemCondition.GOOD })),
+        poItems.map((pi) => ({
+          poItemId: pi.id,
+          receivedQuantity: Number(pi.quantity),
+          condition: ItemCondition.GOOD,
+        })),
       );
     }
     for (const pi of poItems) {
@@ -315,11 +405,19 @@ async function seedReceipts(
     const items: Array<Partial<GoodsReceiptItem>> = [];
     for (const pi of poItems) {
       const good = Math.max(1, Math.round(Number(pi.quantity) * 0.6));
-      items.push({ poItemId: pi.id, receivedQuantity: good, condition: ItemCondition.GOOD });
+      items.push({
+        poItemId: pi.id,
+        receivedQuantity: good,
+        condition: ItemCondition.GOOD,
+      });
       await poItemRepo.update(pi.id, { receivedQuantity: good });
     }
     if (sc.po!.damaged) {
-      items.push({ poItemId: poItems[0].id, receivedQuantity: 5, condition: ItemCondition.DAMAGED });
+      items.push({
+        poItemId: poItems[0].id,
+        receivedQuantity: 5,
+        condition: ItemCondition.DAMAGED,
+      });
     }
     await saveGrn(GrnStatus.PARTIAL, items);
   }
@@ -328,7 +426,9 @@ async function seedReceipts(
 // re-derive budget/rating/invariant แบบ aggregate อิสระ (คนละ path กับ simulation ใน seedDemo) แล้ว assert
 // mismatch ใดๆ → throw (fail-fast: npm run seed:demo จะ exit 1)
 export async function verifyDemoSeed(ds: DataSource): Promise<void> {
-  const fail = (msg: string): never => { throw new Error(`verifyDemoSeed FAILED: ${msg}`); };
+  const fail = (msg: string): never => {
+    throw new Error(`verifyDemoSeed FAILED: ${msg}`);
+  };
 
   const prs = await ds.getRepository(PurchaseRequest).find();
   const pos = await ds.getRepository(PurchaseOrder).find();
@@ -343,7 +443,12 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     arr.push(po);
     posByPr.set(po.prId, arr);
   }
-  const ACTIVE = new Set<PoStatus>([PoStatus.DRAFT, PoStatus.SENT, PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED]);
+  const ACTIVE = new Set<PoStatus>([
+    PoStatus.DRAFT,
+    PoStatus.SENT,
+    PoStatus.ACKNOWLEDGED,
+    PoStatus.PARTIALLY_RECEIVED,
+  ]);
 
   // 1) structural invariants — ตรวจ topology ก่อน reconcile งบ เพราะข้อ 2 ใช้ find() ที่สมมติว่า
   //    PR มี non-cancelled PO ได้ ≤1 ใบ (DB บังคับด้วย UQ_active_po_per_pr — ตรวจซ้ำชั้นสองที่นี่)
@@ -370,7 +475,8 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
   // (classify) บวกได้ค่าตรงกับ path replay ใน seedDemo เป๊ะ; ถ้าเพิ่มราคาทศนิยมต้องเทียบแบบ tolerance
   const reservedBy = new Map<string, number>();
   const usedBy = new Map<string, number>();
-  const add = (m: Map<string, number>, k: string, v: number) => m.set(k, round2((m.get(k) ?? 0) + v));
+  const add = (m: Map<string, number>, k: string, v: number) =>
+    m.set(k, round2((m.get(k) ?? 0) + v));
   for (const pr of prs) {
     if (pr.status !== PrStatus.APPROVED) continue;
     const key = `${pr.departmentId}|${pr.fiscalYear}|${pr.quarter}`;
@@ -402,7 +508,9 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
       fail(`budget ${key} used=${b.usedAmount} expected ${expUsed}`);
     }
     if (Number(b.reservedAmount) + Number(b.usedAmount) > Number(b.totalAmount)) {
-      fail(`budget ${key} committed > total (${b.reservedAmount}+${b.usedAmount} > ${b.totalAmount})`);
+      fail(
+        `budget ${key} committed > total (${b.reservedAmount}+${b.usedAmount} > ${b.totalAmount})`,
+      );
     }
   }
 

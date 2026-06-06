@@ -34,10 +34,16 @@ describe('budget-math', () => {
   });
   describe('applyConsume', () => {
     it('releases reserved and adds used', () => {
-      expect(applyConsume(300000, 100000, 300000, 280000)).toEqual({ reserved: 0, used: 380000 });
+      expect(applyConsume(300000, 100000, 300000, 280000)).toEqual({
+        reserved: 0,
+        used: 380000,
+      });
     });
     it('clamps reserved to 0', () => {
-      expect(applyConsume(100, 0, 500, 500)).toEqual({ reserved: 0, used: 500 });
+      expect(applyConsume(100, 0, 500, 500)).toEqual({
+        reserved: 0,
+        used: 500,
+      });
     });
   });
 });

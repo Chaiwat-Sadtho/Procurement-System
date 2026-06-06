@@ -68,7 +68,14 @@ describe('PRForm — create', () => {
           title: 'จัดซื้อกระดาษ',
           requiredDate: '2026-07-01',
           quarter: null,
-          items: [expect.objectContaining({ itemName: 'กระดาษ A4', quantity: 10, unit: 'รีม', estimatedUnitPrice: 120 })],
+          items: [
+            expect.objectContaining({
+              itemName: 'กระดาษ A4',
+              quantity: 10,
+              unit: 'รีม',
+              estimatedUnitPrice: 120,
+            }),
+          ],
         }),
       ),
     )
@@ -142,8 +149,22 @@ describe('PRForm — edit', () => {
   beforeEach(() => vi.clearAllMocks())
 
   const pr = {
-    id: 3, title: 'ของเดิม', requiredDate: '2026-08-15', quarter: 2,
-    items: [{ id: 1, prId: 3, itemName: 'หมึก', description: null, quantity: 5, unit: 'กล่อง', estimatedUnitPrice: 300, estimatedTotalPrice: 1500 }],
+    id: 3,
+    title: 'ของเดิม',
+    requiredDate: '2026-08-15',
+    quarter: 2,
+    items: [
+      {
+        id: 1,
+        prId: 3,
+        itemName: 'หมึก',
+        description: null,
+        quantity: 5,
+        unit: 'กล่อง',
+        estimatedUnitPrice: 300,
+        estimatedTotalPrice: 1500,
+      },
+    ],
   } as unknown as PurchaseRequest
 
   it('updates with payload that omits quarter and navigates', async () => {
@@ -177,7 +198,9 @@ describe('PRForm — edit', () => {
     makeMutations()
     renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
     // submit-for-approval gates on validity only -> enabled on an unchanged valid draft
-    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled(),
+    )
     // draft re-save of an unchanged form is a no-op -> disabled until something changes
     expect(screen.getByRole('button', { name: 'บันทึกร่าง' })).toBeDisabled()
   })
@@ -187,7 +210,9 @@ describe('PRForm — edit', () => {
     m.updateMutation.mutateAsync.mockResolvedValue(pr)
     m.submitMutation.mutateAsync.mockResolvedValue(pr)
     renderForm({ mode: 'edit', prId: 3, defaultValues: prToFormValues(pr) })
-    await waitFor(() => expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' })).toBeEnabled(),
+    )
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก + ส่งอนุมัติ' }))
     await waitFor(() => expect(m.submitMutation.mutateAsync).toHaveBeenCalledWith(3))
     expect(toast.success).toHaveBeenCalledWith('ส่งคำขอซื้อแล้ว')

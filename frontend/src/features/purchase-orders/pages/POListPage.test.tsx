@@ -74,8 +74,12 @@ function setup({
     isError,
     refetch,
   } as unknown as ReturnType<typeof usePurchaseOrders>)
-  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
-  vi.mocked(useVendors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useVendors>)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<
+    typeof useCurrentUser
+  >)
+  vi.mocked(useVendors).mockReturnValue({ data: undefined } as unknown as ReturnType<
+    typeof useVendors
+  >)
   return { refetch }
 }
 
@@ -167,7 +171,9 @@ describe('POListPage', () => {
 
   it('hides the create button for a manager', () => {
     setup({ data: listData([mockPO]) })
-    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<typeof useCurrentUser>)
+    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<
+      typeof useCurrentUser
+    >)
     renderPage()
     expect(screen.queryByRole('button', { name: 'สร้างใบสั่งซื้อ' })).not.toBeInTheDocument()
   })

@@ -29,12 +29,16 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
     0,
   )
 
-  const arrayError = form.formState.errors.items?.root?.message ?? form.formState.errors.items?.message
+  const arrayError =
+    form.formState.errors.items?.root?.message ?? form.formState.errors.items?.message
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">รายการ<RequiredMark /></h2>
+        <h2 className="text-base font-semibold">
+          รายการ
+          <RequiredMark />
+        </h2>
         <Button type="button" variant="outline" size="sm" onClick={() => append(emptyItem())}>
           <Plus className="mr-1 h-4 w-4" />
           เพิ่มรายการ
@@ -46,7 +50,8 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
       )}
 
       {fields.map((field, index) => {
-        const rowTotal = safeNum(watched?.[index]?.quantity) * safeNum(watched?.[index]?.estimatedUnitPrice)
+        const rowTotal =
+          safeNum(watched?.[index]?.quantity) * safeNum(watched?.[index]?.estimatedUnitPrice)
         return (
           <div key={field.id} className="space-y-3 rounded-md border p-4">
             <FormField
@@ -54,7 +59,10 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
               name={`items.${index}.itemName`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ชื่อรายการ<RequiredMark /></FormLabel>
+                  <FormLabel>
+                    ชื่อรายการ
+                    <RequiredMark />
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="เช่น กระดาษ A4" {...field} />
                   </FormControl>
@@ -83,9 +91,19 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
                 name={`items.${index}.quantity`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>จำนวน<RequiredMark /></FormLabel>
+                    <FormLabel>
+                      จำนวน
+                      <RequiredMark />
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" inputMode="decimal" step="0.01" min="0" className="font-mono tabular-nums" {...field} />
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        className="font-mono tabular-nums"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -96,7 +114,10 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
                 name={`items.${index}.unit`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>หน่วย<RequiredMark /></FormLabel>
+                    <FormLabel>
+                      หน่วย
+                      <RequiredMark />
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="เช่น รีม" {...field} />
                     </FormControl>
@@ -109,9 +130,19 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
                 name={`items.${index}.estimatedUnitPrice`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ราคาต่อหน่วย<RequiredMark /></FormLabel>
+                    <FormLabel>
+                      ราคาต่อหน่วย
+                      <RequiredMark />
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" inputMode="decimal" step="0.01" min="0" className="font-mono tabular-nums" {...field} />
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        className="font-mono tabular-nums"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,7 +171,8 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
 
       <Separator />
       <div className="flex justify-end text-base font-semibold">
-        รวมทั้งหมด:&nbsp;<span className="font-mono tabular-nums">{formatCurrency(grandTotal)}</span>
+        รวมทั้งหมด:&nbsp;
+        <span className="font-mono tabular-nums">{formatCurrency(grandTotal)}</span>
       </div>
     </div>
   )

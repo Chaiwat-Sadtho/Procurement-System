@@ -39,7 +39,9 @@ export class PoQueryDto {
 
   // Query strings arrive as 'true'/'false', so @IsBoolean alone would reject the string —
   // @Transform coerces it first. เฉพาะ 'true' (หรือ boolean true) → true; ค่าอื่น → false (ไม่กรอง, ไม่มี 400).
-  @ApiPropertyOptional({ description: 'เฉพาะ PO ที่รับของได้ (acknowledged + partially_received)' })
+  @ApiPropertyOptional({
+    description: 'เฉพาะ PO ที่รับของได้ (acknowledged + partially_received)',
+  })
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()

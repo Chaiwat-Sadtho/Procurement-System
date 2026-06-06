@@ -1,5 +1,9 @@
 import {
-  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Not, QueryFailedError, Like } from 'typeorm';
@@ -72,7 +76,9 @@ export class PurchaseOrdersService {
       );
     }
 
-    const vendor = await this.vendorRepository.findOne({ where: { id: dto.vendorId } });
+    const vendor = await this.vendorRepository.findOne({
+      where: { id: dto.vendorId },
+    });
     if (!vendor) throw new NotFoundException(`Vendor ${dto.vendorId} not found`);
     if (vendor.isBlacklisted) {
       throw new BadRequestException(`Vendor "${vendor.name}" is blacklisted and cannot be used`);
@@ -148,9 +154,7 @@ export class PurchaseOrdersService {
         const constraint = (err as { constraint?: string }).constraint;
         // P4-2: index บังคับว่า PR มี active PO ได้ใบเดียว — ถ้า app-level check หลุดเพราะ race DB จะจับตรงนี้
         if (constraint === 'UQ_active_po_per_pr') {
-          throw new ConflictException(
-            `Purchase Request ${dto.prId} already has an active PO`,
-          );
+          throw new ConflictException(`Purchase Request ${dto.prId} already has an active PO`);
         }
         // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
         throw new ConflictException('PO number collision, please retry');
@@ -179,9 +183,10 @@ export class PurchaseOrdersService {
     return savedPo;
   }
 
-  async findAll(
-    query: PoQueryDto,
-  ): Promise<{ data: PurchaseOrder[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  async findAll(query: PoQueryDto): Promise<{
+    data: PurchaseOrder[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const { page = 1, limit = 20, status, vendorId, prId, receivable } = query;
 
     const qb = this.poRepository
@@ -204,13 +209,21 @@ export class PurchaseOrdersService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(id: number): Promise<PurchaseOrder> {
     const po = await this.poRepository.findOne({
       where: { id },
-      relations: { items: true, vendor: true, purchaseRequest: true, createdByUser: true },
+      relations: {
+        items: true,
+        vendor: true,
+        purchaseRequest: true,
+        createdByUser: true,
+      },
     });
     if (!po) throw new NotFoundException(`Purchase Order ${id} not found`);
     return po;
@@ -332,7 +345,11 @@ export class PurchaseOrdersService {
       const pr = await manager.findOne(PurchaseRequest, {
         where: { id: po.prId },
         select: {
-          id: true, departmentId: true, fiscalYear: true, quarter: true, status: true,
+          id: true,
+          departmentId: true,
+          fiscalYear: true,
+          quarter: true,
+          status: true,
         }, // ตัด totalEstimatedAmount (dead field โค้ดเดิม) — release ใช้ Number(po.totalAmount) ไม่ใช่ PR estimate
       });
       if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {

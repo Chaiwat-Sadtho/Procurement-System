@@ -17,8 +17,7 @@ export const purchaseRequestsApi = {
   list: (params?: PRListParams) =>
     api.get<PRListResponse>('/purchase-requests', { params }).then((r) => r.data),
 
-  get: (id: number) =>
-    api.get<PurchaseRequest>(`/purchase-requests/${id}`).then((r) => r.data),
+  get: (id: number) => api.get<PurchaseRequest>(`/purchase-requests/${id}`).then((r) => r.data),
 
   create: (data: CreatePRRequest) =>
     api.post<PurchaseRequest>('/purchase-requests', data).then((r) => r.data),
@@ -33,9 +32,7 @@ export const purchaseRequestsApi = {
     api.post<PurchaseRequest>(`/purchase-requests/${id}/approve`).then((r) => r.data),
 
   reject: (id: number, reason: string) =>
-    api
-      .post<PurchaseRequest>(`/purchase-requests/${id}/reject`, { reason })
-      .then((r) => r.data),
+    api.post<PurchaseRequest>(`/purchase-requests/${id}/reject`, { reason }).then((r) => r.data),
 
   remove: (id: number): Promise<void> =>
     api.delete(`/purchase-requests/${id}`).then(() => undefined),

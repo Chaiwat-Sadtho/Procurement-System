@@ -8,10 +8,7 @@ import { BudgetsController } from './budgets.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Budget, User, Department]),
-    NotificationsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Budget, User, Department]), NotificationsModule],
   providers: [BudgetsService],
   controllers: [BudgetsController],
   exports: [BudgetsService],

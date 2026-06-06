@@ -11,7 +11,15 @@ vi.mock('../api', () => ({
 import { purchaseOrdersApi } from '../api'
 import { useVendorRatingForPo } from './useVendorRatingForPo'
 
-const fakeRating = { id: 1, poId: 7, vendorId: 3, score: 4, comment: null, ratedBy: 2, createdAt: '2026-06-01T00:00:00Z' } as VendorRating
+const fakeRating = {
+  id: 1,
+  poId: 7,
+  vendorId: 3,
+  score: 4,
+  comment: null,
+  ratedBy: 2,
+  createdAt: '2026-06-01T00:00:00Z',
+} as VendorRating
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

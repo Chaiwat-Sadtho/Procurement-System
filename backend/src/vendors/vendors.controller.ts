@@ -1,6 +1,16 @@
 import {
-  Controller, Get, Post, Patch, Delete,
-  Body, Param, Query, UseGuards, ParseIntPipe, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { VendorsService } from './vendors.service';
@@ -49,10 +59,7 @@ export class VendorsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROCUREMENT_OFFICER, UserRole.MANAGER)
   @Get(':id/ratings')
-  findRatings(
-    @Param('id', ParseIntPipe) id: number,
-    @Query() query: VendorRatingQueryDto,
-  ) {
+  findRatings(@Param('id', ParseIntPipe) id: number, @Query() query: VendorRatingQueryDto) {
     return this.vendorsService.findRatings(id, query);
   }
 

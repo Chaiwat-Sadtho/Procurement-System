@@ -44,15 +44,11 @@ describe('usePOMutations', () => {
       vendorId: 2,
       expectedDeliveryDate: '2026-07-01',
       notes: 'หมายเหตุ',
-      items: [
-        { prItemId: 10, itemName: 'ปากกา', quantity: 5, unit: 'กล่อง', unitPrice: 20 },
-      ],
+      items: [{ prItemId: 10, itemName: 'ปากกา', quantity: 5, unit: 'กล่อง', unitPrice: 20 }],
     }
     await result.current.createMutation.mutateAsync(payload)
     expect(purchaseOrdersApi.create).toHaveBeenCalledWith(payload)
-    await waitFor(() =>
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] }),
-    )
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] }))
   })
 
   it('update calls api.update with id + data and invalidates singular + plural', async () => {

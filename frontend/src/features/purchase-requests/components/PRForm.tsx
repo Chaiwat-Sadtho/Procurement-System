@@ -58,8 +58,7 @@ export function PRForm(props: PRFormProps) {
     mode: 'onChange',
   })
 
-  const isPending =
-    createMutation.isPending || updateMutation.isPending || submitMutation.isPending
+  const isPending = createMutation.isPending || updateMutation.isPending || submitMutation.isPending
   const { isDirty, isValid } = form.formState
 
   async function onSave(values: PRFormValues, intent: 'draft' | 'submit') {
@@ -89,11 +88,7 @@ export function PRForm(props: PRFormProps) {
       }
 
       toast.success(
-        intent === 'submit'
-          ? 'ส่งคำขอซื้อแล้ว'
-          : isEdit
-            ? 'บันทึกการแก้ไขแล้ว'
-            : 'บันทึกร่างแล้ว',
+        intent === 'submit' ? 'ส่งคำขอซื้อแล้ว' : isEdit ? 'บันทึกการแก้ไขแล้ว' : 'บันทึกร่างแล้ว',
       )
       navigate(`/purchase-requests/${savedId}`)
     } catch (e) {
@@ -114,61 +109,67 @@ export function PRForm(props: PRFormProps) {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>ชื่อเรื่อง<RequiredMark /></FormLabel>
-              <FormControl>
-                <Input placeholder="เช่น จัดซื้อวัสดุสำนักงาน" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Controller
-          control={form.control}
-          name="requiredDate"
-          render={({ field, fieldState }) => (
-            <div className="space-y-1">
-              <Label htmlFor="requiredDate">วันที่ต้องการ<RequiredMark /></Label>
-              <DateField
-                id="requiredDate"
-                value={field.value}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            </div>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="period"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel htmlFor="period">งบประมาณ (ช่วงเวลา)</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  ชื่อเรื่อง
+                  <RequiredMark />
+                </FormLabel>
                 <FormControl>
-                  <SelectTrigger id="period">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <Input placeholder="เช่น จัดซื้อวัสดุสำนักงาน" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {PERIOD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isEdit && (
-                <p className="text-sm text-muted-foreground">ช่วงงบประมาณแก้ไขไม่ได้หลังสร้าง</p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="requiredDate"
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <Label htmlFor="requiredDate">
+                  วันที่ต้องการ
+                  <RequiredMark />
+                </Label>
+                <DateField
+                  id="requiredDate"
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={fieldState.error?.message}
+                />
+              </div>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="period"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="period">งบประมาณ (ช่วงเวลา)</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                  <FormControl>
+                    <SelectTrigger id="period">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {PERIOD_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isEdit && (
+                  <p className="text-sm text-muted-foreground">ช่วงงบประมาณแก้ไขไม่ได้หลังสร้าง</p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
 

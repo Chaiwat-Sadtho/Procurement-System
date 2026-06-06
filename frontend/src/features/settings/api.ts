@@ -17,7 +17,5 @@ export const settingsApi = {
     api.patch<User>('/auth/me', data).then((res) => res.data),
 
   changePassword: (data: ChangePasswordRequest) =>
-    api
-      .patch<{ message: string }>('/auth/me/password', data)
-      .then((res) => res.data),
+    api.patch<{ message: string }>('/auth/me/password', data).then((res) => res.data),
 }

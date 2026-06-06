@@ -32,10 +32,20 @@ export class PurchaseRequestItem {
   unit: string;
 
   @ApiProperty()
-  @Column({ name: 'estimated_unit_price', type: 'decimal', precision: 15, scale: 2 })
+  @Column({
+    name: 'estimated_unit_price',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+  })
   estimatedUnitPrice: number;
 
   @ApiProperty()
-  @Column({ name: 'estimated_total_price', type: 'decimal', precision: 15, scale: 2 })
+  @Column({
+    name: 'estimated_total_price',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+  })
   estimatedTotalPrice: number;
 }

@@ -41,17 +41,19 @@ export function PRItemsTable({ items, totalEstimatedAmount }: PRItemsTableProps)
                 </TableCell>
                 <TableCell className="text-right">{item.quantity}</TableCell>
                 <TableCell>{item.unit}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.estimatedUnitPrice)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.estimatedTotalPrice)}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(item.estimatedUnitPrice)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(item.estimatedTotalPrice)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-end mt-2 pr-4">
-        <span className="text-sm font-semibold">
-          Total: {formatCurrency(totalEstimatedAmount)}
-        </span>
+        <span className="text-sm font-semibold">Total: {formatCurrency(totalEstimatedAmount)}</span>
       </div>
     </div>
   )

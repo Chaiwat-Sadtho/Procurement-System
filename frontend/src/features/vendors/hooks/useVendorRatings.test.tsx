@@ -11,7 +11,10 @@ vi.mock('../api', () => ({
 import { vendorsApi } from '../api'
 import { useVendorRatings } from './useVendorRatings'
 
-const page1 = { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } } as VendorRatingsResponse
+const page1 = {
+  data: [],
+  meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+} as VendorRatingsResponse
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

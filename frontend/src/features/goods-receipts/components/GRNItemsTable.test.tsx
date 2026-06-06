@@ -52,7 +52,14 @@ describe('GRNItemsTable', () => {
 
   it('falls back to a dash for item name and ordered qty when poItem is absent', () => {
     const orphan: GoodsReceiptItem[] = [
-      { id: 399, grnId: 1, poItemId: 99, poItem: undefined, receivedQuantity: '3', condition: 'good' },
+      {
+        id: 399,
+        grnId: 1,
+        poItemId: 99,
+        poItem: undefined,
+        receivedQuantity: '3',
+        condition: 'good',
+      },
     ]
     render(<GRNItemsTable items={orphan} />)
     // both the name cell (`poItem?.itemName ?? '-'`) and the ordered-qty cell (`poItem ? ... : '-'`) fall back

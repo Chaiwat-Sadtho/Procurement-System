@@ -1,6 +1,10 @@
 import api from '@/shared/lib/axios'
 import { safeNum } from '@/shared/lib/safeNum'
-import type { PrStatsResponse, PRListResponse, PurchaseRequest } from '@/features/purchase-requests/types'
+import type {
+  PrStatsResponse,
+  PRListResponse,
+  PurchaseRequest,
+} from '@/features/purchase-requests/types'
 
 // Budget shape จาก GET /budgets (array, ไม่ paginate) — ไม่มี remaining/usagePercent (เฉพาะ /:id/summary)
 export interface DashboardBudget {
@@ -30,7 +34,9 @@ export const dashboardApi = {
 
   getRecentPRs: (): Promise<PurchaseRequest[]> =>
     api
-      .get<PRListResponse>('/purchase-requests', { params: { limit: 5, sort: 'created_at', order: 'DESC' } })
+      .get<PRListResponse>('/purchase-requests', {
+        params: { limit: 5, sort: 'created_at', order: 'DESC' },
+      })
       .then((r) => r.data.data),
 
   getApprovalQueue: (): Promise<PurchaseRequest[]> =>
@@ -42,10 +48,14 @@ export const dashboardApi = {
   getAttentionPRs: (): Promise<{ drafts: PurchaseRequest[]; rejected: PurchaseRequest[] }> =>
     Promise.all([
       api
-        .get<PRListResponse>('/purchase-requests', { params: { status: 'draft', limit: 5, sort: 'created_at', order: 'DESC' } })
+        .get<PRListResponse>('/purchase-requests', {
+          params: { status: 'draft', limit: 5, sort: 'created_at', order: 'DESC' },
+        })
         .then((r) => r.data.data),
       api
-        .get<PRListResponse>('/purchase-requests', { params: { status: 'rejected', limit: 5, sort: 'created_at', order: 'DESC' } })
+        .get<PRListResponse>('/purchase-requests', {
+          params: { status: 'rejected', limit: 5, sort: 'created_at', order: 'DESC' },
+        })
         .then((r) => r.data.data),
     ]).then(([drafts, rejected]) => ({ drafts, rejected })),
 

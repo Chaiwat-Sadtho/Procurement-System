@@ -43,7 +43,9 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
         // make the success/control paths below throw here and fail — locking in the manager-passing.
         log: jest.fn((params: { action: string }, manager?: unknown): void => {
           if (!manager) {
-            throw new Error(`audit log() called without a transaction manager for ${params.action}`);
+            throw new Error(
+              `audit log() called without a transaction manager for ${params.action}`,
+            );
           }
           if (throwOnAction && params.action === throwOnAction) {
             throw new Error(`audit write failed (test) for ${params.action}`);
@@ -124,7 +126,11 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Audit Durability Vendor ${tag}`, taxId: `AD${tag}`, categoryIds: [(catRes.body as IdResponse).id] });
+      .send({
+        name: `Audit Durability Vendor ${tag}`,
+        taxId: `AD${tag}`,
+        categoryIds: [(catRes.body as IdResponse).id],
+      });
     vendorId = (vendorRes.body as IdResponse).id;
   });
 
@@ -143,7 +149,14 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
       .send({
         title,
         requiredDate: '2026-12-31',
-        items: [{ itemName: 'Laptop', quantity: 2, unit: 'unit', estimatedUnitPrice: 5000 }],
+        items: [
+          {
+            itemName: 'Laptop',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 5000,
+          },
+        ],
       })
       .expect(201);
     return (res.body as IdResponse).id;
@@ -309,7 +322,11 @@ describe('Audit durability — rollback on audit failure (e2e)', () => {
     await request(app.getHttpServer())
       .post('/api/v1/goods-receipts')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ poId, receivedDate: '2026-11-15', items: [{ poItemId, receivedQuantity: 2, condition: 'good' }] })
+      .send({
+        poId,
+        receivedDate: '2026-11-15',
+        items: [{ poItemId, receivedQuantity: 2, condition: 'good' }],
+      })
       .expect(500);
 
     // PO not completed and budget not consumed — the consume rolled back with the GRN

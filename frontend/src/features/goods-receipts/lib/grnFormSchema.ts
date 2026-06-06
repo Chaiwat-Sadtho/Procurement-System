@@ -42,9 +42,7 @@ export const grnFormSchema = z
   .superRefine((values, ctx) => {
     // ≥1 emitted DTO item (ArrayMinSize 1) — threshold mirrors the mapper's 0.01 floor (spec §7 +
     // backend @Min(0.01)) so a schema-valid form never maps to an empty items[] the backend would 400.
-    const emitted = values.items.some(
-      (l) => safeNum(l.good) >= 0.01 || safeNum(l.damaged) >= 0.01,
-    )
+    const emitted = values.items.some((l) => safeNum(l.good) >= 0.01 || safeNum(l.damaged) >= 0.01)
     if (!emitted)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

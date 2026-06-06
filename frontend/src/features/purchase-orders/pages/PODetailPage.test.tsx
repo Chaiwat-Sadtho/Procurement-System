@@ -155,7 +155,9 @@ describe('PODetailPage', () => {
 
   it('shows a success toast when send succeeds', async () => {
     const { sendMutation } = mockHook()
-    sendMutation.mutate.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => opts.onSuccess())
+    sendMutation.mutate.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
     setUser()
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'ส่ง' }))

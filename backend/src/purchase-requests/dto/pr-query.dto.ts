@@ -54,7 +54,10 @@ export class PrQueryDto {
   @IsString()
   requesterName?: string;
 
-  @ApiPropertyOptional({ default: 'created_at', enum: ['created_at', 'title', 'total_estimated_amount'] })
+  @ApiPropertyOptional({
+    default: 'created_at',
+    enum: ['created_at', 'title', 'total_estimated_amount'],
+  })
   @IsOptional()
   @IsString()
   sort?: string = 'created_at';
@@ -68,7 +71,9 @@ export class PrQueryDto {
   // so @IsBoolean alone would reject the string — @Transform coerces it first.
   // โดยตั้งใจ: เฉพาะ 'true' (หรือ boolean true) → true; ค่าอื่นทุกค่า (รวม 'banana'/'1'/absent) → false
   // (ไม่มี 400) เพราะ branch เดียวที่มีผลคือ truthy = "กรอง"; ค่าอื่น = "ไม่กรอง" = พฤติกรรมเดิม
-  @ApiPropertyOptional({ description: 'เฉพาะ PR ที่พร้อมแปลงเป็น PO (approved + มีแผนก + ยังไม่มี PO active)' })
+  @ApiPropertyOptional({
+    description: 'เฉพาะ PR ที่พร้อมแปลงเป็น PO (approved + มีแผนก + ยังไม่มี PO active)',
+  })
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()

@@ -72,7 +72,11 @@ describe('StarRating', () => {
     const user = userEvent.setup()
     render(<StarRating value={0} onChange={vi.fn()} />)
     await user.hover(screen.getByRole('radio', { name: '3 ดาว' }))
-    expect(screen.getByRole('radio', { name: '3 ดาว' }).querySelector('svg')).toHaveClass('fill-amber-400')
-    expect(screen.getByRole('radio', { name: '4 ดาว' }).querySelector('svg')).not.toHaveClass('fill-amber-400')
+    expect(screen.getByRole('radio', { name: '3 ดาว' }).querySelector('svg')).toHaveClass(
+      'fill-amber-400',
+    )
+    expect(screen.getByRole('radio', { name: '4 ดาว' }).querySelector('svg')).not.toHaveClass(
+      'fill-amber-400',
+    )
   })
 })

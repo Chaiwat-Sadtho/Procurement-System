@@ -11,8 +11,7 @@ export const goodsReceiptsApi = {
   list: (params?: GRNListParams) =>
     api.get<GRNListResponse>('/goods-receipts', { params }).then((r) => r.data),
 
-  get: (id: number) =>
-    api.get<GoodsReceipt>(`/goods-receipts/${id}`).then((r) => r.data),
+  get: (id: number) => api.get<GoodsReceipt>(`/goods-receipts/${id}`).then((r) => r.data),
 
   create: (data: CreateGoodsReceiptPayload) =>
     api.post<GoodsReceipt>('/goods-receipts', data).then((r) => r.data),

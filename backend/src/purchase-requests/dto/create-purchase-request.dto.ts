@@ -1,6 +1,15 @@
 import {
-  IsString, IsNotEmpty, IsDateString, IsArray,
-  ValidateNested, ArrayMinSize, MaxLength, IsOptional, IsInt, Min, Max,
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsArray,
+  ValidateNested,
+  ArrayMinSize,
+  MaxLength,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
@@ -18,7 +27,12 @@ export class CreatePurchaseRequestDto {
   requiredDate: string;
 
   // P5-3: ไตรมาสงบประมาณ (1-4) ที่จะไปจอง — เว้นว่าง = งบรายปี (annual)
-  @ApiPropertyOptional({ example: 2, minimum: 1, maximum: 4, description: 'null/เว้นว่าง = งบรายปี, 1-4 = ไตรมาสนั้น' })
+  @ApiPropertyOptional({
+    example: 2,
+    minimum: 1,
+    maximum: 4,
+    description: 'null/เว้นว่าง = งบรายปี, 1-4 = ไตรมาสนั้น',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

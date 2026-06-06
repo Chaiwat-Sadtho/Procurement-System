@@ -1,5 +1,9 @@
 import {
-  Injectable, Logger, NotFoundException, BadRequestException, ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
@@ -121,9 +125,7 @@ export class BudgetsService {
     return {
       departmentId,
       fiscalYear,
-      quarter: (quarter == null
-        ? IsNull()
-        : quarter) as FindOptionsWhere<Budget>['quarter'],
+      quarter: (quarter == null ? IsNull() : quarter) as FindOptionsWhere<Budget>['quarter'],
     };
   }
 
@@ -157,10 +159,9 @@ export class BudgetsService {
     const totalCommitted = newReserved + Number(budget.usedAmount);
 
     if (totalCommitted > Number(budget.totalAmount)) {
-      const available = Number(budget.totalAmount) - Number(budget.reservedAmount) - Number(budget.usedAmount);
-      throw new BadRequestException(
-        `งบประมาณไม่เพียงพอ: ต้องการ ${amount}, คงเหลือ ${available}`,
-      );
+      const available =
+        Number(budget.totalAmount) - Number(budget.reservedAmount) - Number(budget.usedAmount);
+      throw new BadRequestException(`งบประมาณไม่เพียงพอ: ต้องการ ${amount}, คงเหลือ ${available}`);
     }
 
     await mgr.update(Budget, budget.id, {
@@ -168,8 +169,12 @@ export class BudgetsService {
     });
 
     if (totalCommitted / Number(budget.totalAmount) > 0.8) {
-      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount))
-        .catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
+      void this.notifyBudgetWarning(
+        departmentId,
+        fiscalYear,
+        totalCommitted,
+        Number(budget.totalAmount),
+      ).catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
     }
   }
 
@@ -262,8 +267,12 @@ export class BudgetsService {
 
     const totalCommitted = newReserved + Number(budget.usedAmount);
     if (delta > 0 && totalCommitted / Number(budget.totalAmount) > 0.8) {
-      void this.notifyBudgetWarning(departmentId, fiscalYear, totalCommitted, Number(budget.totalAmount))
-        .catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
+      void this.notifyBudgetWarning(
+        departmentId,
+        fiscalYear,
+        totalCommitted,
+        Number(budget.totalAmount),
+      ).catch((err) => this.logger.warn('notification failed: BUDGET_WARNING', err));
     }
   }
 
@@ -283,7 +292,9 @@ export class BudgetsService {
     if (managers.length === 0) return;
 
     // procurement officer รับแจ้งงบหลายแผนก → ใส่ชื่อแผนกในข้อความให้แยกออกว่าเป็นงบของแผนกไหน
-    const department = await this.departmentRepository.findOne({ where: { id: departmentId } });
+    const department = await this.departmentRepository.findOne({
+      where: { id: departmentId },
+    });
     const deptName = department?.name ?? `แผนก #${departmentId}`;
 
     await this.notificationsService.sendToMany(

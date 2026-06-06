@@ -60,7 +60,11 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     await request(app.getHttpServer())
       .post('/api/v1/budgets')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ departmentId: deptId, fiscalYear: new Date().getFullYear(), totalAmount: 1000000 })
+      .send({
+        departmentId: deptId,
+        fiscalYear: new Date().getFullYear(),
+        totalAmount: 1000000,
+      })
       .expect(201);
 
     // Fresh employee in that dept.
@@ -109,7 +113,11 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const vendorRes = await request(app.getHttpServer())
       .post('/api/v1/vendors')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ name: `Test Supplier Co. ${tag}`, taxId: String(tag), categoryIds: [(catRes.body as IdResponse).id] });
+      .send({
+        name: `Test Supplier Co. ${tag}`,
+        taxId: String(tag),
+        categoryIds: [(catRes.body as IdResponse).id],
+      });
     vendorId = (vendorRes.body as IdResponse).id;
 
     // Setup: สร้าง PR → submit → approve
@@ -120,7 +128,12 @@ describe('PurchaseOrders + GRN (e2e)', () => {
         title: 'ขอซื้อ Laptop สำหรับ E2E test',
         requiredDate: '2025-12-31',
         items: [
-          { itemName: 'Laptop A', quantity: 2, unit: 'unit', estimatedUnitPrice: 35000 },
+          {
+            itemName: 'Laptop A',
+            quantity: 2,
+            unit: 'unit',
+            estimatedUnitPrice: 35000,
+          },
         ],
       });
     prId = (prRes.body as IdResponse).id;
@@ -148,9 +161,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
         prId,
         vendorId,
         expectedDeliveryDate: '2025-12-15',
-        items: [
-          { itemName: 'Laptop A', quantity: 2, unit: 'unit', unitPrice: 35000 },
-        ],
+        items: [{ itemName: 'Laptop A', quantity: 2, unit: 'unit', unitPrice: 35000 }],
       })
       .expect(201);
 
@@ -179,14 +190,27 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .post('/api/v1/purchase-requests')
       .set('Authorization', `Bearer ${employeeToken}`)
       .send({
-        title: 'Draft PR', requiredDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 1000 }],
+        title: 'Draft PR',
+        requiredDate: '2025-12-31',
+        items: [
+          {
+            itemName: 'Item',
+            quantity: 1,
+            unit: 'unit',
+            estimatedUnitPrice: 1000,
+          },
+        ],
       });
 
     await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: (draftPrRes.body as IdResponse).id, vendorId, expectedDeliveryDate: '2025-12-15', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }] })
+      .send({
+        prId: (draftPrRes.body as IdResponse).id,
+        vendorId,
+        expectedDeliveryDate: '2025-12-15',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+      })
       .expect(400);
   });
 
@@ -365,15 +389,35 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const pr2Res = await request(app.getHttpServer())
       .post('/api/v1/purchase-requests')
       .set('Authorization', `Bearer ${employeeToken}`)
-      .send({ title: 'PR for cancel test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 500 }] });
+      .send({
+        title: 'PR for cancel test',
+        requiredDate: '2025-12-31',
+        items: [
+          {
+            itemName: 'Item',
+            quantity: 1,
+            unit: 'unit',
+            estimatedUnitPrice: 500,
+          },
+        ],
+      });
     const pr2Id = (pr2Res.body as IdResponse).id;
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Id}/submit`).set('Authorization', `Bearer ${employeeToken}`);
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${pr2Id}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-requests/${pr2Id}/submit`)
+      .set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-requests/${pr2Id}/approve`)
+      .set('Authorization', `Bearer ${managerToken}`);
 
     const po2Res = await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: pr2Id, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 500 }] });
+      .send({
+        prId: pr2Id,
+        vendorId,
+        expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 500 }],
+      });
 
     const cancelRes = await request(app.getHttpServer())
       .post(`/api/v1/purchase-orders/${(po2Res.body as IdResponse).id}/cancel`)
@@ -390,7 +434,12 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Dup', quantity: 1, unit: 'unit', unitPrice: 100 }] })
+      .send({
+        prId,
+        vendorId,
+        expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Dup', quantity: 1, unit: 'unit', unitPrice: 100 }],
+      })
       .expect(409);
   });
 
@@ -401,8 +450,13 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .get(`/api/v1/budgets/department/${deptId}`)
       .set('Authorization', `Bearer ${poToken}`)
       .expect(200);
-    const annual = (res.body as Array<{ fiscalYear: number; quarter: number | null; reservedAmount: string }>)
-      .find((b) => b.quarter == null && b.fiscalYear === new Date().getFullYear());
+    const annual = (
+      res.body as Array<{
+        fiscalYear: number;
+        quarter: number | null;
+        reservedAmount: string;
+      }>
+    ).find((b) => b.quarter == null && b.fiscalYear === new Date().getFullYear());
     return Number(annual?.reservedAmount ?? 0);
   };
 
@@ -410,14 +464,34 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     const prRes = await request(app.getHttpServer())
       .post('/api/v1/purchase-requests')
       .set('Authorization', `Bearer ${employeeToken}`)
-      .send({ title: 'PR for PO update test', requiredDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: unitPrice }] });
+      .send({
+        title: 'PR for PO update test',
+        requiredDate: '2025-12-31',
+        items: [
+          {
+            itemName: 'Item',
+            quantity: 1,
+            unit: 'unit',
+            estimatedUnitPrice: unitPrice,
+          },
+        ],
+      });
     const newPrId = (prRes.body as IdResponse).id;
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${newPrId}/submit`).set('Authorization', `Bearer ${employeeToken}`);
-    await request(app.getHttpServer()).post(`/api/v1/purchase-requests/${newPrId}/approve`).set('Authorization', `Bearer ${managerToken}`);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-requests/${newPrId}/submit`)
+      .set('Authorization', `Bearer ${employeeToken}`);
+    await request(app.getHttpServer())
+      .post(`/api/v1/purchase-requests/${newPrId}/approve`)
+      .set('Authorization', `Bearer ${managerToken}`);
     const poRes = await request(app.getHttpServer())
       .post('/api/v1/purchase-orders')
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ prId: newPrId, vendorId, expectedDeliveryDate: '2025-12-31', items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }] })
+      .send({
+        prId: newPrId,
+        vendorId,
+        expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice }],
+      })
       .expect(201);
     return (poRes.body as IdResponse).id;
   };
@@ -428,7 +502,9 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/purchase-orders/${draftPoId}`)
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 2000000 }] })
+      .send({
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 2000000 }],
+      })
       .expect(400);
 
     // rollback: items/total untouched after the rejected edit
@@ -450,7 +526,9 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/purchase-orders/${draftPoId}`)
       .set('Authorization', `Bearer ${poToken}`)
-      .send({ items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 5000 }] })
+      .send({
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 5000 }],
+      })
       .expect(200);
 
     const afterReserved = await getReservedAnnual();

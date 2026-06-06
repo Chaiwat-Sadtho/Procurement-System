@@ -96,7 +96,13 @@ describe('Users / Auth security (e2e)', () => {
     const email = `pw-${Date.now()}@test.com`;
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password: 'Password123', firstName: 'Pw', lastName: 'Test', departmentId: 1 })
+      .send({
+        email,
+        password: 'Password123',
+        firstName: 'Pw',
+        lastName: 'Test',
+        departmentId: 1,
+      })
       .expect(201);
 
     await request(app.getHttpServer())
@@ -110,7 +116,13 @@ describe('Users / Auth security (e2e)', () => {
     const email = `deactivate-${Date.now()}@test.com`;
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password: 'Password123', firstName: 'Deact', lastName: 'Me', departmentId: 1 })
+      .send({
+        email,
+        password: 'Password123',
+        firstName: 'Deact',
+        lastName: 'Me',
+        departmentId: 1,
+      })
       .expect(201);
     const userId = (reg.body as AuthResponse).user.id;
 

@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from '@/shared/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/shared/components/ui/sheet'
 import { SidebarContent } from './Sidebar'
 
 export function MobileSidebar() {

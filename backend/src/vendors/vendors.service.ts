@@ -1,5 +1,8 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -39,7 +42,9 @@ export class VendorsService {
 
   async create(dto: CreateVendorDto): Promise<Vendor> {
     if (dto.taxId) {
-      const existing = await this.vendorRepository.findOne({ where: { taxId: dto.taxId } });
+      const existing = await this.vendorRepository.findOne({
+        where: { taxId: dto.taxId },
+      });
       if (existing) throw new ConflictException(`Vendor with tax ID ${dto.taxId} already exists`);
     }
 
@@ -52,15 +57,18 @@ export class VendorsService {
     });
 
     if (dto.categoryIds?.length) {
-      vendor.categories = await this.categoryRepository.findBy({ id: In(dto.categoryIds) });
+      vendor.categories = await this.categoryRepository.findBy({
+        id: In(dto.categoryIds),
+      });
     }
 
     return this.vendorRepository.save(vendor);
   }
 
-  async findAll(
-    query: VendorQueryDto,
-  ): Promise<{ data: Vendor[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  async findAll(query: VendorQueryDto): Promise<{
+    data: Vendor[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const { page = 1, limit = 20, search, isBlacklisted, categoryId } = query;
 
     const qb = this.vendorRepository
@@ -73,15 +81,18 @@ export class VendorsService {
     }
     // filter ด้วย subquery แทน andWhere บน select join เพื่อไม่ให้ categories array ของ vendor ถูกตัดเหลือเฉพาะ category ที่ match (P3-2)
     if (categoryId) {
-      qb.andWhere((qb2) => {
-        const sub = qb2
-          .subQuery()
-          .select('fc.vendor_id')
-          .from('vendor_category_mappings', 'fc')
-          .where('fc.category_id = :categoryId')
-          .getQuery();
-        return `vendor.id IN ${sub}`;
-      }, { categoryId });
+      qb.andWhere(
+        (qb2) => {
+          const sub = qb2
+            .subQuery()
+            .select('fc.vendor_id')
+            .from('vendor_category_mappings', 'fc')
+            .where('fc.category_id = :categoryId')
+            .getQuery();
+          return `vendor.id IN ${sub}`;
+        },
+        { categoryId },
+      );
     }
 
     const [data, total] = await qb
@@ -90,7 +101,10 @@ export class VendorsService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(id: number): Promise<Vendor> {
@@ -145,7 +159,9 @@ export class VendorsService {
       .limit(limit)
       .getRawMany<RawRatingRow>();
 
-    const total = await this.ratingRepository.count({ where: { vendorId: id } });
+    const total = await this.ratingRepository.count({
+      where: { vendorId: id },
+    });
 
     const data = rows.map((r) => ({
       id: r.id,
@@ -156,21 +172,24 @@ export class VendorsService {
       comment: r.comment,
       ratedBy: {
         id: r.raterId,
-        fullName: [r.raterFirstName, r.raterMiddleName, r.raterLastName]
-          .filter(Boolean)
-          .join(' '),
+        fullName: [r.raterFirstName, r.raterMiddleName, r.raterLastName].filter(Boolean).join(' '),
       },
       createdAt: r.createdAt,
     }));
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async update(id: number, dto: UpdateVendorDto): Promise<Vendor> {
     const vendor = await this.findOne(id);
 
     if (dto.taxId && dto.taxId !== vendor.taxId) {
-      const existing = await this.vendorRepository.findOne({ where: { taxId: dto.taxId } });
+      const existing = await this.vendorRepository.findOne({
+        where: { taxId: dto.taxId },
+      });
       if (existing) throw new ConflictException(`Vendor with tax ID ${dto.taxId} already exists`);
     }
 

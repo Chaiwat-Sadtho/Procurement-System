@@ -72,9 +72,7 @@ describe('SecurityPage', () => {
     await fillPasswords(user, 'samepass12', 'samepass12', 'samepass12')
     await user.click(screen.getByRole('button', { name: /change password/i }))
     await waitFor(() => {
-      expect(
-        screen.getByText(/new password must be different/i),
-      ).toBeInTheDocument()
+      expect(screen.getByText(/new password must be different/i)).toBeInTheDocument()
     })
     expect(settingsApi.changePassword).not.toHaveBeenCalled()
   })
@@ -126,10 +124,7 @@ describe('SecurityPage', () => {
       'autocomplete',
       'current-password',
     )
-    expect(screen.getByLabelText(/^new password/i)).toHaveAttribute(
-      'autocomplete',
-      'new-password',
-    )
+    expect(screen.getByLabelText(/^new password/i)).toHaveAttribute('autocomplete', 'new-password')
     expect(screen.getByLabelText(/confirm new password/i)).toHaveAttribute(
       'autocomplete',
       'new-password',

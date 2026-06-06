@@ -1,5 +1,8 @@
 import {
-  Injectable, BadRequestException, ConflictException, UnauthorizedException,
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryFailedError } from 'typeorm';

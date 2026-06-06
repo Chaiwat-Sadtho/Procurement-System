@@ -19,10 +19,7 @@ import { RowLink } from '@/shared/components/RowLink'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { POStatusBadge } from '../components/POStatusBadge'
-import {
-  POListFilterForm,
-  type POListFilterValues,
-} from '../components/POListFilterForm'
+import { POListFilterForm, type POListFilterValues } from '../components/POListFilterForm'
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
 import type { PoStatus } from '../types'
@@ -46,10 +43,8 @@ export function POListPage() {
   const queryParams = {
     page,
     limit,
-    status:
-      filters.status && filters.status !== 'all' ? (filters.status as PoStatus) : undefined,
-    vendorId:
-      filters.vendorId && filters.vendorId !== 'all' ? Number(filters.vendorId) : undefined,
+    status: filters.status && filters.status !== 'all' ? (filters.status as PoStatus) : undefined,
+    vendorId: filters.vendorId && filters.vendorId !== 'all' ? Number(filters.vendorId) : undefined,
   }
 
   const { data, isLoading, isError, refetch } = usePurchaseOrders(queryParams, { enabled: true })

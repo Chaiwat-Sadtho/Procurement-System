@@ -14,7 +14,10 @@ const vendor: Vendor = {
   isBlacklisted: false,
   blacklistReason: null,
   ratingAvg: '4.50',
-  categories: [{ id: 1, name: 'Hardware' }, { id: 2, name: 'Software' }],
+  categories: [
+    { id: 1, name: 'Hardware' },
+    { id: 2, name: 'Software' },
+  ],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-02-01T00:00:00Z',
 }

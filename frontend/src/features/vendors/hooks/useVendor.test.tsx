@@ -18,7 +18,9 @@ import { useVendor } from './useVendor'
 const fakeVendor = { id: 7 } as Vendor
 
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 }
 

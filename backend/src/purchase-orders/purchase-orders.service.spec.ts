@@ -13,23 +13,36 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const mockApprovedPr: Partial<PurchaseRequest> = {
-  id: 1, status: PrStatus.APPROVED,
-  departmentId: 1, fiscalYear: 2026, quarter: null, totalEstimatedAmount: 1000,
+  id: 1,
+  status: PrStatus.APPROVED,
+  departmentId: 1,
+  fiscalYear: 2026,
+  quarter: null,
+  totalEstimatedAmount: 1000,
 };
 
 const mockVendor: Partial<Vendor> = {
-  id: 1, name: 'Test Vendor', isBlacklisted: false,
+  id: 1,
+  name: 'Test Vendor',
+  isBlacklisted: false,
 };
 
 const mockDraftPo: Partial<PurchaseOrder> = {
-  id: 1, poNumber: 'PO-2025-0001',
-  prId: 1, vendorId: 1,
-  status: PoStatus.DRAFT, items: [],
+  id: 1,
+  poNumber: 'PO-2025-0001',
+  prId: 1,
+  vendorId: 1,
+  status: PoStatus.DRAFT,
+  items: [],
 };
 
 const mockSentPo = { ...mockDraftPo, status: PoStatus.SENT };
 const mockAckedPo = { ...mockDraftPo, status: PoStatus.ACKNOWLEDGED };
-const mockCompletedPo = { ...mockDraftPo, status: PoStatus.COMPLETED, vendorId: 1 };
+const mockCompletedPo = {
+  ...mockDraftPo,
+  status: PoStatus.COMPLETED,
+  vendorId: 1,
+};
 
 const mockPoRepo = {
   count: jest.fn().mockResolvedValue(0),
@@ -45,14 +58,21 @@ const mockPoItemRepo = {
 };
 const mockPrRepo = { findOne: jest.fn() };
 const mockVendorRepo = { findOne: jest.fn(), update: jest.fn() };
-const mockRatingRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.fn(), createQueryBuilder: jest.fn() };
+const mockRatingRepo = {
+  findOne: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  createQueryBuilder: jest.fn(),
+};
 const mockDataSource = { transaction: jest.fn() };
 const mockBudgetsService = {
   releaseReservedAmount: jest.fn().mockResolvedValue(undefined),
   adjustReservedAmount: jest.fn().mockResolvedValue(undefined),
 };
 const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
-const mockNotificationsService = { send: jest.fn().mockResolvedValue(undefined) };
+const mockNotificationsService = {
+  send: jest.fn().mockResolvedValue(undefined),
+};
 
 describe('PurchaseOrdersService', () => {
   let service: PurchaseOrdersService;
@@ -62,7 +82,10 @@ describe('PurchaseOrdersService', () => {
       providers: [
         PurchaseOrdersService,
         { provide: getRepositoryToken(PurchaseOrder), useValue: mockPoRepo },
-        { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
+        {
+          provide: getRepositoryToken(PurchaseOrderItem),
+          useValue: mockPoItemRepo,
+        },
         { provide: getRepositoryToken(PurchaseRequest), useValue: mockPrRepo },
         { provide: getRepositoryToken(Vendor), useValue: mockVendorRepo },
         { provide: getRepositoryToken(VendorRating), useValue: mockRatingRepo },
@@ -80,7 +103,9 @@ describe('PurchaseOrdersService', () => {
     // create เปิด transaction (budget adjust + PO save atomic) — helper จำลอง manager.save
     const mockTxSave = (saveImpl: jest.Mock) => {
       const manager = { save: saveImpl };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
       return manager;
     };
 
@@ -89,14 +114,22 @@ describe('PurchaseOrdersService', () => {
       mockPoRepo.findOne.mockResolvedValue(null); // P4-2: ยังไม่มี active PO ผูกกับ PR นี้
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
       mockPoRepo.count.mockResolvedValue(0);
-      const item = { itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000, totalPrice: 1000, receivedQuantity: 0 };
+      const item = {
+        itemName: 'Item',
+        quantity: 1,
+        unit: 'unit',
+        unitPrice: 1000,
+        totalPrice: 1000,
+        receivedQuantity: 0,
+      };
       mockPoItemRepo.create.mockReturnValue(item);
       const createdPo = { ...mockDraftPo, items: [item], totalAmount: 1000 };
       mockPoRepo.create.mockReturnValue(createdPo);
       mockTxSave(jest.fn().mockResolvedValue(createdPo));
 
       const result = await service.create(1, {
-        prId: 1, vendorId: 1,
+        prId: 1,
+        vendorId: 1,
         expectedDeliveryDate: '2025-12-31',
         items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
       });
@@ -116,7 +149,8 @@ describe('PurchaseOrdersService', () => {
       mockTxSave(jest.fn().mockImplementation((_entity, e) => Promise.resolve(e)));
 
       const result = await service.create(1, {
-        prId: 1, vendorId: 1,
+        prId: 1,
+        vendorId: 1,
         expectedDeliveryDate: '2025-12-31',
         items: [{ itemName: 'X', quantity: 1.03, unit: 'unit', unitPrice: 1.5 }],
       });
@@ -127,40 +161,78 @@ describe('PurchaseOrdersService', () => {
 
     // P5-6: PO ที่แพงกว่า PR estimate ต้อง reserve ส่วนต่างเพิ่ม (delta บวก) เพื่อกัน used ทะลุ total ตอน consume
     it('should reserve the positive delta when PO total exceeds PR estimate', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockApprovedPr, totalEstimatedAmount: 1000 });
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockApprovedPr,
+        totalEstimatedAmount: 1000,
+      });
       mockPoRepo.findOne.mockResolvedValue(null);
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
-      const item = { itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1500, totalPrice: 1500, receivedQuantity: 0 };
+      const item = {
+        itemName: 'Item',
+        quantity: 1,
+        unit: 'unit',
+        unitPrice: 1500,
+        totalPrice: 1500,
+        receivedQuantity: 0,
+      };
       mockPoItemRepo.create.mockReturnValue(item);
       const createdPo = { ...mockDraftPo, items: [item], totalAmount: 1500 };
       mockPoRepo.create.mockReturnValue(createdPo);
       const manager = mockTxSave(jest.fn().mockResolvedValue(createdPo));
 
       await service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
+        prId: 1,
+        vendorId: 1,
+        expectedDeliveryDate: '2025-12-31',
         items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1500 }],
       });
 
       // delta = 1500 - 1000 = 500 (reserve เพิ่ม) ใช้ dept/fy/quarter ที่ตรึงจาก PR
-      expect(mockBudgetsService.adjustReservedAmount).toHaveBeenCalledWith(1, 2026, null, 500, manager);
+      expect(mockBudgetsService.adjustReservedAmount).toHaveBeenCalledWith(
+        1,
+        2026,
+        null,
+        500,
+        manager,
+      );
     });
 
     // P5-6: ถ้า PO เกินงบคงเหลือ adjustReservedAmount โยน BadRequest → ไม่สร้าง PO (rollback)
     it('should reject PO creation when PO total exceeds available budget', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockApprovedPr, totalEstimatedAmount: 1000 });
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockApprovedPr,
+        totalEstimatedAmount: 1000,
+      });
       mockPoRepo.findOne.mockResolvedValue(null);
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
-      const item = { itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 999999, totalPrice: 999999, receivedQuantity: 0 };
+      const item = {
+        itemName: 'Item',
+        quantity: 1,
+        unit: 'unit',
+        unitPrice: 999999,
+        totalPrice: 999999,
+        receivedQuantity: 0,
+      };
       mockPoItemRepo.create.mockReturnValue(item);
-      mockPoRepo.create.mockReturnValue({ ...mockDraftPo, items: [item], totalAmount: 999999 });
+      mockPoRepo.create.mockReturnValue({
+        ...mockDraftPo,
+        items: [item],
+        totalAmount: 999999,
+      });
       const save = jest.fn().mockResolvedValue({ ...mockDraftPo });
       mockTxSave(save);
-      mockBudgetsService.adjustReservedAmount.mockRejectedValueOnce(new BadRequestException('งบไม่พอ'));
+      mockBudgetsService.adjustReservedAmount.mockRejectedValueOnce(
+        new BadRequestException('งบไม่พอ'),
+      );
 
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 999999 }],
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 999999 }],
+        }),
+      ).rejects.toThrow(BadRequestException);
       expect(save).not.toHaveBeenCalled();
     });
 
@@ -169,16 +241,25 @@ describe('PurchaseOrdersService', () => {
       mockPoRepo.findOne.mockResolvedValue(null);
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
       mockPoRepo.count.mockResolvedValue(0);
-      mockPoItemRepo.create.mockReturnValue({ itemName: 'Item', quantity: 1, unitPrice: 1000, totalPrice: 1000 });
+      mockPoItemRepo.create.mockReturnValue({
+        itemName: 'Item',
+        quantity: 1,
+        unitPrice: 1000,
+        totalPrice: 1000,
+      });
       mockPoRepo.create.mockReturnValue({ ...mockDraftPo });
       const dbErr = new QueryFailedError('insert', [], new Error('dup'));
       (dbErr as { code?: string }).code = '23505';
       mockTxSave(jest.fn().mockRejectedValue(dbErr));
 
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
-      })).rejects.toThrow(ConflictException);
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+        }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should map active-PO unique violation (P4-2 race) to a clear ConflictException', async () => {
@@ -186,51 +267,81 @@ describe('PurchaseOrdersService', () => {
       mockPoRepo.findOne.mockResolvedValue(null); // app-level check ผ่าน (race) แต่ DB index จับได้
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
       mockPoRepo.count.mockResolvedValue(0);
-      mockPoItemRepo.create.mockReturnValue({ itemName: 'Item', quantity: 1, unitPrice: 1000, totalPrice: 1000 });
+      mockPoItemRepo.create.mockReturnValue({
+        itemName: 'Item',
+        quantity: 1,
+        unitPrice: 1000,
+        totalPrice: 1000,
+      });
       mockPoRepo.create.mockReturnValue({ ...mockDraftPo });
       const dbErr = new QueryFailedError('insert', [], new Error('dup'));
       (dbErr as { code?: string }).code = '23505';
       (dbErr as { constraint?: string }).constraint = 'UQ_active_po_per_pr';
       mockTxSave(jest.fn().mockRejectedValue(dbErr));
 
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
-      })).rejects.toThrow(/already has an active PO/);
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 1000 }],
+        }),
+      ).rejects.toThrow(/already has an active PO/);
     });
 
     it('should throw BadRequestException if PR is not approved', async () => {
-      mockPrRepo.findOne.mockResolvedValue({ ...mockApprovedPr, status: PrStatus.SUBMITTED });
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
-      })).rejects.toThrow(BadRequestException);
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockApprovedPr,
+        status: PrStatus.SUBMITTED,
+      });
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if vendor is blacklisted', async () => {
       mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
       mockPoRepo.findOne.mockResolvedValue(null);
-      mockVendorRepo.findOne.mockResolvedValue({ ...mockVendor, isBlacklisted: true });
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
-      })).rejects.toThrow(BadRequestException);
+      mockVendorRepo.findOne.mockResolvedValue({
+        ...mockVendor,
+        isBlacklisted: true,
+      });
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ConflictException if PR already has an active PO (P4-2)', async () => {
       mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo }); // active PO ผูกกับ PR นี้อยู่แล้ว
-      await expect(service.create(1, {
-        prId: 1, vendorId: 1, expectedDeliveryDate: '2025-12-31',
-        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
-      })).rejects.toThrow(ConflictException);
+      await expect(
+        service.create(1, {
+          prId: 1,
+          vendorId: 1,
+          expectedDeliveryDate: '2025-12-31',
+          items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 100 }],
+        }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
   describe('send', () => {
     it('should transition draft PO to sent', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo });
-      mockPoRepo.save.mockResolvedValue({ ...mockDraftPo, status: PoStatus.SENT });
+      mockPoRepo.save.mockResolvedValue({
+        ...mockDraftPo,
+        status: PoStatus.SENT,
+      });
       const result = await service.send(1);
       expect(result.status).toBe(PoStatus.SENT);
     });
@@ -244,12 +355,19 @@ describe('PurchaseOrdersService', () => {
   describe('acknowledge', () => {
     it('should transition sent PO to acknowledged', async () => {
       mockPoRepo.findOne.mockResolvedValue({ ...mockSentPo });
-      const manager = { save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }) };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      const manager = {
+        save: jest.fn().mockResolvedValue({ ...mockSentPo, status: PoStatus.ACKNOWLEDGED }),
+      };
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
       const result = await service.acknowledge(1, 1);
       expect(result.status).toBe(PoStatus.ACKNOWLEDGED);
       // mutation-proof: status-save joins the tx (manager.save), not the bare repo
-      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.ACKNOWLEDGED }));
+      expect(manager.save).toHaveBeenCalledWith(
+        PurchaseOrder,
+        expect.objectContaining({ status: PoStatus.ACKNOWLEDGED }),
+      );
     });
 
     it('should throw BadRequest if PO is not sent', async () => {
@@ -265,11 +383,16 @@ describe('PurchaseOrdersService', () => {
         save: jest.fn().mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue(null), // PR lookup ใน tx → ไม่เจอ → ไม่ release
       };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
       const result = await service.cancel(1, 1);
       expect(result.status).toBe(PoStatus.CANCELLED);
       // mutation-proof: status-save joins the tx (manager.save), not the bare repo
-      expect(manager.save).toHaveBeenCalledWith(PurchaseOrder, expect.objectContaining({ status: PoStatus.CANCELLED }));
+      expect(manager.save).toHaveBeenCalledWith(
+        PurchaseOrder,
+        expect.objectContaining({ status: PoStatus.CANCELLED }),
+      );
     });
 
     it('should throw BadRequest if PO is already completed', async () => {
@@ -278,37 +401,68 @@ describe('PurchaseOrdersService', () => {
     });
 
     it('should throw BadRequest if PO is already cancelled', async () => {
-      mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo, status: PoStatus.CANCELLED });
+      mockPoRepo.findOne.mockResolvedValue({
+        ...mockDraftPo,
+        status: PoStatus.CANCELLED,
+      });
       await expect(service.cancel(1, 1)).rejects.toThrow(BadRequestException);
     });
 
     // P5-2/P5-6: release ยอด PO จริง ภายใน tx เดียวกับ cancel — ส่ง manager (atomic, mutation-proof identity)
     it('P5-2: should release the PO total from reserved budget within the cancel transaction', async () => {
-      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      mockPoRepo.findOne.mockResolvedValue({
+        id: 1,
+        prId: 1,
+        status: PoStatus.SENT,
+        totalAmount: 60000,
+      });
       const manager = {
         save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue({
-          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+          id: 1,
+          departmentId: 1,
+          fiscalYear: 2026,
+          quarter: null,
+          status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
 
       await service.cancel(1, 1);
 
       // arg 5 = tx manager → release joins the cancel tx (rollback together on failure)
-      expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(1, 2026, null, 60000, manager);
+      expect(mockBudgetsService.releaseReservedAmount).toHaveBeenCalledWith(
+        1,
+        2026,
+        null,
+        60000,
+        manager,
+      );
     });
 
     // guard lock: PR ไม่ APPROVED → ไม่ release (mutation-proof: ตัด status check → release ถูกเรียก → แดง)
     it('should NOT release reserved budget when the linked PR is not approved', async () => {
-      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      mockPoRepo.findOne.mockResolvedValue({
+        id: 1,
+        prId: 1,
+        status: PoStatus.SENT,
+        totalAmount: 60000,
+      });
       const manager = {
         save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue({
-          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.SUBMITTED,
+          id: 1,
+          departmentId: 1,
+          fiscalYear: 2026,
+          quarter: null,
+          status: PrStatus.SUBMITTED,
         }),
       };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
 
       const result = await service.cancel(1, 1);
 
@@ -318,14 +472,25 @@ describe('PurchaseOrdersService', () => {
 
     // guard lock: PR ไม่มี department → ไม่ release (mutation-proof: ตัด departmentId check → release ถูกเรียก → แดง)
     it('should NOT release reserved budget when the linked PR has no department', async () => {
-      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      mockPoRepo.findOne.mockResolvedValue({
+        id: 1,
+        prId: 1,
+        status: PoStatus.SENT,
+        totalAmount: 60000,
+      });
       const manager = {
         save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue({
-          id: 1, departmentId: null, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+          id: 1,
+          departmentId: null,
+          fiscalYear: 2026,
+          quarter: null,
+          status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
 
       const result = await service.cancel(1, 1);
 
@@ -335,14 +500,25 @@ describe('PurchaseOrdersService', () => {
 
     // ปิด silent catch: release fail ต้อง propagate (rollback) ไม่ใช่กลืนเงียบ
     it('should propagate a budget-release failure instead of swallowing it', async () => {
-      mockPoRepo.findOne.mockResolvedValue({ id: 1, prId: 1, status: PoStatus.SENT, totalAmount: 60000 });
+      mockPoRepo.findOne.mockResolvedValue({
+        id: 1,
+        prId: 1,
+        status: PoStatus.SENT,
+        totalAmount: 60000,
+      });
       const manager = {
         save: jest.fn().mockResolvedValue({ id: 1, status: PoStatus.CANCELLED }),
         findOne: jest.fn().mockResolvedValue({
-          id: 1, departmentId: 1, fiscalYear: 2026, quarter: null, status: PrStatus.APPROVED,
+          id: 1,
+          departmentId: 1,
+          fiscalYear: 2026,
+          quarter: null,
+          status: PrStatus.APPROVED,
         }),
       };
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
       mockBudgetsService.releaseReservedAmount.mockRejectedValueOnce(new Error('release failed'));
 
       await expect(service.cancel(1, 1)).rejects.toThrow('release failed');
@@ -356,7 +532,11 @@ describe('PurchaseOrdersService', () => {
       const mockRating = { id: 1, score: 4, poId: 1, vendorId: 1 };
       mockRatingRepo.create.mockReturnValue(mockRating);
       mockRatingRepo.save.mockResolvedValue(mockRating);
-      const mockQb = { select: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), getRawOne: jest.fn().mockResolvedValue({ avg: '4.00' }) };
+      const mockQb = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ avg: '4.00' }),
+      };
       mockRatingRepo.createQueryBuilder.mockReturnValue(mockQb);
 
       const result = await service.rateVendor(1, 1, { score: 4 });
@@ -383,8 +563,13 @@ describe('PurchaseOrdersService', () => {
         create: jest.fn().mockImplementation((_e: unknown, data: unknown) => data),
         save: jest.fn().mockImplementation((_e: unknown, data: unknown) => Promise.resolve(data)),
       };
-      mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo, items: [{ id: 9 }] });
-      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+      mockPoRepo.findOne.mockResolvedValue({
+        ...mockDraftPo,
+        items: [{ id: 9 }],
+      });
+      mockDataSource.transaction.mockImplementation((cb: (m: typeof manager) => unknown) =>
+        cb(manager),
+      );
 
       const result = await service.update(1, {
         items: [
@@ -394,7 +579,9 @@ describe('PurchaseOrdersService', () => {
       });
 
       expect(mockDataSource.transaction).toHaveBeenCalled();
-      expect(manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, { poId: 1 });
+      expect(manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, {
+        poId: 1,
+      });
       // destructive delete + recreate must run through the transaction manager, never the bare repo
       expect(mockPoItemRepo.delete).not.toHaveBeenCalled();
       expect(result.totalAmount).toBe(250);

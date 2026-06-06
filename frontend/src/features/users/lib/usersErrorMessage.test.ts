@@ -3,13 +3,13 @@ import { AxiosError } from 'axios'
 import { usersErrorMessage } from './usersErrorMessage'
 
 function axiosErr(message: string): AxiosError {
-  return new AxiosError(
-    'Request failed',
-    'ERR_BAD_REQUEST',
-    undefined,
-    undefined,
-    { status: 400, data: { message }, statusText: '', headers: {}, config: {} as never },
-  )
+  return new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {
+    status: 400,
+    data: { message },
+    statusText: '',
+    headers: {},
+    config: {} as never,
+  })
 }
 
 describe('usersErrorMessage', () => {
@@ -20,7 +20,9 @@ describe('usersErrorMessage', () => {
   })
 
   it('passes through other recognised backend messages', () => {
-    expect(usersErrorMessage(axiosErr('Cannot change your own role'))).toBe('Cannot change your own role')
+    expect(usersErrorMessage(axiosErr('Cannot change your own role'))).toBe(
+      'Cannot change your own role',
+    )
   })
 
   it('falls back to a Thai generic message for unknown errors', () => {
