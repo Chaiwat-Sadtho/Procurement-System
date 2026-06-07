@@ -5,6 +5,9 @@ import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
 import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
 import { UsersPage } from '@/features/users/pages/UsersPage'
+import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
+import { BudgetDetailPage } from '@/features/budgets/pages/BudgetDetailPage'
+import { BudgetFormPage } from '@/features/budgets/pages/BudgetFormPage'
 
 // router config is a plain object tree; the protected children live under route[1] ('/')
 type RouteLike = { path?: string; element?: unknown; children?: RouteLike[] }
@@ -49,6 +52,36 @@ describe('router — users route is wired (no more ComingSoon)', () => {
   it('users → UsersPage, guarded by procurement_officer only', () => {
     const route = findRoute('users')!
     expect(innerPageType(route.element)).toBe(UsersPage)
+    const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
+    expect(guardProps.allowedRoles).toEqual(['procurement_officer'])
+  })
+})
+
+describe('router — budgets routes are wired (no more ComingSoon)', () => {
+  it('budgets → BudgetListPage, guarded by manager + procurement_officer', () => {
+    const route = findRoute('budgets')!
+    expect(innerPageType(route.element)).toBe(BudgetListPage)
+    const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
+    expect(guardProps.allowedRoles).toEqual(['manager', 'procurement_officer'])
+  })
+
+  it('budgets/new → BudgetFormPage, guarded by procurement_officer', () => {
+    const route = findRoute('budgets/new')!
+    expect(innerPageType(route.element)).toBe(BudgetFormPage)
+    const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
+    expect(guardProps.allowedRoles).toEqual(['procurement_officer'])
+  })
+
+  it('budgets/:id → BudgetDetailPage, guarded by manager + procurement_officer', () => {
+    const route = findRoute('budgets/:id')!
+    expect(innerPageType(route.element)).toBe(BudgetDetailPage)
+    const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
+    expect(guardProps.allowedRoles).toEqual(['manager', 'procurement_officer'])
+  })
+
+  it('budgets/:id/edit → BudgetFormPage, guarded by procurement_officer', () => {
+    const route = findRoute('budgets/:id/edit')!
+    expect(innerPageType(route.element)).toBe(BudgetFormPage)
     const guardProps = (route.element as ReactElement<{ allowedRoles?: string[] }>).props
     expect(guardProps.allowedRoles).toEqual(['procurement_officer'])
   })

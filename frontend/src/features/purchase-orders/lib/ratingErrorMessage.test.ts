@@ -4,7 +4,13 @@ import { ratingErrorMessage } from './ratingErrorMessage'
 
 function axiosErr(message: string) {
   const err = new AxiosError('req failed')
-  err.response = { data: { message }, status: 400, statusText: '', headers: {}, config: {} as never }
+  err.response = {
+    data: { message },
+    status: 400,
+    statusText: '',
+    headers: {},
+    config: {} as never,
+  }
   return err
 }
 

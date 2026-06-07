@@ -6,12 +6,7 @@ import { toast } from 'sonner'
 import axios from 'axios'
 import { settingsApi } from '@/features/settings/api'
 import { Button } from '@/shared/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
   Form,
   FormControl,
@@ -89,11 +84,7 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>Current Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="current-password"
-                      {...field}
-                    />
+                    <Input type="password" autoComplete="current-password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,11 +97,7 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
+                    <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -123,20 +110,13 @@ export function SecurityPage() {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
+                    <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !isDirty || !isValid}
-            >
+            <Button type="submit" disabled={mutation.isPending || !isDirty || !isValid}>
               Change Password
             </Button>
           </form>

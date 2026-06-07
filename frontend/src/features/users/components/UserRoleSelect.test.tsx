@@ -13,7 +13,10 @@ vi.mock('../hooks/useUserMutations', () => ({
     updateStatusMutation: { mutate: vi.fn(), isPending: false },
   }),
 }))
-const { toastSuccess, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastError: vi.fn() }))
+const { toastSuccess, toastError } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}))
 vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError } }))
 
 import { UserRoleSelect } from './UserRoleSelect'

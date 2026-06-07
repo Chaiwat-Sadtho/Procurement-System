@@ -58,9 +58,18 @@ function setup({
   isError?: boolean
 }) {
   const refetch = vi.fn()
-  vi.mocked(useVendors).mockReturnValue({ data, isLoading, isError, refetch } as unknown as ReturnType<typeof useVendors>)
-  vi.mocked(useVendorCategories).mockReturnValue({ data: [] } as unknown as ReturnType<typeof useVendorCategories>)
-  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
+  vi.mocked(useVendors).mockReturnValue({
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } as unknown as ReturnType<typeof useVendors>)
+  vi.mocked(useVendorCategories).mockReturnValue({ data: [] } as unknown as ReturnType<
+    typeof useVendorCategories
+  >)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<
+    typeof useCurrentUser
+  >)
   return { refetch }
 }
 
@@ -248,7 +257,9 @@ describe('VendorListPage', () => {
 
   it('hides the เพิ่มผู้ขาย button for a manager', () => {
     setup({ data: listData([mockVendor]) })
-    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<typeof useCurrentUser>)
+    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<
+      typeof useCurrentUser
+    >)
     renderPage()
     expect(screen.queryByRole('button', { name: 'เพิ่มผู้ขาย' })).not.toBeInTheDocument()
   })

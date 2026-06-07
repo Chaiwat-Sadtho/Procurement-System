@@ -12,8 +12,14 @@ describe('dashboardApi.getBudgets', () => {
     vi.mocked(api.get).mockResolvedValue({
       data: [
         {
-          id: 1, departmentId: 1, department: { id: 1, name: 'IT' }, fiscalYear: 2026, quarter: null,
-          totalAmount: '3000000.00', reservedAmount: '500000.00', usedAmount: '250000.00',
+          id: 1,
+          departmentId: 1,
+          department: { id: 1, name: 'IT' },
+          fiscalYear: 2026,
+          quarter: null,
+          totalAmount: '3000000.00',
+          reservedAmount: '500000.00',
+          usedAmount: '250000.00',
         },
       ],
     } as never)
@@ -33,8 +39,14 @@ describe('dashboardApi.getBudgets', () => {
     vi.mocked(api.get).mockResolvedValue({
       data: [
         {
-          id: 2, departmentId: 2, department: { id: 2, name: 'HR' }, fiscalYear: 2026, quarter: null,
-          totalAmount: '1e999', reservedAmount: 'abc', usedAmount: '',
+          id: 2,
+          departmentId: 2,
+          department: { id: 2, name: 'HR' },
+          fiscalYear: 2026,
+          quarter: null,
+          totalAmount: '1e999',
+          reservedAmount: 'abc',
+          usedAmount: '',
         },
       ],
     } as never)

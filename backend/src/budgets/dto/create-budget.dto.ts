@@ -15,7 +15,10 @@ export class CreateBudgetDto {
   @Type(() => Number)
   fiscalYear: number;
 
-  @ApiPropertyOptional({ example: null, description: '1-4 หรือ null สำหรับงบรายปี' })
+  @ApiPropertyOptional({
+    example: null,
+    description: '1-4 หรือ null สำหรับงบรายปี',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

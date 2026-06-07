@@ -1,6 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Unique, Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Unique,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Department } from '../../departments/entities/department.entity';
@@ -38,11 +45,23 @@ export class Budget {
   totalAmount: number;
 
   @ApiProperty({ example: 0 })
-  @Column({ name: 'reserved_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'reserved_amount',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    default: 0,
+  })
   reservedAmount: number;
 
   @ApiProperty({ example: 0 })
-  @Column({ name: 'used_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'used_amount',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    default: 0,
+  })
   usedAmount: number;
 
   @ApiProperty()

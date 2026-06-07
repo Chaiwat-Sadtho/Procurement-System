@@ -42,7 +42,10 @@ export function VendorDetailHeader({ vendor, actions }: VendorDetailHeaderProps)
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <MetaItem label="เลขผู้เสียภาษี" value={<span className="font-mono">{vendor.taxId ?? '—'}</span>} />
+          <MetaItem
+            label="เลขผู้เสียภาษี"
+            value={<span className="font-mono">{vendor.taxId ?? '—'}</span>}
+          />
           <MetaItem label="อีเมล" value={vendor.email ?? '—'} />
           <MetaItem label="เบอร์โทร" value={vendor.phone ?? '—'} />
           <MetaItem label="ที่อยู่" value={vendor.address ?? '—'} />

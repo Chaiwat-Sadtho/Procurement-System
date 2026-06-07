@@ -20,9 +20,13 @@ beforeEach(() => {
 
 describe('goodsReceiptsApi.list', () => {
   it('GETs /goods-receipts with params and returns .data', async () => {
-    mockApi.get.mockResolvedValue({ data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } } })
+    mockApi.get.mockResolvedValue({
+      data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
+    })
     const out = await goodsReceiptsApi.list({ page: 2, status: 'partial' })
-    expect(mockApi.get).toHaveBeenCalledWith('/goods-receipts', { params: { page: 2, status: 'partial' } })
+    expect(mockApi.get).toHaveBeenCalledWith('/goods-receipts', {
+      params: { page: 2, status: 'partial' },
+    })
     expect(out).toEqual({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } })
   })
 })

@@ -73,9 +73,7 @@ describe('PRListFilterForm', () => {
     await setRange('01012569', '31122569')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ requesterName: 'สมชาย' }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ requesterName: 'สมชาย' }))
   })
 
   it('ล้าง resets fields and calls onClear', async () => {

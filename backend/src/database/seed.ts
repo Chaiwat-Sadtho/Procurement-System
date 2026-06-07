@@ -17,9 +17,31 @@ export async function seedBaseline(ds: DataSource) {
 
   const password = await bcrypt.hash('Password123', 10);
   const users: DeepPartial<User>[] = [
-    { email: 'employee@company.com', passwordHash: password, firstName: 'สมชาย', middleName: 'กลาง', lastName: 'ใจดี', role: UserRole.EMPLOYEE, departmentId: departments[0].id },
-    { email: 'manager@company.com', passwordHash: password, firstName: 'สมหญิง', lastName: 'รักงาน', role: UserRole.MANAGER, departmentId: departments[0].id },
-    { email: 'procurement@company.com', passwordHash: password, firstName: 'วิชัย', lastName: 'จัดซื้อ', role: UserRole.PROCUREMENT_OFFICER, departmentId: departments[2].id },
+    {
+      email: 'employee@company.com',
+      passwordHash: password,
+      firstName: 'สมชาย',
+      middleName: 'กลาง',
+      lastName: 'ใจดี',
+      role: UserRole.EMPLOYEE,
+      departmentId: departments[0].id,
+    },
+    {
+      email: 'manager@company.com',
+      passwordHash: password,
+      firstName: 'สมหญิง',
+      lastName: 'รักงาน',
+      role: UserRole.MANAGER,
+      departmentId: departments[0].id,
+    },
+    {
+      email: 'procurement@company.com',
+      passwordHash: password,
+      firstName: 'วิชัย',
+      lastName: 'จัดซื้อ',
+      role: UserRole.PROCUREMENT_OFFICER,
+      departmentId: departments[2].id,
+    },
   ];
   await userRepo.save(users);
 }
@@ -30,7 +52,9 @@ if (require.main === module) {
     await AppDataSource.initialize();
     await seedBaseline(AppDataSource);
     console.log('✓ Seeded baseline (3 departments + 3 users)');
-    console.log('Test accounts (password: Password123): employee@ / manager@ / procurement@company.com');
+    console.log(
+      'Test accounts (password: Password123): employee@ / manager@ / procurement@company.com',
+    );
     await AppDataSource.destroy();
   })().catch((err) => {
     console.error(err);

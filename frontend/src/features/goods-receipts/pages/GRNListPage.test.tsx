@@ -80,8 +80,12 @@ function setup({
     isError,
     refetch,
   } as unknown as ReturnType<typeof useGoodsReceipts>)
-  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
-  vi.mocked(useReceivablePOs).mockReturnValue({ data: [] } as unknown as ReturnType<typeof useReceivablePOs>)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<
+    typeof useCurrentUser
+  >)
+  vi.mocked(useReceivablePOs).mockReturnValue({ data: [] } as unknown as ReturnType<
+    typeof useReceivablePOs
+  >)
   return { refetch }
 }
 
@@ -178,7 +182,9 @@ describe('GRNListPage', () => {
 
   it('hides the create button for a manager', () => {
     setup({ data: listData([mockGrn]) })
-    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<typeof useCurrentUser>)
+    vi.mocked(useCurrentUser).mockReturnValue({ data: managerUser } as ReturnType<
+      typeof useCurrentUser
+    >)
     renderPage()
     expect(screen.queryByRole('button', { name: 'บันทึกการรับของ' })).not.toBeInTheDocument()
   })
@@ -222,9 +228,7 @@ describe('GRNListPage', () => {
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const lastCall = vi.mocked(useGoodsReceipts).mock.calls.at(-1)!
-    expect(lastCall[0]).toEqual(
-      expect.objectContaining({ status: 'complete', poId: 5, page: 1 }),
-    )
+    expect(lastCall[0]).toEqual(expect.objectContaining({ status: 'complete', poId: 5, page: 1 }))
   })
 
   it('clears filters back to undefined when the clear button is pressed', async () => {

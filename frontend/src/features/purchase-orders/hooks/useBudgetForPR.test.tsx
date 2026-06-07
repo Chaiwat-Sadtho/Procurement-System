@@ -46,18 +46,12 @@ describe('matchBudgetForPR', () => {
   })
 
   it('matches the annual row (quarter null) when the PR quarter is null', () => {
-    const rows = [
-      makeBudget({ id: 1, quarter: 1 }),
-      makeBudget({ id: 3, quarter: null }),
-    ]
+    const rows = [makeBudget({ id: 1, quarter: 1 }), makeBudget({ id: 3, quarter: null })]
     expect(matchBudgetForPR(rows, { ...pr, quarter: null })?.id).toBe(3)
   })
 
   it('does NOT fall back to the annual row when the quarterly row is missing', () => {
-    const rows = [
-      makeBudget({ id: 1, quarter: 1 }),
-      makeBudget({ id: 3, quarter: null }),
-    ]
+    const rows = [makeBudget({ id: 1, quarter: 1 }), makeBudget({ id: 3, quarter: null })]
     // PR is Q2; only Q1 + annual exist -> no match (mirrors backend exact-match)
     expect(matchBudgetForPR(rows, pr)).toBeUndefined()
   })
@@ -92,10 +86,9 @@ describe('useBudgetForPR', () => {
   })
 
   it('stays idle when the PR has no department', () => {
-    const { result } = renderHook(
-      () => useBudgetForPR({ departmentId: null, quarter: 2 }),
-      { wrapper },
-    )
+    const { result } = renderHook(() => useBudgetForPR({ departmentId: null, quarter: 2 }), {
+      wrapper,
+    })
     expect(result.current.fetchStatus).toBe('idle')
     expect(dashboardApi.getBudgets).not.toHaveBeenCalled()
   })
@@ -105,10 +98,9 @@ describe('useBudgetForPR', () => {
     vi.mocked(dashboardApi.getBudgets).mockResolvedValue(rows)
     const thisYear = new Date().getFullYear()
     // No fiscalYear on the PR (the real PurchaseRequest shape) -> hook defaults.
-    const { result } = renderHook(
-      () => useBudgetForPR({ departmentId: 3, quarter: 2 }),
-      { wrapper },
-    )
+    const { result } = renderHook(() => useBudgetForPR({ departmentId: 3, quarter: 2 }), {
+      wrapper,
+    })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(dashboardApi.getBudgets).toHaveBeenCalledWith({
       departmentId: 3,

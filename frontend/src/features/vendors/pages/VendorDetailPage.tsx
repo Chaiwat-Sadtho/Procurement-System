@@ -19,8 +19,14 @@ export function VendorDetailPage() {
   const vendorId = Number(id)
   const validId = Number.isInteger(vendorId) && vendorId > 0
 
-  const { data: vendor, isLoading, isError, refetch, blacklistMutation, unblacklistMutation } =
-    useVendor(validId ? vendorId : 0)
+  const {
+    data: vendor,
+    isLoading,
+    isError,
+    refetch,
+    blacklistMutation,
+    unblacklistMutation,
+  } = useVendor(validId ? vendorId : 0)
   const { data: user } = useCurrentUser()
 
   const [blacklistOpen, setBlacklistOpen] = useState(false)

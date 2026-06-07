@@ -17,11 +17,16 @@ import { UserRole } from './entities/user.entity';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiOperation({ summary: 'ดู user (PO เห็นทั้งหมด, Manager เห็นเฉพาะแผนกตัวเอง)' })
+  @ApiOperation({
+    summary: 'ดู user (PO เห็นทั้งหมด, Manager เห็นเฉพาะแผนกตัวเอง)',
+  })
   @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get()
   findAll(@CurrentUser() actor: CurrentUserPayload) {
-    return this.usersService.findAll({ role: actor.role, departmentId: actor.departmentId });
+    return this.usersService.findAll({
+      role: actor.role,
+      departmentId: actor.departmentId,
+    });
   }
 
   @ApiOperation({ summary: 'เปลี่ยน role (PO only)' })

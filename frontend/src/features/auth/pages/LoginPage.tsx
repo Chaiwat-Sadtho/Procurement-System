@@ -120,18 +120,14 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="mt-auto pt-8 text-xs text-slate-400">
-          © 2026 Procurement System
-        </p>
+        <p className="mt-auto pt-8 text-xs text-slate-400">© 2026 Procurement System</p>
       </aside>
 
       <main className="col-span-12 flex items-center justify-center bg-background p-6 lg:col-span-4">
         <div className="w-full max-w-sm">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-foreground">Sign in</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              เข้าสู่ระบบเพื่อจัดการงานจัดซื้อ
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">เข้าสู่ระบบเพื่อจัดการงานจัดซื้อ</p>
           </div>
 
           <Form {...form}>

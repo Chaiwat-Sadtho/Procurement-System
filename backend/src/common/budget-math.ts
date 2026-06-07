@@ -3,8 +3,7 @@
 export const round2 = (n: number): number => Number(n.toFixed(2));
 
 // PR approved → จองงบ (reserved += amount)
-export const applyReserve = (reserved: number, amount: number): number =>
-  round2(reserved + amount);
+export const applyReserve = (reserved: number, amount: number): number => round2(reserved + amount);
 
 // PO cancelled → คืนงบจอง (reserved -= amount, ไม่ต่ำกว่า 0)
 export const applyRelease = (reserved: number, amount: number): number =>

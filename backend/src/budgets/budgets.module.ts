@@ -3,13 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Budget } from './entities/budget.entity';
 import { Department } from '../departments/entities/department.entity';
 import { User } from '../users/entities/user.entity';
+import { PurchaseRequest } from '../purchase-requests/entities/purchase-request.entity';
+import { PurchaseOrder } from '../purchase-orders/entities/purchase-order.entity';
 import { BudgetsService } from './budgets.service';
 import { BudgetsController } from './budgets.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Budget, User, Department]),
+    TypeOrmModule.forFeature([Budget, User, Department, PurchaseRequest, PurchaseOrder]),
     NotificationsModule,
   ],
   providers: [BudgetsService],

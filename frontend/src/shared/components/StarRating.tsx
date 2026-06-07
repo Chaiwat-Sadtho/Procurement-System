@@ -34,7 +34,10 @@ export function StarRating({
           <Star
             key={n}
             aria-hidden="true"
-            className={cn('h-4 w-4', n <= value ? 'fill-amber-400 text-amber-400' : 'fill-none text-muted-foreground')}
+            className={cn(
+              'h-4 w-4',
+              n <= value ? 'fill-amber-400 text-amber-400' : 'fill-none text-muted-foreground',
+            )}
           />
         ))}
       </span>
@@ -73,7 +76,10 @@ export function StarRating({
         >
           <Star
             aria-hidden="true"
-            className={cn('h-6 w-6 transition-colors', n <= active ? 'fill-amber-400 text-amber-400' : 'fill-none text-muted-foreground')}
+            className={cn(
+              'h-6 w-6 transition-colors',
+              n <= active ? 'fill-amber-400 text-amber-400' : 'fill-none text-muted-foreground',
+            )}
           />
         </button>
       ))}

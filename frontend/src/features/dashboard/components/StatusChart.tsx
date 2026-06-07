@@ -46,7 +46,10 @@ export function StatusChart({ stats, isLoading }: StatusChartProps) {
             <ul className="space-y-1 text-sm">
               {SEGMENTS.map((s) => (
                 <li key={s.key} data-testid={`legend-${s.key}`} className="flex items-center gap-2">
-                  <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: s.color }} />
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm"
+                    style={{ backgroundColor: s.color }}
+                  />
                   <span className="text-muted-foreground">{s.label}</span>
                   <span className="ml-auto font-medium">{stats[s.key]}</span>
                 </li>

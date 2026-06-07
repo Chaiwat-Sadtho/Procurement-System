@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
@@ -49,7 +53,12 @@ export class Notification {
   referenceId: number | null;
 
   @ApiProperty({ nullable: true })
-  @Column({ name: 'reference_type', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'reference_type',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   referenceType: string | null;
 
   @ApiProperty()

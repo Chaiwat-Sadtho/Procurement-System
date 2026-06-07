@@ -61,7 +61,14 @@ describe('ListPaginationFooter', () => {
     const onPrev = vi.fn()
     const onNext = vi.fn()
     render(
-      <ListPaginationFooter {...baseProps} summary="" page={2} totalPages={3} onPrev={onPrev} onNext={onNext} />,
+      <ListPaginationFooter
+        {...baseProps}
+        summary=""
+        page={2}
+        totalPages={3}
+        onPrev={onPrev}
+        onNext={onNext}
+      />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'ก่อนหน้า' }))
     await userEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))

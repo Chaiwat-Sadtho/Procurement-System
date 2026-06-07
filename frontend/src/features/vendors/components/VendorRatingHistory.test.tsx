@@ -5,18 +5,26 @@ import { MemoryRouter } from 'react-router-dom'
 import type { VendorRatingsResponse } from '../types'
 
 const mockUseVendorRatings = vi.fn()
-vi.mock('../hooks/useVendorRatings', () => ({ useVendorRatings: (...a: unknown[]) => mockUseVendorRatings(...a) }))
+vi.mock('../hooks/useVendorRatings', () => ({
+  useVendorRatings: (...a: unknown[]) => mockUseVendorRatings(...a),
+}))
 
 import { VendorRatingHistory } from './VendorRatingHistory'
 
 const row = {
-  id: 1, vendorId: 3, poId: 7,
+  id: 1,
+  vendorId: 3,
+  poId: 7,
   purchaseOrder: { id: 7, poNumber: 'PO-2026-0007' },
-  score: 4, comment: 'ดี',
+  score: 4,
+  comment: 'ดี',
   ratedBy: { id: 2, fullName: 'สมชาย ใจดี' },
   createdAt: '2026-06-01T00:00:00Z',
 }
-const oneRow = { data: [row], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } } as VendorRatingsResponse
+const oneRow = {
+  data: [row],
+  meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+} as VendorRatingsResponse
 
 function renderHistory() {
   return render(
@@ -30,23 +38,40 @@ describe('VendorRatingHistory', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('renders a rating row with PO link + rater', () => {
-    mockUseVendorRatings.mockReturnValue({ data: oneRow, isLoading: false, isError: false, refetch: vi.fn() })
+    mockUseVendorRatings.mockReturnValue({
+      data: oneRow,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
     renderHistory()
     expect(screen.getByLabelText('คะแนน 4 จาก 5')).toBeInTheDocument()
     expect(screen.getByText('(4/5)')).toBeInTheDocument()
     expect(screen.getByText('ดี')).toBeInTheDocument()
     expect(screen.getByText('สมชาย ใจดี')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'PO-2026-0007' })).toHaveAttribute('href', '/purchase-orders/7')
+    expect(screen.getByRole('link', { name: 'PO-2026-0007' })).toHaveAttribute(
+      'href',
+      '/purchase-orders/7',
+    )
   })
 
   it('renders every rating row, showing a dash for an empty comment', () => {
     const rows = [
       row,
-      { ...row, id: 2, score: 5, comment: null, poId: 8, purchaseOrder: { id: 8, poNumber: 'PO-2026-0008' } },
+      {
+        ...row,
+        id: 2,
+        score: 5,
+        comment: null,
+        poId: 8,
+        purchaseOrder: { id: 8, poNumber: 'PO-2026-0008' },
+      },
     ]
     mockUseVendorRatings.mockReturnValue({
       data: { data: rows, meta: { page: 1, limit: 20, total: 2, totalPages: 1 } },
-      isLoading: false, isError: false, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
     })
     renderHistory()
     expect(screen.getByText('(4/5)')).toBeInTheDocument()
@@ -56,7 +81,12 @@ describe('VendorRatingHistory', () => {
   })
 
   it('shows the loading state while fetching', () => {
-    mockUseVendorRatings.mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() })
+    mockUseVendorRatings.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      refetch: vi.fn(),
+    })
     renderHistory()
     expect(screen.getByTestId('vendor-rating-history-loading')).toBeInTheDocument()
   })
@@ -64,7 +94,9 @@ describe('VendorRatingHistory', () => {
   it('shows the empty message when there are no ratings', () => {
     mockUseVendorRatings.mockReturnValue({
       data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
-      isLoading: false, isError: false, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
     })
     renderHistory()
     expect(screen.getByText('ยังไม่มีการให้คะแนน')).toBeInTheDocument()
@@ -72,7 +104,13 @@ describe('VendorRatingHistory', () => {
 
   it('shows the error state with retry', () => {
     const refetch = vi.fn()
-    mockUseVendorRatings.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: new Error('x'), refetch })
+    mockUseVendorRatings.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('x'),
+      refetch,
+    })
     renderHistory()
     expect(screen.getByRole('alert')).toBeInTheDocument()
   })
@@ -81,7 +119,9 @@ describe('VendorRatingHistory', () => {
     const user = userEvent.setup()
     mockUseVendorRatings.mockReturnValue({
       data: { data: [row], meta: { page: 1, limit: 20, total: 25, totalPages: 3 } },
-      isLoading: false, isError: false, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
     })
     renderHistory()
     await user.click(screen.getByRole('button', { name: 'ถัดไป' }))
@@ -93,7 +133,9 @@ describe('VendorRatingHistory', () => {
     const user = userEvent.setup()
     mockUseVendorRatings.mockReturnValue({
       data: { data: [row], meta: { page: 1, limit: 20, total: 25, totalPages: 3 } },
-      isLoading: false, isError: false, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
     })
     renderHistory()
     // prev ถูก disable ตอน page 1 -> ต้องไปหน้า 2 ก่อนแล้วถอยกลับ
@@ -106,7 +148,9 @@ describe('VendorRatingHistory', () => {
     const user = userEvent.setup()
     mockUseVendorRatings.mockReturnValue({
       data: { data: [row], meta: { page: 1, limit: 20, total: 100, totalPages: 5 } },
-      isLoading: false, isError: false, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
     })
     renderHistory()
     await user.click(screen.getByRole('button', { name: 'ถัดไป' })) // page -> 2

@@ -10,8 +10,15 @@ import { BudgetSummary } from './BudgetSummary'
 import type { DashboardBudget, DashboardDepartment } from '../api'
 
 const budget = (over: Partial<DashboardBudget>): DashboardBudget => ({
-  id: 1, departmentId: 1, department: { id: 1, name: 'IT' }, fiscalYear: 2026, quarter: null,
-  totalAmount: 1000, reservedAmount: 0, usedAmount: 0, ...over,
+  id: 1,
+  departmentId: 1,
+  department: { id: 1, name: 'IT' },
+  fiscalYear: 2026,
+  quarter: null,
+  totalAmount: 1000,
+  reservedAmount: 0,
+  usedAmount: 0,
+  ...over,
 })
 
 function mockBudgets(data: DashboardBudget[], isLoading = false) {
@@ -19,13 +26,17 @@ function mockBudgets(data: DashboardBudget[], isLoading = false) {
 }
 
 const departments: DashboardDepartment[] = [
-  { id: 1, name: 'IT' }, { id: 2, name: 'Finance' }, { id: 3, name: 'Operations' },
+  { id: 1, name: 'IT' },
+  { id: 2, name: 'Finance' },
+  { id: 3, name: 'Operations' },
 ]
 
 describe('BudgetSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useDepartments).mockReturnValue({ data: departments } as ReturnType<typeof useDepartments>)
+    vi.mocked(useDepartments).mockReturnValue({ data: departments } as ReturnType<
+      typeof useDepartments
+    >)
   })
 
   it('renders percent used (reserved+used)/total', () => {
@@ -63,7 +74,14 @@ describe('BudgetSummary', () => {
   it('collapses to first N (sorted least-remaining first) with a show-all toggle', async () => {
     // remaining = total - (reserved+used): dept ids by remaining ascending = 5,4,3,2,1
     const many = [1, 2, 3, 4, 5].map((id) =>
-      budget({ id, departmentId: id, department: { id, name: `Dept ${id}` }, totalAmount: 1000, reservedAmount: id * 100, usedAmount: 0 }),
+      budget({
+        id,
+        departmentId: id,
+        department: { id, name: `Dept ${id}` },
+        totalAmount: 1000,
+        reservedAmount: id * 100,
+        usedAmount: 0,
+      }),
     )
     mockBudgets(many)
     render(<BudgetSummary scope={{}} />)

@@ -26,15 +26,32 @@ import { toast } from 'sonner'
 import { VendorDetailPage } from './VendorDetailPage'
 
 const mockVendor: Vendor = {
-  id: 1, name: 'ACME Corp', taxId: '0105551234567', email: 'a@x.com', phone: '021234567',
-  address: 'Bangkok', isBlacklisted: false, blacklistReason: null, ratingAvg: '4.50',
-  categories: [{ id: 1, name: 'Hardware' }], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  id: 1,
+  name: 'ACME Corp',
+  taxId: '0105551234567',
+  email: 'a@x.com',
+  phone: '021234567',
+  address: 'Bangkok',
+  isBlacklisted: false,
+  blacklistReason: null,
+  ratingAvg: '4.50',
+  categories: [{ id: 1, name: 'Hardware' }],
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
 
 const poUser: User = {
-  id: 10, email: 'po@x.com', firstName: 'P', middleName: null, lastName: 'O', fullName: 'PO',
-  role: 'procurement_officer', isActive: true, departmentId: 1,
-  createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  id: 10,
+  email: 'po@x.com',
+  firstName: 'P',
+  middleName: null,
+  lastName: 'O',
+  fullName: 'PO',
+  role: 'procurement_officer',
+  isActive: true,
+  departmentId: 1,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
 
 function mockHook(overrides: Partial<Record<string, unknown>> = {}) {
@@ -137,7 +154,9 @@ describe('VendorDetailPage', () => {
 
   it('shows a success toast when blacklist succeeds', async () => {
     const { blacklistMutation } = mockHook()
-    blacklistMutation.mutate.mockImplementation((_r: string, opts: { onSuccess: () => void }) => opts.onSuccess())
+    blacklistMutation.mutate.mockImplementation((_r: string, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
     setUser()
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'แบล็คลิสต์' }))
@@ -157,8 +176,8 @@ describe('VendorDetailPage', () => {
 
   it('shows an error toast when a mutation fails', async () => {
     const { blacklistMutation } = mockHook()
-    blacklistMutation.mutate.mockImplementation((_r: string, opts: { onError: (e: unknown) => void }) =>
-      opts.onError(new Error('x')),
+    blacklistMutation.mutate.mockImplementation(
+      (_r: string, opts: { onError: (e: unknown) => void }) => opts.onError(new Error('x')),
     )
     setUser()
     renderPage()
@@ -170,7 +189,9 @@ describe('VendorDetailPage', () => {
 
   it('shows a success toast when unblacklist succeeds', async () => {
     const { unblacklistMutation } = mockHook({ data: { ...mockVendor, isBlacklisted: true } })
-    unblacklistMutation.mutate.mockImplementation((_v: undefined, opts: { onSuccess: () => void }) => opts.onSuccess())
+    unblacklistMutation.mutate.mockImplementation(
+      (_v: undefined, opts: { onSuccess: () => void }) => opts.onSuccess(),
+    )
     setUser()
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'ยกเลิกแบล็คลิสต์' }))
@@ -180,8 +201,8 @@ describe('VendorDetailPage', () => {
 
   it('shows an error toast when unblacklist fails', async () => {
     const { unblacklistMutation } = mockHook({ data: { ...mockVendor, isBlacklisted: true } })
-    unblacklistMutation.mutate.mockImplementation((_v: undefined, opts: { onError: (e: unknown) => void }) =>
-      opts.onError(new Error('x')),
+    unblacklistMutation.mutate.mockImplementation(
+      (_v: undefined, opts: { onError: (e: unknown) => void }) => opts.onError(new Error('x')),
     )
     setUser()
     renderPage()

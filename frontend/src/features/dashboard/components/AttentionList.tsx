@@ -3,7 +3,15 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import type { PurchaseRequest } from '@/features/purchase-requests/types'
 import { useAttentionPRs } from '../hooks/useAttentionPRs'
 
-function Section({ title, status, prs }: { title: string; status: string; prs: PurchaseRequest[] }) {
+function Section({
+  title,
+  status,
+  prs,
+}: {
+  title: string
+  status: string
+  prs: PurchaseRequest[]
+}) {
   if (prs.length === 0) return null
   return (
     <div className="space-y-2">

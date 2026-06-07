@@ -21,16 +21,30 @@ const baseVendor: Vendor = {
 }
 
 const poUser: User = {
-  id: 10, email: 'po@x.com', firstName: 'P', middleName: null, lastName: 'O',
-  fullName: 'PO', role: 'procurement_officer', isActive: true, departmentId: 1,
-  createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  id: 10,
+  email: 'po@x.com',
+  firstName: 'P',
+  middleName: null,
+  lastName: 'O',
+  fullName: 'PO',
+  role: 'procurement_officer',
+  isActive: true,
+  departmentId: 1,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
 
 const noop = () => {}
 
-function renderActions(vendor: Partial<Vendor>, user: Partial<User>, handlers: Partial<{
-  onEdit: () => void; onBlacklist: () => void; onUnblacklist: () => void
-}> = {}) {
+function renderActions(
+  vendor: Partial<Vendor>,
+  user: Partial<User>,
+  handlers: Partial<{
+    onEdit: () => void
+    onBlacklist: () => void
+    onUnblacklist: () => void
+  }> = {},
+) {
   return render(
     <VendorActions
       vendor={{ ...baseVendor, ...vendor }}
@@ -72,7 +86,11 @@ describe('VendorActions', () => {
   it('fires onEdit and onBlacklist', async () => {
     const onEdit = vi.fn()
     const onBlacklist = vi.fn()
-    renderActions({ isBlacklisted: false }, { role: 'procurement_officer' }, { onEdit, onBlacklist })
+    renderActions(
+      { isBlacklisted: false },
+      { role: 'procurement_officer' },
+      { onEdit, onBlacklist },
+    )
     await userEvent.click(screen.getByRole('button', { name: 'แก้ไข' }))
     await userEvent.click(screen.getByRole('button', { name: 'แบล็คลิสต์' }))
     expect(onEdit).toHaveBeenCalledOnce()

@@ -25,17 +25,27 @@ function makeMutations(over: Record<string, unknown> = {}) {
     updateMutation: { mutateAsync: vi.fn(), isPending: false },
     ...over,
   }
-  vi.mocked(useVendorMutations).mockReturnValue(m as unknown as ReturnType<typeof useVendorMutations>)
+  vi.mocked(useVendorMutations).mockReturnValue(
+    m as unknown as ReturnType<typeof useVendorMutations>,
+  )
   return m
 }
 
 function setCategories() {
   vi.mocked(useVendorCategories).mockReturnValue({
-    data: [{ id: 1, name: 'Hardware' }, { id: 2, name: 'Software' }],
+    data: [
+      { id: 1, name: 'Hardware' },
+      { id: 2, name: 'Software' },
+    ],
   } as unknown as ReturnType<typeof useVendorCategories>)
 }
 
-function renderForm(props: React.ComponentProps<typeof VendorForm> = { mode: 'create', defaultValues: createDefaultValues() }) {
+function renderForm(
+  props: React.ComponentProps<typeof VendorForm> = {
+    mode: 'create',
+    defaultValues: createDefaultValues(),
+  },
+) {
   return render(
     <MemoryRouter>
       <VendorForm {...props} />
@@ -76,7 +86,12 @@ describe('VendorForm — create', () => {
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
     await waitFor(() =>
       expect(m.createMutation.mutateAsync).toHaveBeenCalledWith({
-        name: 'ACME', taxId: null, email: null, phone: null, address: null, categoryIds: [],
+        name: 'ACME',
+        taxId: null,
+        email: null,
+        phone: null,
+        address: null,
+        categoryIds: [],
       }),
     )
     expect(mockNavigate).toHaveBeenCalledWith('/vendors/42')
@@ -118,10 +133,18 @@ describe('VendorForm — edit', () => {
   })
 
   const vendor = {
-    id: 3, name: 'OldCo', taxId: '0105551234567', email: null, phone: null, address: null,
-    isBlacklisted: false, blacklistReason: null, ratingAvg: null,
+    id: 3,
+    name: 'OldCo',
+    taxId: '0105551234567',
+    email: null,
+    phone: null,
+    address: null,
+    isBlacklisted: false,
+    blacklistReason: null,
+    ratingAvg: null,
     categories: [{ id: 1, name: 'Hardware' }],
-    createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
   } as Vendor
 
   it('updates with the mapped payload and navigates to detail', async () => {
@@ -135,7 +158,14 @@ describe('VendorForm — edit', () => {
     await waitFor(() =>
       expect(m.updateMutation.mutateAsync).toHaveBeenCalledWith({
         id: 3,
-        data: { name: 'NewCo', taxId: '0105551234567', email: null, phone: null, address: null, categoryIds: [1] },
+        data: {
+          name: 'NewCo',
+          taxId: '0105551234567',
+          email: null,
+          phone: null,
+          address: null,
+          categoryIds: [1],
+        },
       }),
     )
     expect(mockNavigate).toHaveBeenCalledWith('/vendors/3')

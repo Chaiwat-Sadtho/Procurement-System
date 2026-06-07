@@ -54,7 +54,10 @@ describe('VendorsService', () => {
       providers: [
         VendorsService,
         { provide: getRepositoryToken(Vendor), useValue: mockVendorRepo },
-        { provide: getRepositoryToken(VendorCategory), useValue: mockCategoryRepo },
+        {
+          provide: getRepositoryToken(VendorCategory),
+          useValue: mockCategoryRepo,
+        },
         { provide: getRepositoryToken(VendorRating), useValue: mockRatingRepo },
       ],
     }).compile();
@@ -79,9 +82,9 @@ describe('VendorsService', () => {
 
     it('should throw ConflictException if taxId already exists', async () => {
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
-      await expect(
-        service.create({ name: 'อีกบริษัท', taxId: '0105563123456' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.create({ name: 'อีกบริษัท', taxId: '0105563123456' })).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -114,16 +117,14 @@ describe('VendorsService', () => {
 
     it('should throw BadRequestException if vendor is already blacklisted', async () => {
       mockVendorRepo.findOne.mockResolvedValue({ ...mockBlacklistedVendor });
-      await expect(
-        service.blacklist(1, { reason: 'เหตุผลใหม่' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.blacklist(1, { reason: 'เหตุผลใหม่' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException if vendor not found', async () => {
       mockVendorRepo.findOne.mockResolvedValue(null);
-      await expect(
-        service.blacklist(999, { reason: 'เหตุผล' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.blacklist(999, { reason: 'เหตุผล' })).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -150,9 +151,9 @@ describe('VendorsService', () => {
   describe('findRatings', () => {
     it('should throw NotFoundException if vendor not found', async () => {
       mockVendorRepo.findOne.mockResolvedValue(null);
-      await expect(
-        service.findRatings(999, { page: 1, limit: 20 }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findRatings(999, { page: 1, limit: 20 })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return paginated ratings with joined PO number and rater name', async () => {
@@ -176,7 +177,12 @@ describe('VendorsService', () => {
 
       const result = await service.findRatings(1, { page: 1, limit: 20 });
 
-      expect(result.meta).toEqual({ page: 1, limit: 20, total: 1, totalPages: 1 });
+      expect(result.meta).toEqual({
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      });
       expect(result.data[0]).toEqual({
         id: 1,
         vendorId: 1,

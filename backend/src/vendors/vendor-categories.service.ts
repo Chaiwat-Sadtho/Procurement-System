@@ -12,7 +12,9 @@ export class VendorCategoriesService {
   ) {}
 
   async create(dto: CreateVendorCategoryDto): Promise<VendorCategory> {
-    const existing = await this.categoryRepository.findOne({ where: { name: dto.name } });
+    const existing = await this.categoryRepository.findOne({
+      where: { name: dto.name },
+    });
     if (existing) throw new ConflictException(`Category "${dto.name}" already exists`);
 
     const category = this.categoryRepository.create({ name: dto.name });

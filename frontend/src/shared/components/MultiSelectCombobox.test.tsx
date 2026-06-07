@@ -11,7 +11,13 @@ const options: ComboboxOption[] = [
   { value: '3', label: 'Services' },
 ]
 
-function Harness({ initial = [], onChangeSpy }: { initial?: string[]; onChangeSpy?: (v: string[]) => void }) {
+function Harness({
+  initial = [],
+  onChangeSpy,
+}: {
+  initial?: string[]
+  onChangeSpy?: (v: string[]) => void
+}) {
   const [value, setValue] = useState<string[]>(initial)
   return (
     <MultiSelectCombobox
@@ -27,7 +33,14 @@ function Harness({ initial = [], onChangeSpy }: { initial?: string[]; onChangeSp
 
 describe('MultiSelectCombobox', () => {
   it('shows the placeholder when nothing is selected', () => {
-    render(<MultiSelectCombobox value={[]} onChange={vi.fn()} options={options} placeholder="เลือกหมวดหมู่" />)
+    render(
+      <MultiSelectCombobox
+        value={[]}
+        onChange={vi.fn()}
+        options={options}
+        placeholder="เลือกหมวดหมู่"
+      />,
+    )
     expect(screen.getByRole('combobox')).toHaveTextContent('เลือกหมวดหมู่')
   })
 
@@ -64,7 +77,9 @@ describe('MultiSelectCombobox', () => {
   })
 
   it('shows the empty text when there are no options', async () => {
-    render(<MultiSelectCombobox value={[]} onChange={vi.fn()} options={[]} emptyText="ไม่พบหมวดหมู่" />)
+    render(
+      <MultiSelectCombobox value={[]} onChange={vi.fn()} options={[]} emptyText="ไม่พบหมวดหมู่" />,
+    )
     await userEvent.click(screen.getByRole('combobox'))
     expect(await screen.findByText('ไม่พบหมวดหมู่')).toBeInTheDocument()
   })

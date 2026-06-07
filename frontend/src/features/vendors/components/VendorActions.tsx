@@ -10,7 +10,13 @@ interface VendorActionsProps {
   onUnblacklist: () => void
 }
 
-export function VendorActions({ vendor, user, onEdit, onBlacklist, onUnblacklist }: VendorActionsProps) {
+export function VendorActions({
+  vendor,
+  user,
+  onEdit,
+  onBlacklist,
+  onUnblacklist,
+}: VendorActionsProps) {
   if (user.role !== 'procurement_officer') return null
 
   return (

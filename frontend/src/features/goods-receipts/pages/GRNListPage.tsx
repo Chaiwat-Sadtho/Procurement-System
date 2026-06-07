@@ -19,10 +19,7 @@ import { RowLink } from '@/shared/components/RowLink'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatDate, getRowIndex } from '@/shared/lib/utils'
 import { GrnStatusBadge } from '../components/GrnStatusBadge'
-import {
-  GRNListFilterForm,
-  type GRNListFilterValues,
-} from '../components/GRNListFilterForm'
+import { GRNListFilterForm, type GRNListFilterValues } from '../components/GRNListFilterForm'
 import { useGoodsReceipts } from '../hooks/useGoodsReceipts'
 import { useReceivablePOs } from '../hooks/useReceivablePOs'
 import type { GrnStatus } from '../types'
@@ -46,8 +43,7 @@ export function GRNListPage() {
   const queryParams = {
     page,
     limit,
-    status:
-      filters.status && filters.status !== 'all' ? (filters.status as GrnStatus) : undefined,
+    status: filters.status && filters.status !== 'all' ? (filters.status as GrnStatus) : undefined,
     poId: filters.poId && filters.poId !== 'all' ? Number(filters.poId) : undefined,
   }
 

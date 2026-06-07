@@ -54,9 +54,7 @@ describe('LoginPage', () => {
 
   it('labels the announcements panel as a named complementary landmark', () => {
     renderLoginPage()
-    expect(
-      screen.getByRole('complementary', { name: 'ประกาศและข่าวสาร' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'ประกาศและข่าวสาร' })).toBeInTheDocument()
   })
 
   it('shows validation error when email is empty', async () => {

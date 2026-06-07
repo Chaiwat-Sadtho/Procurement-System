@@ -12,7 +12,12 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([GoodsReceiptNote, GoodsReceiptItem, PurchaseOrder, PurchaseOrderItem]),
+    TypeOrmModule.forFeature([
+      GoodsReceiptNote,
+      GoodsReceiptItem,
+      PurchaseOrder,
+      PurchaseOrderItem,
+    ]),
     BudgetsModule,
     AuditLogsModule,
     NotificationsModule,

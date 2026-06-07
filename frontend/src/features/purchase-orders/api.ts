@@ -14,8 +14,7 @@ export const purchaseOrdersApi = {
   list: (params?: POListParams) =>
     api.get<POListResponse>('/purchase-orders', { params }).then((r) => r.data),
 
-  get: (id: number) =>
-    api.get<PurchaseOrder>(`/purchase-orders/${id}`).then((r) => r.data),
+  get: (id: number) => api.get<PurchaseOrder>(`/purchase-orders/${id}`).then((r) => r.data),
 
   create: (data: CreatePORequest) =>
     api.post<PurchaseOrder>('/purchase-orders', data).then((r) => r.data),
@@ -23,8 +22,7 @@ export const purchaseOrdersApi = {
   update: (id: number, data: UpdatePORequest) =>
     api.patch<PurchaseOrder>(`/purchase-orders/${id}`, data).then((r) => r.data),
 
-  send: (id: number) =>
-    api.post<PurchaseOrder>(`/purchase-orders/${id}/send`).then((r) => r.data),
+  send: (id: number) => api.post<PurchaseOrder>(`/purchase-orders/${id}/send`).then((r) => r.data),
 
   acknowledge: (id: number) =>
     api.post<PurchaseOrder>(`/purchase-orders/${id}/acknowledge`).then((r) => r.data),
@@ -34,9 +32,7 @@ export const purchaseOrdersApi = {
 
   // bare array — endpoint ไม่ paginate (§4 D6), เรียง createdAt ASC ฝั่ง server
   getGoodsReceipts: (id: number) =>
-    api
-      .get<GoodsReceiptSummary[]>(`/purchase-orders/${id}/goods-receipts`)
-      .then((r) => r.data),
+    api.get<GoodsReceiptSummary[]>(`/purchase-orders/${id}/goods-receipts`).then((r) => r.data),
 
   rate: (id: number, payload: RateVendorPayload) =>
     api.post<VendorRating>(`/purchase-orders/${id}/ratings`, payload).then((r) => r.data),

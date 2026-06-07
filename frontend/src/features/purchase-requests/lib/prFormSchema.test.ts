@@ -15,7 +15,13 @@ const validValues: PRFormValues = {
   requiredDate: '2026-07-01',
   period: '2',
   items: [
-    { itemName: 'กระดาษ', description: 'A4 80 แกรม', quantity: '10', unit: 'รีม', estimatedUnitPrice: '120.5' },
+    {
+      itemName: 'กระดาษ',
+      description: 'A4 80 แกรม',
+      quantity: '10',
+      unit: 'รีม',
+      estimatedUnitPrice: '120.5',
+    },
   ],
 }
 
@@ -27,30 +33,71 @@ describe('prFormSchema', () => {
   it('rejects empty title / requiredDate / itemName / unit', () => {
     expect(prFormSchema.safeParse({ ...validValues, title: '' }).success).toBe(false)
     expect(prFormSchema.safeParse({ ...validValues, requiredDate: '' }).success).toBe(false)
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], itemName: '' }] }).success).toBe(false)
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unit: '' }] }).success).toBe(false)
+    expect(
+      prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], itemName: '' }] })
+        .success,
+    ).toBe(false)
+    expect(
+      prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], unit: '' }] })
+        .success,
+    ).toBe(false)
   })
 
   it('rejects quantity <= 0 and accepts decimals', () => {
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '0' }] }).success).toBe(false)
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '-1' }] }).success).toBe(false)
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '2.5' }] }).success).toBe(true)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '0' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '-1' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '2.5' }],
+      }).success,
+    ).toBe(true)
   })
 
   it('rejects negative unit price, accepts 0', () => {
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], estimatedUnitPrice: '-1' }] }).success).toBe(false)
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], estimatedUnitPrice: '0' }] }).success).toBe(true)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], estimatedUnitPrice: '-1' }],
+      }).success,
+    ).toBe(false)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], estimatedUnitPrice: '0' }],
+      }).success,
+    ).toBe(true)
   })
 
   // '1e999' parses to Infinity, which passed the bare `>= 0.01` / `>= 0` refines and then serialized
   // to null in JSON.stringify (backend then 400s). Same gap as poFormSchema — reject non-finite input
   // FE-side instead of leaking Infinity into the mapped payload.
   it('rejects non-finite quantity (1e999 -> Infinity)', () => {
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], quantity: '1e999' }] }).success).toBe(false)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], quantity: '1e999' }],
+      }).success,
+    ).toBe(false)
   })
 
   it('rejects non-finite estimatedUnitPrice (1e999 -> Infinity)', () => {
-    expect(prFormSchema.safeParse({ ...validValues, items: [{ ...validValues.items[0], estimatedUnitPrice: '1e999' }] }).success).toBe(false)
+    expect(
+      prFormSchema.safeParse({
+        ...validValues,
+        items: [{ ...validValues.items[0], estimatedUnitPrice: '1e999' }],
+      }).success,
+    ).toBe(false)
   })
 
   it('requires at least one item', () => {
@@ -64,7 +111,15 @@ describe('mappers', () => {
       title: 'กระดาษ A4',
       requiredDate: '2026-07-01',
       quarter: 2,
-      items: [{ itemName: 'กระดาษ', description: 'A4 80 แกรม', quantity: 10, unit: 'รีม', estimatedUnitPrice: 120.5 }],
+      items: [
+        {
+          itemName: 'กระดาษ',
+          description: 'A4 80 แกรม',
+          quantity: 10,
+          unit: 'รีม',
+          estimatedUnitPrice: 120.5,
+        },
+      ],
     })
   })
 
@@ -73,7 +128,10 @@ describe('mappers', () => {
   })
 
   it('omits empty description (undefined, not empty string)', () => {
-    const out = toCreatePayload({ ...validValues, items: [{ ...validValues.items[0], description: '   ' }] })
+    const out = toCreatePayload({
+      ...validValues,
+      items: [{ ...validValues.items[0], description: '   ' }],
+    })
     expect(out.items[0].description).toBeUndefined()
   })
 
@@ -83,22 +141,50 @@ describe('mappers', () => {
     expect(out).toEqual({
       title: 'กระดาษ A4',
       requiredDate: '2026-07-01',
-      items: [{ itemName: 'กระดาษ', description: 'A4 80 แกรม', quantity: 10, unit: 'รีม', estimatedUnitPrice: 120.5 }],
+      items: [
+        {
+          itemName: 'กระดาษ',
+          description: 'A4 80 แกรม',
+          quantity: 10,
+          unit: 'รีม',
+          estimatedUnitPrice: 120.5,
+        },
+      ],
     })
   })
 })
 
 describe('prToFormValues', () => {
   const pr = {
-    id: 1, title: 'ของเก่า', requiredDate: '2026-08-15', quarter: 3,
-    items: [{ id: 1, prId: 1, itemName: 'หมึก', description: null, quantity: 5, unit: 'กล่อง', estimatedUnitPrice: 300, estimatedTotalPrice: 1500 }],
+    id: 1,
+    title: 'ของเก่า',
+    requiredDate: '2026-08-15',
+    quarter: 3,
+    items: [
+      {
+        id: 1,
+        prId: 1,
+        itemName: 'หมึก',
+        description: null,
+        quantity: 5,
+        unit: 'กล่อง',
+        estimatedUnitPrice: 300,
+        estimatedTotalPrice: 1500,
+      },
+    ],
   } as unknown as PurchaseRequest
 
   it('prefills period from quarter and stringifies numbers', () => {
     const v = prToFormValues(pr)
     expect(v.period).toBe('3')
     expect(v.title).toBe('ของเก่า')
-    expect(v.items[0]).toEqual({ itemName: 'หมึก', description: '', quantity: '5', unit: 'กล่อง', estimatedUnitPrice: '300' })
+    expect(v.items[0]).toEqual({
+      itemName: 'หมึก',
+      description: '',
+      quantity: '5',
+      unit: 'กล่อง',
+      estimatedUnitPrice: '300',
+    })
   })
 
   it('quarter null -> period annual', () => {

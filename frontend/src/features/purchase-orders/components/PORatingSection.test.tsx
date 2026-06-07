@@ -7,7 +7,9 @@ import type { User } from '@/shared/types'
 
 const mockRatingForPo = vi.fn()
 const mockRate = { mutate: vi.fn(), isPending: false }
-vi.mock('../hooks/useVendorRatingForPo', () => ({ useVendorRatingForPo: (...a: unknown[]) => mockRatingForPo(...a) }))
+vi.mock('../hooks/useVendorRatingForPo', () => ({
+  useVendorRatingForPo: (...a: unknown[]) => mockRatingForPo(...a),
+}))
 vi.mock('../hooks/useRateVendor', () => ({ useRateVendor: () => mockRate }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
@@ -16,14 +18,33 @@ import { PORatingSection } from './PORatingSection'
 
 function axiosErr(message: string) {
   const err = new AxiosError('req failed')
-  err.response = { data: { message }, status: 409, statusText: '', headers: {}, config: {} as never }
+  err.response = {
+    data: { message },
+    status: 409,
+    statusText: '',
+    headers: {},
+    config: {} as never,
+  }
   return err
 }
 
 const officer = { id: 2, role: 'procurement_officer' } as User
 const manager = { id: 5, role: 'manager' } as User
-const basePo = { id: 7, vendorId: 3, status: 'completed', vendor: { id: 3, name: 'บริษัท ก', isBlacklisted: false } } as PurchaseOrder
-const rating = { id: 1, poId: 7, vendorId: 3, score: 4, comment: 'ดี', ratedBy: 2, createdAt: '2026-06-01T00:00:00Z' } as VendorRating
+const basePo = {
+  id: 7,
+  vendorId: 3,
+  status: 'completed',
+  vendor: { id: 3, name: 'บริษัท ก', isBlacklisted: false },
+} as PurchaseOrder
+const rating = {
+  id: 1,
+  poId: 7,
+  vendorId: 3,
+  score: 4,
+  comment: 'ดี',
+  ratedBy: 2,
+  createdAt: '2026-06-01T00:00:00Z',
+} as VendorRating
 
 describe('PORatingSection', () => {
   beforeEach(() => {
@@ -32,7 +53,9 @@ describe('PORatingSection', () => {
   })
 
   it('renders nothing when PO is not completed', () => {
-    const { container } = render(<PORatingSection po={{ ...basePo, status: 'sent' }} user={officer} />)
+    const { container } = render(
+      <PORatingSection po={{ ...basePo, status: 'sent' }} user={officer} />,
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
@@ -70,7 +93,9 @@ describe('PORatingSection', () => {
 
   it('on success shows a toast and closes the dialog', async () => {
     const user = userEvent.setup()
-    mockRate.mutate.mockImplementation((_p: unknown, opts: { onSuccess: () => void }) => opts.onSuccess())
+    mockRate.mutate.mockImplementation((_p: unknown, opts: { onSuccess: () => void }) =>
+      opts.onSuccess(),
+    )
     render(<PORatingSection po={basePo} user={officer} />)
     await user.click(screen.getByRole('button', { name: 'ให้คะแนนผู้ขาย' }))
     await user.click(screen.getByRole('radio', { name: '4 ดาว' }))

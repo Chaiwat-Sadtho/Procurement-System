@@ -36,17 +36,13 @@ export function NavGroupSection({
   const { data: user } = useCurrentUser()
   const location = useLocation()
 
-  const children = group.children.filter(
-    (child) => user && child.allowedRoles.includes(user.role),
-  )
+  const children = group.children.filter((child) => user && child.allowedRoles.includes(user.role))
 
   const storageKey = `${SIDEBAR_GROUP_STORAGE_PREFIX}${group.label}`
   // Persisted preference is read once at mount. An explicit in-session toggle
   // (userToggled) always takes precedence so the header is never a dead control
   // — even on an active-child route the button stays operable (a11y).
-  const [persistedCollapsed] = useState(
-    () => localStorage.getItem(storageKey) === 'collapsed',
-  )
+  const [persistedCollapsed] = useState(() => localStorage.getItem(storageKey) === 'collapsed')
   const [userToggled, setUserToggled] = useState<boolean | null>(null)
 
   // Role emptied every child → render nothing (no orphan header).
@@ -54,9 +50,7 @@ export function NavGroupSection({
 
   const contentId = `nav-group-${group.label}`
   const hasActiveChild = children.some(
-    (child) =>
-      location.pathname === child.path ||
-      location.pathname.startsWith(`${child.path}/`),
+    (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
   )
   // Default (no explicit click yet): expanded unless persisted-collapsed, but an
   // active child route forces it open, overriding the persisted collapsed state

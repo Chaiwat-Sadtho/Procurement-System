@@ -96,9 +96,7 @@ const editDefaults = {
   vendorId: 2,
   expectedDeliveryDate: '2026-07-01',
   notes: '',
-  items: [
-    { prItemId: 201, itemName: 'A4 Paper', quantity: '10', unit: 'reams', unitPrice: '150' },
-  ],
+  items: [{ prItemId: 201, itemName: 'A4 Paper', quantity: '10', unit: 'reams', unitPrice: '150' }],
 }
 
 describe('POForm', () => {

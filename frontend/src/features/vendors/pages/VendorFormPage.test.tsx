@@ -6,7 +6,9 @@ import type { Vendor } from '../types'
 vi.mock('../hooks/useVendor', () => ({ useVendor: vi.fn() }))
 vi.mock('../components/VendorForm', () => ({
   VendorForm: (props: { mode: string; defaultValues: { name: string } }) => (
-    <div data-testid="vendorform">mode={props.mode}|name={props.defaultValues.name}</div>
+    <div data-testid="vendorform">
+      mode={props.mode}|name={props.defaultValues.name}
+    </div>
   ),
 }))
 
@@ -35,9 +37,18 @@ function renderAt(path: string) {
 }
 
 const vendor = {
-  id: 3, name: 'OldCo', taxId: null, email: null, phone: null, address: null,
-  isBlacklisted: false, blacklistReason: null, ratingAvg: null, categories: [],
-  createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  id: 3,
+  name: 'OldCo',
+  taxId: null,
+  email: null,
+  phone: null,
+  address: null,
+  isBlacklisted: false,
+  blacklistReason: null,
+  ratingAvg: null,
+  categories: [],
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 } as Vendor
 
 describe('VendorFormPage', () => {

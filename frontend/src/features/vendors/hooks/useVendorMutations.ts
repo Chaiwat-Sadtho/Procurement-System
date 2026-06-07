@@ -19,8 +19,7 @@ export function useVendorMutations() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: VendorPayload }) =>
-      vendorsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: VendorPayload }) => vendorsApi.update(id, data),
     onSuccess: (_res, vars) => invalidateOne(vars.id),
   })
 

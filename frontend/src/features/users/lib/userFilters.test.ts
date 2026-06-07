@@ -21,9 +21,27 @@ function makeUser(over: Partial<User>): User {
 }
 
 const users: User[] = [
-  makeUser({ id: 1, fullName: 'สมชาย ใจดี', email: 'somchai@company.com', role: 'employee', isActive: true }),
-  makeUser({ id: 2, fullName: 'สมหญิง รักงาน', email: 'somying@company.com', role: 'manager', isActive: false }),
-  makeUser({ id: 3, fullName: 'Procure Officer', email: 'po@company.com', role: 'procurement_officer', isActive: true }),
+  makeUser({
+    id: 1,
+    fullName: 'สมชาย ใจดี',
+    email: 'somchai@company.com',
+    role: 'employee',
+    isActive: true,
+  }),
+  makeUser({
+    id: 2,
+    fullName: 'สมหญิง รักงาน',
+    email: 'somying@company.com',
+    role: 'manager',
+    isActive: false,
+  }),
+  makeUser({
+    id: 3,
+    fullName: 'Procure Officer',
+    email: 'po@company.com',
+    role: 'procurement_officer',
+    isActive: true,
+  }),
 ]
 
 describe('filterUsers', () => {
@@ -57,7 +75,11 @@ describe('filterUsers', () => {
   })
 
   it('combines search + role + status (AND)', () => {
-    const r = filterUsers(users, { search: 'company', role: 'procurement_officer', status: 'active' })
+    const r = filterUsers(users, {
+      search: 'company',
+      role: 'procurement_officer',
+      status: 'active',
+    })
     expect(r.map((u) => u.id)).toEqual([3])
   })
 

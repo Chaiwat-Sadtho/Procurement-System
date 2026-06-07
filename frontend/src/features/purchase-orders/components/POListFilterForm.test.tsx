@@ -60,9 +60,7 @@ describe('POListFilterForm', () => {
     // the controlled trigger reflects the watched value (pins watch -> useWatch swap)
     expect(screen.getByLabelText('สถานะ')).toHaveTextContent('ส่งแล้ว')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'sent' }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ status: 'sent' }))
   })
 
   it('submits the chosen vendor id via the combobox', async () => {
@@ -71,9 +69,7 @@ describe('POListFilterForm', () => {
     await userEvent.click(screen.getByText('Beta Ltd'))
     expect(screen.getByLabelText('ผู้ขาย')).toHaveTextContent('Beta Ltd')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ vendorId: '8' }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ vendorId: '8' }))
   })
 
   it('ล้าง is disabled while pristine and enables after a change', async () => {

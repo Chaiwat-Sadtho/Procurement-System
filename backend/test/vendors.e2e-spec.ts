@@ -3,12 +3,7 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import {
-  AuthResponse,
-  VendorCategoryResponse,
-  VendorResponse,
-  Paginated,
-} from './types';
+import { AuthResponse, VendorCategoryResponse, VendorResponse, Paginated } from './types';
 
 // Idempotency note (P3 correction): category name and vendor taxId have UNIQUE
 // constraints. We tag both with a per-run value (`tag = Date.now()`) so the suite

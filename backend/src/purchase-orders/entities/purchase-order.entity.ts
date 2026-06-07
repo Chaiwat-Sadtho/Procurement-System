@@ -1,7 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, Index,
-  ManyToOne, OneToMany, JoinColumn,
-  CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
@@ -20,7 +26,10 @@ export enum PoStatus {
 
 @Entity('purchase_orders')
 // P4-2: หนึ่ง PR ที่ approved แปลงเป็น active PO ได้ครั้งเดียว (PO ที่ถูก cancel ไม่นับ) — บังคับระดับ DB กัน race
-@Index('UQ_active_po_per_pr', ['prId'], { unique: true, where: `status != 'cancelled'` })
+@Index('UQ_active_po_per_pr', ['prId'], {
+  unique: true,
+  where: `status != 'cancelled'`,
+})
 export class PurchaseOrder {
   @ApiProperty()
   @PrimaryGeneratedColumn()
@@ -56,7 +65,13 @@ export class PurchaseOrder {
   status: PoStatus;
 
   @ApiProperty()
-  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'total_amount',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    default: 0,
+  })
   totalAmount: number;
 
   @ApiProperty()
@@ -71,7 +86,9 @@ export class PurchaseOrder {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @OneToMany(() => PurchaseOrderItem, (item) => item.purchaseOrder, { cascade: true })
+  @OneToMany(() => PurchaseOrderItem, (item) => item.purchaseOrder, {
+    cascade: true,
+  })
   items: PurchaseOrderItem[];
 
   @ApiProperty()

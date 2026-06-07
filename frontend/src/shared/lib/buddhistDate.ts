@@ -30,11 +30,7 @@ export function buddhistTextToIso(text: string): string {
   if (month < 1 || month > 12 || day < 1 || day > 31) return ''
   // round-trip ผ่าน Date จริงเพื่อตัดวันที่เป็นไปไม่ได้ (31/02 ฯลฯ)
   const probe = new Date(ceYear, month - 1, day)
-  if (
-    probe.getFullYear() !== ceYear ||
-    probe.getMonth() !== month - 1 ||
-    probe.getDate() !== day
-  ) {
+  if (probe.getFullYear() !== ceYear || probe.getMonth() !== month - 1 || probe.getDate() !== day) {
     return ''
   }
   // format มือ — ห้าม toISOString() (UTC ลดวันใน +07:00)

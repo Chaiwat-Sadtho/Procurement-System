@@ -1,6 +1,15 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query,
-  UseGuards, ParseIntPipe, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BudgetsService } from './budgets.service';
@@ -11,6 +20,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Budgets')
 @ApiBearerAuth()
@@ -26,11 +37,11 @@ export class BudgetsController {
     return this.budgetsService.create(dto);
   }
 
-  @ApiOperation({ summary: 'ดูงบประมาณทุก department (Manager, PO)' })
+  @ApiOperation({ summary: 'ดูงบประมาณ (Manager=แผนกตัวเอง, PO=ทุกแผนก)' })
   @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get()
-  findAll(@Query() query: BudgetQueryDto) {
-    return this.budgetsService.findAll(query);
+  findAll(@Query() query: BudgetQueryDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.budgetsService.findAll(query, user);
   }
 
   @ApiOperation({ summary: 'ดูงบของ department ที่ระบุ' })
@@ -43,8 +54,15 @@ export class BudgetsController {
   @ApiOperation({ summary: 'สรุปงบ: reserved/used/remaining (Manager, PO)' })
   @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get(':id/summary')
-  getSummary(@Param('id', ParseIntPipe) id: number) {
-    return this.budgetsService.getSummary(id);
+  getSummary(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.budgetsService.getSummary(id, user);
+  }
+
+  @ApiOperation({ summary: 'รายการ transaction ที่ขยับงบก้อนนี้ — money trail (Manager, PO)' })
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
+  @Get(':id/transactions')
+  getTransactions(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.budgetsService.getTransactions(id, user);
   }
 
   @ApiOperation({ summary: 'ปรับจำนวนงบ (PO เท่านั้น)' })

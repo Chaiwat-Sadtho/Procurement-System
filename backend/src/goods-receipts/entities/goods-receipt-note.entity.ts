@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, OneToMany, JoinColumn, CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { PurchaseOrder } from '../../purchase-orders/entities/purchase-order.entity';
@@ -48,7 +53,9 @@ export class GoodsReceiptNote {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @OneToMany(() => GoodsReceiptItem, (item) => item.goodsReceiptNote, { cascade: true })
+  @OneToMany(() => GoodsReceiptItem, (item) => item.goodsReceiptNote, {
+    cascade: true,
+  })
   items: GoodsReceiptItem[];
 
   @ApiProperty()

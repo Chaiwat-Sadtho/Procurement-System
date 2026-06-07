@@ -47,7 +47,12 @@ interface PRListFilterFormProps {
   onClear?: () => void
 }
 
-export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onClear }: PRListFilterFormProps) {
+export function PRListFilterForm({
+  showRequester,
+  initialStatus,
+  onSubmit,
+  onClear,
+}: PRListFilterFormProps) {
   const [resetKey, setResetKey] = useState(0)
 
   const defaultValues: PRListFilterValues = {
@@ -96,7 +101,8 @@ export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onCle
 
         <div className="space-y-1">
           <Label htmlFor="from">
-            วันที่เริ่มต้น<RequiredMark />
+            วันที่เริ่มต้น
+            <RequiredMark />
           </Label>
           <Controller
             name="from"
@@ -115,7 +121,8 @@ export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onCle
 
         <div className="space-y-1">
           <Label htmlFor="to">
-            วันที่สิ้นสุด<RequiredMark />
+            วันที่สิ้นสุด
+            <RequiredMark />
           </Label>
           <Controller
             name="to"
@@ -148,7 +155,10 @@ export function PRListFilterForm({ showRequester, initialStatus, onSubmit, onCle
 
         <div className="space-y-1">
           <Label htmlFor="status">สถานะ</Label>
-          <Select value={statusValue} onValueChange={(v) => setValue('status', v, { shouldDirty: true })}>
+          <Select
+            value={statusValue}
+            onValueChange={(v) => setValue('status', v, { shouldDirty: true })}
+          >
             <SelectTrigger id="status">
               <SelectValue />
             </SelectTrigger>

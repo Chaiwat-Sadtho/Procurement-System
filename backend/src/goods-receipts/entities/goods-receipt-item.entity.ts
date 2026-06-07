@@ -14,7 +14,9 @@ export class GoodsReceiptItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => GoodsReceiptNote, (grn) => grn.items, { onDelete: 'CASCADE' })
+  @ManyToOne(() => GoodsReceiptNote, (grn) => grn.items, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'grn_id' })
   goodsReceiptNote: GoodsReceiptNote;
 
@@ -29,7 +31,12 @@ export class GoodsReceiptItem {
   poItemId: number;
 
   @ApiProperty()
-  @Column({ name: 'received_quantity', type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    name: 'received_quantity',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+  })
   receivedQuantity: number;
 
   @ApiProperty({ enum: ItemCondition })

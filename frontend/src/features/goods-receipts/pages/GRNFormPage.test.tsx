@@ -73,7 +73,9 @@ function setReceivable(data: ReceivablePO[] = receivable) {
 // argument-sensitive PO load mock: the requested state only materialises once a real PO id
 // (id > 0) reaches the hook, so the click→load seam stays non-vacuous (a static mock would
 // render GRNForm before any pick). `over` drives the picked PO's outcome: loaded / loading / error.
-function setPO(over: { data?: unknown; isLoading?: boolean; isError?: boolean } = { data: fullPO }) {
+function setPO(
+  over: { data?: unknown; isLoading?: boolean; isError?: boolean } = { data: fullPO },
+) {
   vi.mocked(usePurchaseOrder).mockImplementation(
     (id: number) =>
       ({

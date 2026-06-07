@@ -14,7 +14,9 @@ import { UserRole } from '../users/entities/user.entity';
 export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
-  @ApiOperation({ summary: 'ดู audit log ทั้งหมด (procurement_officer เท่านั้น)' })
+  @ApiOperation({
+    summary: 'ดู audit log ทั้งหมด (procurement_officer เท่านั้น)',
+  })
   @Roles(UserRole.PROCUREMENT_OFFICER)
   @Get()
   findAll(@Query() query: AuditLogQueryDto) {

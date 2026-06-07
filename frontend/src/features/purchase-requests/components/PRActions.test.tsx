@@ -74,12 +74,18 @@ describe('PRActions gating', () => {
   })
 
   it('employee owner + submitted → no buttons', () => {
-    const { container } = renderActions({ status: 'submitted', requesterId: 10 }, { role: 'employee', id: 10 })
+    const { container } = renderActions(
+      { status: 'submitted', requesterId: 10 },
+      { role: 'employee', id: 10 },
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
   it('employee non-owner + draft → no buttons', () => {
-    const { container } = renderActions({ status: 'draft', requesterId: 10 }, { role: 'employee', id: 11 })
+    const { container } = renderActions(
+      { status: 'draft', requesterId: 10 },
+      { role: 'employee', id: 11 },
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
@@ -101,7 +107,10 @@ describe('PRActions gating', () => {
   })
 
   it('procurement_officer + submitted → no buttons (view only)', () => {
-    const { container } = renderActions({ status: 'submitted' }, { role: 'procurement_officer', id: 99 })
+    const { container } = renderActions(
+      { status: 'submitted' },
+      { role: 'procurement_officer', id: 99 },
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
@@ -125,7 +134,11 @@ describe('PRActions gating', () => {
   it('shows แก้ไข and ลบร่าง for the owner of a draft and fires handlers', async () => {
     const onEdit = vi.fn()
     const onDelete = vi.fn()
-    renderActions({ status: 'draft', requesterId: 10 }, { role: 'employee', id: 10 }, { onEdit, onDelete })
+    renderActions(
+      { status: 'draft', requesterId: 10 },
+      { role: 'employee', id: 10 },
+      { onEdit, onDelete },
+    )
     await userEvent.click(screen.getByRole('button', { name: 'แก้ไข' }))
     await userEvent.click(screen.getByRole('button', { name: 'ลบร่าง' }))
     expect(onEdit).toHaveBeenCalledOnce()

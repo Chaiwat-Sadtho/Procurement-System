@@ -22,29 +22,72 @@ import type { PurchaseRequest } from '@/features/purchase-requests/types'
 import type { DashboardBudget } from '../api'
 
 const baseUser: User = {
-  id: 1, email: 'u@x.com', firstName: 'A', middleName: null, lastName: 'B', fullName: 'A B',
-  role: 'employee', isActive: true, departmentId: 1, createdAt: '', updatedAt: '',
+  id: 1,
+  email: 'u@x.com',
+  firstName: 'A',
+  middleName: null,
+  lastName: 'B',
+  fullName: 'A B',
+  role: 'employee',
+  isActive: true,
+  departmentId: 1,
+  createdAt: '',
+  updatedAt: '',
 }
 
 const draftPR: PurchaseRequest = {
-  id: 1, prNumber: 'PR-2026-0001', title: 'Draft item', status: 'draft',
-  totalEstimatedAmount: 1000, quarter: null, requiredDate: '2026-02-01', requesterId: 1,
-  requester: { id: 1, fullName: 'A B', email: 'a@b.com' }, departmentId: 1,
-  department: { id: 1, name: 'IT' }, approvedBy: null, approver: null, approvedAt: null,
-  rejectReason: null, items: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  id: 1,
+  prNumber: 'PR-2026-0001',
+  title: 'Draft item',
+  status: 'draft',
+  totalEstimatedAmount: 1000,
+  quarter: null,
+  requiredDate: '2026-02-01',
+  requesterId: 1,
+  requester: { id: 1, fullName: 'A B', email: 'a@b.com' },
+  departmentId: 1,
+  department: { id: 1, name: 'IT' },
+  approvedBy: null,
+  approver: null,
+  approvedAt: null,
+  rejectReason: null,
+  items: [],
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
 
 function mockHooks(role: User['role']) {
-  vi.mocked(useCurrentUser).mockReturnValue({ data: { ...baseUser, role } } as ReturnType<typeof useCurrentUser>)
-  vi.mocked(useStats).mockReturnValue({ data: { total: 4, draft: 1, submitted: 1, approved: 1, rejected: 1 }, isLoading: false } as ReturnType<typeof useStats>)
-  vi.mocked(useRecentPRs).mockReturnValue({ data: [] as PurchaseRequest[], isLoading: false } as ReturnType<typeof useRecentPRs>)
-  vi.mocked(useApprovalQueue).mockReturnValue({ data: [] as PurchaseRequest[], isLoading: false } as ReturnType<typeof useApprovalQueue>)
-  vi.mocked(useBudgets).mockReturnValue({ data: [] as DashboardBudget[], isLoading: false } as ReturnType<typeof useBudgets>)
-  vi.mocked(useAttentionPRs).mockReturnValue({ data: { drafts: [draftPR], rejected: [] as PurchaseRequest[] }, isLoading: false } as ReturnType<typeof useAttentionPRs>)
+  vi.mocked(useCurrentUser).mockReturnValue({ data: { ...baseUser, role } } as ReturnType<
+    typeof useCurrentUser
+  >)
+  vi.mocked(useStats).mockReturnValue({
+    data: { total: 4, draft: 1, submitted: 1, approved: 1, rejected: 1 },
+    isLoading: false,
+  } as ReturnType<typeof useStats>)
+  vi.mocked(useRecentPRs).mockReturnValue({
+    data: [] as PurchaseRequest[],
+    isLoading: false,
+  } as ReturnType<typeof useRecentPRs>)
+  vi.mocked(useApprovalQueue).mockReturnValue({
+    data: [] as PurchaseRequest[],
+    isLoading: false,
+  } as ReturnType<typeof useApprovalQueue>)
+  vi.mocked(useBudgets).mockReturnValue({
+    data: [] as DashboardBudget[],
+    isLoading: false,
+  } as ReturnType<typeof useBudgets>)
+  vi.mocked(useAttentionPRs).mockReturnValue({
+    data: { drafts: [draftPR], rejected: [] as PurchaseRequest[] },
+    isLoading: false,
+  } as ReturnType<typeof useAttentionPRs>)
 }
 
 function renderPage() {
-  return render(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  return render(
+    <MemoryRouter>
+      <DashboardPage />
+    </MemoryRouter>,
+  )
 }
 
 describe('DashboardPage', () => {
