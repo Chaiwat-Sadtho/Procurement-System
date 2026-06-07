@@ -15,6 +15,7 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { RowLink } from '@/shared/components/RowLink'
 import { formatCurrency } from '@/shared/lib/utils'
 import { BudgetListFilterForm, type BudgetListFilterResult } from '../components/BudgetListFilterForm'
@@ -70,9 +71,7 @@ export function BudgetListPage() {
       />
 
       {appliedParams === null ? (
-        <p className="py-12 text-center text-muted-foreground">
-          เลือกปีงบประมาณ/แผนก แล้วกดค้นหา
-        </p>
+        <ListSearchPrompt message="เลือกปีงบประมาณ/แผนก แล้วกดค้นหา" />
       ) : isError ? (
         <ListErrorState message="โหลดข้อมูลงบประมาณไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (

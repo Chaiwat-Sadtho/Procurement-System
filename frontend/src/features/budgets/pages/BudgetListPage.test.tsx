@@ -91,7 +91,7 @@ describe('BudgetListPage', () => {
     renderPage()
     // useBudgets is called with null until the user searches (hook enables on non-null)
     expect(vi.mocked(useBudgets).mock.calls[0][0]).toBeNull()
-    expect(screen.getByText(/เลือกปีงบประมาณ/)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/เลือกปีงบประมาณ/)
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
