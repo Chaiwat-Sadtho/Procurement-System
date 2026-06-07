@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../users/entities/user.entity';
+import { CacheService } from '../cache/cache.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser: User = {
@@ -33,6 +34,11 @@ const mockJwtService = {
   sign: jest.fn().mockReturnValue('mock-jwt-token'),
 };
 
+const mockCache = {
+  getOrSet: jest.fn((_key: string, _ttl: number, factory: () => unknown) => factory()),
+  del: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -42,6 +48,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: CacheService, useValue: mockCache },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);
@@ -171,6 +178,14 @@ describe('AuthService', () => {
 
       await expect(service.getProfile(999)).rejects.toThrow(UnauthorizedException);
     });
+
+    it('caches the profile under auth:me:{id} with the auth TTL', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      await service.getProfile(7);
+
+      expect(mockCache.getOrSet).toHaveBeenCalledWith('auth:me:7', 300, expect.any(Function));
+    });
   });
 
   describe('updateProfile', () => {
@@ -207,6 +222,16 @@ describe('AuthService', () => {
       await expect(service.updateProfile(999, { firstName: 'X' })).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('invalidates the auth:me cache on profile update', async () => {
+      const editable = { ...mockUser };
+      mockUserRepository.findOne.mockResolvedValueOnce(editable).mockResolvedValueOnce(editable);
+      mockUserRepository.save.mockResolvedValue(editable);
+
+      await service.updateProfile(7, { firstName: 'New' });
+
+      expect(mockCache.del).toHaveBeenCalledWith('auth:me:7');
     });
   });
 });
