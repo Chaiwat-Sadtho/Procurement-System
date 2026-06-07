@@ -85,12 +85,12 @@ const managerUser = { id: 2, role: 'manager', departmentId: 7 } as User
 describe('BudgetListPage', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('is search-first: the query is disabled (params null) and a prompt is shown before searching', () => {
+  it('is search-first: the query is disabled (enabled:false) and a prompt is shown before searching', () => {
     setup({ data: undefined })
     asUser(poUser)
     renderPage()
-    // useBudgets is called with null until the user searches (hook enables on non-null)
-    expect(vi.mocked(useBudgets).mock.calls[0][0]).toBeNull()
+    // the query stays disabled (enabled:false) until the user searches; params is always a real object
+    expect(vi.mocked(useBudgets).mock.calls[0][1]).toEqual({ enabled: false })
     expect(screen.getByRole('status')).toHaveTextContent(/เลือกปีงบประมาณ/)
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })

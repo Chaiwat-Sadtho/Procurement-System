@@ -33,14 +33,18 @@ export function BudgetListPage() {
   const isManager = user?.role === 'manager'
   const canCreate = user?.role === 'procurement_officer'
 
-  // search-first: appliedParams = null จนกว่าจะกดค้นหา
-  const [appliedParams, setAppliedParams] = useState<BudgetListParams | null>(null)
-  const { data, isLoading, isError, refetch } = useBudgets(appliedParams)
+  // search-first (มิเรอร์ group A): query ยิงเมื่อ hasSearched เท่านั้น; appliedParams เป็น object จริงเสมอ
+  const [hasSearched, setHasSearched] = useState(false)
+  const [appliedParams, setAppliedParams] = useState<BudgetListParams>({
+    fiscalYear: new Date().getFullYear(),
+  })
+  const { data, isLoading, isError, refetch } = useBudgets(appliedParams, { enabled: hasSearched })
 
   function handleSubmit(result: BudgetListFilterResult) {
     // manager: บังคับแผนกตัวเอง (BE enforce ซ้ำ)
     const departmentId = isManager ? (user?.departmentId ?? undefined) : result.departmentId
     setAppliedParams({ fiscalYear: result.fiscalYear, departmentId })
+    setHasSearched(true)
   }
 
   // เรียง remaining น้อย→มาก (ใกล้หมดขึ้นก่อน); remaining = total - reserved - used (FE คำนวณ)
@@ -70,7 +74,7 @@ export function BudgetListPage() {
         onSubmit={handleSubmit}
       />
 
-      {appliedParams === null ? (
+      {!hasSearched ? (
         <ListSearchPrompt message="เลือกปีงบประมาณ/แผนก แล้วกดค้นหา" />
       ) : isError ? (
         <ListErrorState message="โหลดข้อมูลงบประมาณไม่สำเร็จ" onRetry={() => refetch()} />
