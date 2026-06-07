@@ -14,12 +14,14 @@ import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
 import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
 import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
+import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
+import { BudgetDetailPage } from '@/features/budgets/pages/BudgetDetailPage'
+import { BudgetFormPage } from '@/features/budgets/pages/BudgetFormPage'
 import { UsersPage } from '@/features/users/pages/UsersPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
-import { ComingSoon } from './ComingSoon'
 
 export const router = createBrowserRouter([
   {
@@ -146,7 +148,7 @@ export const router = createBrowserRouter([
         path: 'budgets',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Budgets" />
+            <BudgetListPage />
           </ProtectedRoute>
         ),
       },
@@ -154,7 +156,7 @@ export const router = createBrowserRouter([
         path: 'budgets/new',
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
-            <ComingSoon title="New Budget" />
+            <BudgetFormPage />
           </ProtectedRoute>
         ),
       },
@@ -162,7 +164,15 @@ export const router = createBrowserRouter([
         path: 'budgets/:id',
         element: (
           <ProtectedRoute allowedRoles={['manager', 'procurement_officer']}>
-            <ComingSoon title="Budget Detail" />
+            <BudgetDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'budgets/:id/edit',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <BudgetFormPage />
           </ProtectedRoute>
         ),
       },
