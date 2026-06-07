@@ -61,6 +61,11 @@ describe('GRNListFilterForm', () => {
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
   })
 
+  it('keeps ล้าง enabled while pristine when canClear is true', () => {
+    renderForm({ canClear: true })
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
+
   it('ล้าง resets status back to the visible ทั้งหมด default and calls onClear', async () => {
     const { onClear } = renderForm()
     await userEvent.click(screen.getByLabelText('สถานะ'))

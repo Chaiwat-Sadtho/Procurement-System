@@ -106,34 +106,53 @@ describe('GRNListPage', () => {
     mockFilter.values = { status: 'all', poId: 'all' }
   })
 
-  it('fetches immediately on mount with page 1, limit 5', () => {
+  it('is search-first: query disabled and a prompt is shown before searching', () => {
     setup({ data: undefined })
     renderPage()
-    const firstCall = vi.mocked(useGoodsReceipts).mock.calls[0]
-    expect(firstCall[0]).toEqual(expect.objectContaining({ page: 1, limit: 5 }))
-    expect(firstCall[0]?.status).toBeUndefined()
-    expect(firstCall[0]?.poId).toBeUndefined()
-    expect(firstCall[1]).toEqual({ enabled: true })
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงการรับของ/)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
-  it('shows the loading skeleton', () => {
+  it('enables the query and shows the table after pressing ค้นหา', async () => {
+    setup({ data: listData([mockGrn]) })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    expect(vi.mocked(useGoodsReceipts).mock.calls.at(-1)![1]).toEqual({ enabled: true })
+    expect(screen.getByText('GRN-2026-0001')).toBeInTheDocument()
+  })
+
+  it('returns to the prompt after ล้าง', async () => {
+    setup({ data: listData([mockGrn]) })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงการรับของ/)).toBeInTheDocument()
+  })
+
+  it('shows the loading skeleton', async () => {
     setup({ data: undefined, isLoading: true })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const loading = screen.getByTestId('grn-list-loading')
     expect(loading).toBeInTheDocument()
     expect(loading).toHaveAttribute('aria-busy', 'true')
   })
 
-  it('shows the empty row when data is empty', () => {
+  it('shows the empty row when data is empty', async () => {
     setup({ data: listData([], { total: 0, totalPages: 0 }) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toHaveAttribute('role', 'status')
   })
 
-  it('renders the table (table-fixed + bg-table-header) with GRN fields + status badge + item count', () => {
+  it('renders the table (table-fixed + bg-table-header) with GRN fields + status badge + item count', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('GRN-2026-0001')).toBeInTheDocument()
     expect(screen.getByText('PO-2026-0005')).toBeInTheDocument()
     expect(screen.getByText('รับครบถ้วน')).toBeInTheDocument() // GrnStatusBadge complete
@@ -148,6 +167,7 @@ describe('GRNListPage', () => {
   it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     // click a NON-link cell (PO number); the GRN-number cell is the link, which stops propagation
     await userEvent.click(screen.getByText('PO-2026-0005'))
     expect(mockNavigate).toHaveBeenCalledWith('/goods-receipts/1')
@@ -156,6 +176,7 @@ describe('GRNListPage', () => {
   it('exposes the GRN number as a real link, and clicking it does not double-fire the row onClick', async () => {
     setup({ data: listData([mockGrn]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const link = screen.getByRole('link', { name: 'GRN-2026-0001' })
     expect(link).toHaveAttribute('href', '/goods-receipts/1')
     // stopPropagation guard: the link handles nav; the row onClick must not also fire
@@ -166,6 +187,7 @@ describe('GRNListPage', () => {
   it('shows the error box with a retry button that calls refetch', async () => {
     const { refetch } = setup({ data: undefined, isError: true })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('โหลดข้อมูลการรับของไม่สำเร็จ')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('โหลดข้อมูลการรับของไม่สำเร็จ')
     await userEvent.click(screen.getByRole('button', { name: /ลองใหม่/i }))
@@ -189,7 +211,7 @@ describe('GRNListPage', () => {
     expect(screen.queryByRole('button', { name: 'บันทึกการรับของ' })).not.toBeInTheDocument()
   })
 
-  it('keeps the running number continuous across pages (uses meta.page)', () => {
+  it('keeps the running number continuous across pages (uses meta.page)', async () => {
     setup({
       data: listData([mockGrn, { ...mockGrn, id: 2, grnNumber: 'GRN-2026-0002' }], {
         page: 2,
@@ -199,13 +221,15 @@ describe('GRNListPage', () => {
       }),
     })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('21')).toBeInTheDocument()
     expect(screen.getByText('22')).toBeInTheDocument()
   })
 
-  it('shows the footer with PageSizeSelect even when there is only one page', () => {
+  it('shows the footer with PageSizeSelect even when there is only one page', async () => {
     setup({ data: listData([mockGrn], { total: 1, totalPages: 1 }) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByLabelText('จำนวนแถวต่อหน้า')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /ก่อนหน้า/i })).not.toBeInTheDocument()
   })

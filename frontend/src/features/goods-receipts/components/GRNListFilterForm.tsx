@@ -30,9 +30,10 @@ interface GRNListFilterFormProps {
   pos: ReceivablePO[]
   onSubmit: (values: GRNListFilterValues) => void
   onClear?: () => void
+  canClear?: boolean
 }
 
-export function GRNListFilterForm({ pos, onSubmit, onClear }: GRNListFilterFormProps) {
+export function GRNListFilterForm({ pos, onSubmit, onClear, canClear }: GRNListFilterFormProps) {
   const defaultValues: GRNListFilterValues = {
     status: 'all',
     poId: 'all',
@@ -104,7 +105,7 @@ export function GRNListFilterForm({ pos, onSubmit, onClear }: GRNListFilterFormP
           type="button"
           variant="destructive"
           className="w-full md:col-start-4"
-          disabled={!isDirty}
+          disabled={!isDirty && !canClear}
           onClick={handleClear}
         >
           ล้าง

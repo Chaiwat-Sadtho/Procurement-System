@@ -16,10 +16,21 @@ vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 // POListFilterForm (slice D) owns its own vendor source; stub it to a minimal inert
 // form so this page test stays focused on the page, not the filter internals.
 vi.mock('../components/POListFilterForm', () => ({
-  POListFilterForm: ({ onSubmit }: { onSubmit: (v: unknown) => void }) => (
-    <button type="button" onClick={() => onSubmit({ status: 'all', vendorId: 'all' })}>
-      ค้นหา
-    </button>
+  POListFilterForm: ({
+    onSubmit,
+    onClear,
+  }: {
+    onSubmit: (v: unknown) => void
+    onClear?: () => void
+  }) => (
+    <div>
+      <button type="button" onClick={() => onSubmit({ status: 'all', vendorId: 'all' })}>
+        ค้นหา
+      </button>
+      <button type="button" onClick={() => onClear?.()}>
+        ล้างตัวกรอง
+      </button>
+    </div>
   ),
 }))
 vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
@@ -97,34 +108,53 @@ const managerUser = { id: 2, role: 'manager' } as User
 describe('POListPage', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('fetches immediately on mount with enabled=true and page 1, limit 5', () => {
+  it('is search-first: query disabled and a prompt is shown before searching', () => {
     setup({ data: undefined })
     renderPage()
-    const firstCall = vi.mocked(usePurchaseOrders).mock.calls[0]
-    expect(firstCall[0]).toEqual(expect.objectContaining({ page: 1, limit: 5 }))
-    expect(firstCall[0]?.status).toBeUndefined()
-    expect(firstCall[0]?.vendorId).toBeUndefined()
-    expect(firstCall[1]).toEqual({ enabled: true })
+    expect(vi.mocked(usePurchaseOrders).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงใบสั่งซื้อ/)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
-  it('shows the loading skeleton', () => {
+  it('enables the query and shows the table after pressing ค้นหา', async () => {
+    setup({ data: listData([mockPO]) })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    expect(vi.mocked(usePurchaseOrders).mock.calls.at(-1)![1]).toEqual({ enabled: true })
+    expect(screen.getByText('PO-2026-0001')).toBeInTheDocument()
+  })
+
+  it('returns to the prompt after ล้าง (even when searched with default filters)', async () => {
+    setup({ data: listData([mockPO]) })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงใบสั่งซื้อ/)).toBeInTheDocument()
+  })
+
+  it('shows the loading skeleton', async () => {
     setup({ data: undefined, isLoading: true })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const loading = screen.getByTestId('po-list-loading')
     expect(loading).toBeInTheDocument()
     expect(loading).toHaveAttribute('aria-busy', 'true')
   })
 
-  it('shows the empty row when data is empty', () => {
+  it('shows the empty row when data is empty', async () => {
     setup({ data: listData([], { total: 0, totalPages: 0 }) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toBeInTheDocument()
     expect(screen.getByText('ไม่พบข้อมูลตามเงื่อนไข')).toHaveAttribute('role', 'status')
   })
 
-  it('renders the table (table-fixed + bg-table-header) with PO fields', () => {
+  it('renders the table (table-fixed + bg-table-header) with PO fields', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('PO-2026-0001')).toBeInTheDocument()
     expect(screen.getByText('PR-2026-0005')).toBeInTheDocument()
     expect(screen.getByText('ACME Corp')).toBeInTheDocument()
@@ -136,6 +166,7 @@ describe('POListPage', () => {
   it('navigates when a non-link cell of the row is clicked (whole-row mouse target)', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     // click a NON-link cell (vendor name); the id cell is the link, which stops propagation
     await userEvent.click(screen.getByText('ACME Corp'))
     expect(mockNavigate).toHaveBeenCalledWith('/purchase-orders/1')
@@ -144,6 +175,7 @@ describe('POListPage', () => {
   it('exposes the id as a real link, and clicking it does not double-fire the row onClick', async () => {
     setup({ data: listData([mockPO]) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const link = screen.getByRole('link', { name: 'PO-2026-0001' })
     expect(link).toHaveAttribute('href', '/purchase-orders/1')
     // stopPropagation guard: the link handles nav; the row onClick must not also fire
@@ -154,6 +186,7 @@ describe('POListPage', () => {
   it('shows the error box with a retry button that calls refetch', async () => {
     const { refetch } = setup({ data: undefined, isError: true })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('โหลดข้อมูลใบสั่งซื้อไม่สำเร็จ')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('โหลดข้อมูลใบสั่งซื้อไม่สำเร็จ')
     await userEvent.click(screen.getByRole('button', { name: /ลองใหม่/i }))
@@ -178,7 +211,7 @@ describe('POListPage', () => {
     expect(screen.queryByRole('button', { name: 'สร้างใบสั่งซื้อ' })).not.toBeInTheDocument()
   })
 
-  it('keeps the running number continuous across pages (uses meta.page)', () => {
+  it('keeps the running number continuous across pages (uses meta.page)', async () => {
     setup({
       data: listData([mockPO, { ...mockPO, id: 2, poNumber: 'PO-2026-0002' }], {
         page: 2,
@@ -188,13 +221,15 @@ describe('POListPage', () => {
       }),
     })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByText('21')).toBeInTheDocument()
     expect(screen.getByText('22')).toBeInTheDocument()
   })
 
-  it('shows the footer with PageSizeSelect even when there is only one page', () => {
+  it('shows the footer with PageSizeSelect even when there is only one page', async () => {
     setup({ data: listData([mockPO], { total: 1, totalPages: 1 }) })
     renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     expect(screen.getByLabelText('จำนวนแถวต่อหน้า')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /ก่อนหน้า/i })).not.toBeInTheDocument()
   })

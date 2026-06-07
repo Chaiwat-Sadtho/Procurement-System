@@ -16,6 +16,7 @@ import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { RowLink } from '@/shared/components/RowLink'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { POStatusBadge } from '../components/POStatusBadge'
@@ -33,6 +34,7 @@ export function POListPage() {
   const navigate = useNavigate()
   const { page, limit, nextPage, prevPage, setLimit, setPage } = usePagination()
   const [filters, setFilters] = useState<POListFilterValues>(DEFAULT_FILTERS)
+  const [hasSearched, setHasSearched] = useState(false)
 
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
@@ -47,7 +49,9 @@ export function POListPage() {
     vendorId: filters.vendorId && filters.vendorId !== 'all' ? Number(filters.vendorId) : undefined,
   }
 
-  const { data, isLoading, isError, refetch } = usePurchaseOrders(queryParams, { enabled: true })
+  const { data, isLoading, isError, refetch } = usePurchaseOrders(queryParams, {
+    enabled: hasSearched,
+  })
   useClampPageToTotal(data?.meta.totalPages)
 
   // running number sticks to the page the server actually returned (meta),
@@ -56,11 +60,13 @@ export function POListPage() {
   const displayLimit = data?.meta.limit ?? limit
 
   const handleSubmit = (values: POListFilterValues) => {
+    setHasSearched(true)
     setPage(1)
     setFilters(values)
   }
 
   const handleClear = () => {
+    setHasSearched(false)
     setPage(1)
     setFilters(DEFAULT_FILTERS)
   }
@@ -77,9 +83,14 @@ export function POListPage() {
         }
       />
 
-      <POListFilterForm vendors={vendors} onSubmit={handleSubmit} onClear={handleClear} />
+      <POListFilterForm vendors={vendors} onSubmit={handleSubmit} onClear={handleClear} canClear={hasSearched} />
 
-      {isError ? (
+      {!hasSearched ? (
+        <ListSearchPrompt
+          message="เลือกเงื่อนไขแล้วกดค้นหาเพื่อแสดงใบสั่งซื้อ"
+          testId="po-search-prompt"
+        />
+      ) : isError ? (
         <ListErrorState message="โหลดข้อมูลใบสั่งซื้อไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListLoadingState testId="po-list-loading" />

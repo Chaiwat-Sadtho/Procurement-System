@@ -16,6 +16,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { RowLink } from '@/shared/components/RowLink'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { getRowIndex } from '@/shared/lib/utils'
@@ -38,6 +39,7 @@ export function VendorListPage() {
   const navigate = useNavigate()
   const { page, limit, setPage, nextPage, prevPage, setLimit } = usePagination()
   const [filters, setFilters] = useState<VendorListFilterValues>(DEFAULT_FILTERS)
+  const [hasSearched, setHasSearched] = useState(false)
 
   const { data: categories } = useVendorCategories()
   const { data: user } = useCurrentUser()
@@ -51,7 +53,7 @@ export function VendorListPage() {
     categoryId: toCategoryIdParam(filters.categoryId),
   }
 
-  const { data, isLoading, isError, refetch } = useVendors(queryParams, { enabled: true })
+  const { data, isLoading, isError, refetch } = useVendors(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
   // running number sticks to the page the server actually returned (meta),
@@ -62,11 +64,13 @@ export function VendorListPage() {
   const handleSubmit = (values: VendorListFilterValues) => {
     setPage(1)
     setFilters(values)
+    setHasSearched(true)
   }
 
   const handleClear = () => {
     setPage(1)
     setFilters(DEFAULT_FILTERS)
+    setHasSearched(false)
   }
 
   return (
@@ -85,9 +89,15 @@ export function VendorListPage() {
         categories={categories ?? []}
         onSubmit={handleSubmit}
         onClear={handleClear}
+        canClear={hasSearched}
       />
 
-      {isError ? (
+      {!hasSearched ? (
+        <ListSearchPrompt
+          message="ค้นหาด้วยชื่อ/หมวดหมู่/สถานะ แล้วกดค้นหาเพื่อแสดงผู้ขาย"
+          testId="vendor-search-prompt"
+        />
+      ) : isError ? (
         <ListErrorState message="โหลดข้อมูลผู้ขายไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListLoadingState testId="vendor-list-loading" />
