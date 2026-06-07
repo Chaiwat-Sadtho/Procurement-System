@@ -47,4 +47,36 @@ export class CacheService {
     await this.set(key, fresh, ttlSeconds);
     return fresh;
   }
+
+  private genKey(namespace: string): string {
+    return `${namespace}:gen`;
+  }
+
+  private async generation(namespace: string): Promise<number> {
+    const gen = await this.get<number>(this.genKey(namespace));
+    return gen ?? 1;
+  }
+
+  /**
+   * Namespaced cache-aside. The key embeds the namespace's current generation
+   * (`{namespace}:g{gen}:{subkey}`) so invalidateNamespace can retire every key
+   * in the namespace at once by bumping the counter — no SCAN/delByPrefix needed.
+   */
+  async getOrSetNamespaced<T>(
+    namespace: string,
+    subkey: string,
+    ttlSeconds: number,
+    factory: () => Promise<T>,
+  ): Promise<T> {
+    const gen = await this.generation(namespace);
+    const key = `${namespace}:g${gen}:${subkey}`;
+    return this.getOrSet(key, ttlSeconds, factory);
+  }
+
+  async invalidateNamespace(namespace: string): Promise<void> {
+    const gen = await this.generation(namespace);
+    // TTL 0 = no expiry: the generation counter must outlive cached values,
+    // otherwise it could reset and resurrect a stale generation's keys.
+    await this.set(this.genKey(namespace), gen + 1, 0);
+  }
 }

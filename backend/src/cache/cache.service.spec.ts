@@ -45,4 +45,31 @@ describe('CacheService', () => {
       await expect(service.del('k')).resolves.toBeUndefined();
     });
   });
+
+  describe('namespaced', () => {
+    it('getOrSetNamespaced uses generation 1 when no counter exists', async () => {
+      store.get
+        .mockResolvedValueOnce(undefined) // generation lookup
+        .mockResolvedValueOnce(undefined); // value lookup
+      const factory = jest.fn().mockResolvedValue(['a']);
+      const result = await service.getOrSetNamespaced('vendor:list', 'h1', 60, factory);
+      expect(result).toEqual(['a']);
+      expect(store.set).toHaveBeenCalledWith('vendor:list:g1:h1', ['a'], 60_000);
+    });
+
+    it('invalidateNamespace bumps the generation counter', async () => {
+      store.get.mockResolvedValue(2); // current gen
+      await service.invalidateNamespace('vendor:list');
+      expect(store.set).toHaveBeenCalledWith('vendor:list:gen', 3, 0);
+    });
+
+    it('after invalidate, namespaced key uses new generation', async () => {
+      store.get
+        .mockResolvedValueOnce(3) // generation lookup
+        .mockResolvedValueOnce(undefined); // value miss
+      const factory = jest.fn().mockResolvedValue(['b']);
+      await service.getOrSetNamespaced('vendor:list', 'h1', 60, factory);
+      expect(store.set).toHaveBeenCalledWith('vendor:list:g3:h1', ['b'], 60_000);
+    });
+  });
 });
