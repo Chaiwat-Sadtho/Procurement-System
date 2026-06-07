@@ -150,7 +150,7 @@ describe('PRListPage', () => {
 
     renderPage()
     expect(screen.getByRole('button', { name: /ค้นหา/i })).toBeInTheDocument()
-    expect(screen.getByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)
     expect(vi.mocked(usePurchaseRequests).mock.calls[0][1]).toEqual({ enabled: false })
   })
 

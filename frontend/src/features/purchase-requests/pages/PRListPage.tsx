@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
@@ -118,9 +119,7 @@ export function PRListPage() {
       />
 
       {filters === null ? (
-        <p className="text-center py-12 text-muted-foreground">
-          กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล
-        </p>
+        <ListSearchPrompt message="กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล" />
       ) : isLoading ? (
         <ListLoadingState testId="pr-list-loading" />
       ) : (
