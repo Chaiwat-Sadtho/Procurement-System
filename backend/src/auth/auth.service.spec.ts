@@ -35,7 +35,7 @@ const mockJwtService = {
 };
 
 const mockCache = {
-  getOrSet: jest.fn((_key: string, _ttl: number, factory: () => unknown) => factory()),
+  getOrSet: jest.fn(async (_key: string, _ttl: number, factory: () => unknown) => factory()),
   del: jest.fn(),
 };
 
@@ -166,7 +166,10 @@ describe('AuthService', () => {
 
       const result = await service.getProfile(1);
 
-      expect(result).toBe(mockUser);
+      // re-hydrated into a real User (carries the fullName getter), content preserved
+      expect(result).toBeInstanceOf(User);
+      expect(result.email).toBe(mockUser.email);
+      expect(result.fullName).toBe('Test User');
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
         relations: { department: true },
@@ -185,6 +188,30 @@ describe('AuthService', () => {
       await service.getProfile(7);
 
       expect(mockCache.getOrSet).toHaveBeenCalledWith('auth:me:7', 300, expect.any(Function));
+    });
+
+    it('rehydrates a JSON-round-tripped cache hit into a User so fullName survives', async () => {
+      // A Redis hit returns a plain object (Keyv serializes to JSON → the fullName
+      // getter and the User prototype are gone). getProfile must rebuild the instance
+      // so ClassSerializerInterceptor still emits fullName.
+      const cachedPlain = {
+        id: 7,
+        email: 'c@d.com',
+        firstName: 'John',
+        middleName: 'Michael',
+        lastName: 'Doe',
+        role: UserRole.EMPLOYEE,
+        isActive: true,
+        departmentId: 1,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      mockCache.getOrSet.mockResolvedValueOnce(cachedPlain); // simulate hit (factory not run)
+
+      const result = await service.getProfile(7);
+
+      expect(result).toBeInstanceOf(User);
+      expect(result.fullName).toBe('John Michael Doe');
     });
   });
 
@@ -232,6 +259,25 @@ describe('AuthService', () => {
       await service.updateProfile(7, { firstName: 'New' });
 
       expect(mockCache.del).toHaveBeenCalledWith('auth:me:7');
+    });
+
+    it('invalidates auth:me BEFORE re-reading the profile (del precedes the re-read)', async () => {
+      // guards the del-then-getProfile order: re-reading first would re-cache stale data
+      const calls: string[] = [];
+      mockCache.del.mockImplementationOnce(async () => {
+        calls.push('del');
+      });
+      mockCache.getOrSet.mockImplementationOnce(async (_k: string, _t: number, f: () => unknown) => {
+        calls.push('getOrSet');
+        return f();
+      });
+      const editable = { ...mockUser, id: 7 };
+      mockUserRepository.findOne.mockResolvedValueOnce(editable).mockResolvedValueOnce(editable);
+      mockUserRepository.save.mockResolvedValue(editable);
+
+      await service.updateProfile(7, { firstName: 'New' });
+
+      expect(calls).toEqual(['del', 'getOrSet']);
     });
   });
 });

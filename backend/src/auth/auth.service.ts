@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryFailedError } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
@@ -100,8 +101,8 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  async getProfile(userId: number) {
-    return this.cache.getOrSet(CacheKeys.authMe(userId), CacheTtl.AUTH_ME, async () => {
+  async getProfile(userId: number): Promise<User> {
+    const cached = await this.cache.getOrSet(CacheKeys.authMe(userId), CacheTtl.AUTH_ME, async () => {
       const user = await this.userRepository.findOne({
         where: { id: userId },
         relations: { department: true },
@@ -111,6 +112,11 @@ export class AuthService {
       }
       return user;
     });
+    // A cache hit comes back JSON-deserialized (plain object): the @Expose() fullName
+    // getter and Date types are lost, so ClassSerializerInterceptor would drop fullName.
+    // Rebuild the User instance so the response shape is identical on hit and miss.
+    // (cast to object so plainToInstance picks the single-object overload, not the array one)
+    return cached instanceof User ? cached : plainToInstance(User, cached as object);
   }
 
   async updateProfile(userId: number, dto: UpdateProfileDto) {
