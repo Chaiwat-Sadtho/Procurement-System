@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
+import { CacheService } from '../cache/cache.service';
 
 const mockUser: Partial<User> = {
   id: 1,
@@ -18,12 +19,20 @@ const mockRepo = {
   count: jest.fn(),
 };
 
+const mockCache = {
+  del: jest.fn(),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, { provide: getRepositoryToken(User), useValue: mockRepo }],
+      providers: [
+        UsersService,
+        { provide: getRepositoryToken(User), useValue: mockRepo },
+        { provide: CacheService, useValue: mockCache },
+      ],
     }).compile();
     service = module.get<UsersService>(UsersService);
     jest.clearAllMocks();
@@ -82,6 +91,24 @@ describe('UsersService', () => {
     await expect(service.updateStatus(2, { isActive: false }, 999)).rejects.toThrow(
       BadRequestException,
     );
+  });
+
+  it('updateRole invalidates the target user auth:me cache', async () => {
+    mockRepo.findOne.mockResolvedValue({ ...mockUser, id: 7 });
+    mockRepo.save.mockResolvedValue({ ...mockUser, id: 7, role: UserRole.MANAGER });
+
+    await service.updateRole(7, { role: UserRole.MANAGER }, 1);
+
+    expect(mockCache.del).toHaveBeenCalledWith('auth:me:7');
+  });
+
+  it('updateStatus invalidates the target user auth:me cache', async () => {
+    mockRepo.findOne.mockResolvedValue({ ...mockUser, id: 7 });
+    mockRepo.save.mockResolvedValue({ ...mockUser, id: 7, isActive: false });
+
+    await service.updateStatus(7, { isActive: false }, 1);
+
+    expect(mockCache.del).toHaveBeenCalledWith('auth:me:7');
   });
 
   describe('findAll role-aware', () => {
