@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
+import { In, Not } from 'typeorm';
 import {
   BadRequestException,
   ConflictException,
@@ -538,6 +539,98 @@ describe('BudgetsService', () => {
       mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, departmentId: 1 });
       mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
       await expect(service.getTransactions(1, managerUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    // review-hardening: pin the load-bearing Not(CANCELLED) filter — a mock returning []
+    // simulates the post-filter result but cannot prove the query excludes cancelled rows.
+    // Without this assertion, dropping `status: Not(CANCELLED)` leaves the suite green while a
+    // cancelled PO's amount could surface in the money trail.
+    it('joins only active POs — queries In(prIds) + Not(CANCELLED)', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr()]);
+      mockPoRepo.find.mockResolvedValue([]);
+
+      await service.getTransactions(1, poUser);
+
+      expect(mockPoRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { prId: In([100]), status: Not(PoStatus.CANCELLED) },
+        }),
+      );
+    });
+
+    // review-hardening: PARTIALLY_RECEIVED shares the `else if (po)` branch with SENT, but it is
+    // the domain-sensitive case — a partial GRN never moves budget to used (consume is gated on
+    // allReceived), so it MUST stay reserved at the full PO total. Pins that distinction.
+    it('maps a PARTIALLY_RECEIVED PO to a reserved bucket using the PO total', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr()]);
+      mockPoRepo.find.mockResolvedValue([
+        {
+          id: 500,
+          prId: 100,
+          poNumber: 'PO-2026-0001',
+          status: PoStatus.PARTIALLY_RECEIVED,
+          totalAmount: 9500,
+        },
+      ]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows[0]).toMatchObject({
+        amount: 9500,
+        bucket: 'reserved',
+        poStatus: PoStatus.PARTIALLY_RECEIVED,
+      });
+    });
+
+    // review-hardening: TypeORM 'decimal' columns return STRINGS at runtime — feed a string so the
+    // Number() coercion is actually exercised (numeric mocks make it a no-op; removing Number() would
+    // otherwise pass).
+    it('coerces decimal-as-string money fields to numbers', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr({ totalEstimatedAmount: '10000.00' })]);
+      mockPoRepo.find.mockResolvedValue([]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows[0].amount).toBe(10000);
+      expect(typeof rows[0].amount).toBe('number');
+    });
+
+    // review-hardening: the money trail is a most-recent-first timeline — pin order:approvedAt DESC
+    // (the mock cannot sort, so assert the find() argument; flipping to ASC would otherwise pass).
+    it('orders the approved PRs by approvedAt DESC', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([]);
+
+      await service.getTransactions(1, poUser);
+
+      expect(mockPrRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { approvedAt: 'DESC' } }),
+      );
+    });
+
+    // review-hardening: empty short-circuit — no approved PR means return [] without ever issuing
+    // the PO query (avoids a degenerate In([]) query).
+    it('returns [] and skips the PO query when no approved PR matches', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows).toEqual([]);
+      expect(mockPoRepo.find).not.toHaveBeenCalled();
+    });
+
+    // review-hardening: getSummary has both Forbidden and allowed manager tests; the trail only had
+    // Forbidden. Pin the allowed own-department path so an over-tightened guard would be caught.
+    it('lets an own-department manager read the money trail', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, departmentId: 2 });
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
+      mockPrRepo.find.mockResolvedValue([]);
+
+      await expect(service.getTransactions(1, managerUser)).resolves.toEqual([]);
     });
   });
 });
