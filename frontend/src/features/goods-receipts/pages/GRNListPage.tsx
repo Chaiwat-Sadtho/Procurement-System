@@ -15,6 +15,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { RowLink } from '@/shared/components/RowLink'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { formatDate, getRowIndex } from '@/shared/lib/utils'
@@ -33,6 +34,7 @@ export function GRNListPage() {
   const navigate = useNavigate()
   const { page, limit, nextPage, prevPage, setLimit, setPage } = usePagination()
   const [filters, setFilters] = useState<GRNListFilterValues>(DEFAULT_FILTERS)
+  const [hasSearched, setHasSearched] = useState(false)
 
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
@@ -47,7 +49,7 @@ export function GRNListPage() {
     poId: filters.poId && filters.poId !== 'all' ? Number(filters.poId) : undefined,
   }
 
-  const { data, isLoading, isError, refetch } = useGoodsReceipts(queryParams, { enabled: true })
+  const { data, isLoading, isError, refetch } = useGoodsReceipts(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
   // running number sticks to the page the server actually returned (meta),
@@ -56,11 +58,13 @@ export function GRNListPage() {
   const displayLimit = data?.meta.limit ?? limit
 
   const handleSubmit = (values: GRNListFilterValues) => {
+    setHasSearched(true)
     setPage(1)
     setFilters(values)
   }
 
   const handleClear = () => {
+    setHasSearched(false)
     setPage(1)
     setFilters(DEFAULT_FILTERS)
   }
@@ -77,9 +81,14 @@ export function GRNListPage() {
         }
       />
 
-      <GRNListFilterForm pos={poOptions} onSubmit={handleSubmit} onClear={handleClear} />
+      <GRNListFilterForm pos={poOptions} onSubmit={handleSubmit} onClear={handleClear} canClear={hasSearched} />
 
-      {isError ? (
+      {!hasSearched ? (
+        <ListSearchPrompt
+          message="เลือกเงื่อนไขแล้วกดค้นหาเพื่อแสดงการรับของ"
+          testId="grn-search-prompt"
+        />
+      ) : isError ? (
         <ListErrorState message="โหลดข้อมูลการรับของไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListLoadingState testId="grn-list-loading" />
