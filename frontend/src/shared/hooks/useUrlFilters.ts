@@ -23,11 +23,11 @@ export interface UseUrlFiltersResult<T> {
   clear: () => void
 }
 
-type Pending<T> = { kind: 'commit'; values: T } | { kind: 'clear' }
+type Action<T> = { kind: 'commit'; values: T } | { kind: 'clear' }
 
 export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResult<T> {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [pending, setPending] = useState<Pending<T> | null>(null)
+  const [action, setAction] = useState<Action<T> | null>(null)
 
   const filters = useMemo(
     () => config.parse(searchParams),
@@ -47,16 +47,18 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
 
   // gotcha #47 (TESTING.md): a commit/clear triggered by RHF handleSubmit runs in an
   // async microtask where setSearchParams (= navigate) is a no-op — only setState survives.
-  // So commit/clear just record intent via setState; the URL is written here in a normal
-  // post-commit effect (React-managed flow → the write lands). Idempotent: pending is cleared
-  // so it fires exactly once per action (no render loop; StrictMode double-invoke is harmless
-  // because the second pass sees pending === null).
+  // So commit/clear record intent via setState (action); the URL is written here in a normal
+  // post-commit effect (React-managed flow → the write lands). The effect keys on `action`
+  // alone (NOT searchParams) so pagination's URL writes never re-trigger it, and it performs
+  // no setState of its own (that would trip react-hooks/set-state-in-effect) — each commit/
+  // clear stores a fresh object, so the effect fires exactly once per action with no clear
+  // needed. StrictMode's double-invoked mount effect is a no-op (action === null on mount).
   useEffect(() => {
-    if (!pending) return
+    if (!action) return
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev) // clone → preserves limit + any unrelated keys
-      if (pending.kind === 'commit') {
-        config.serialize(pending.values, p)
+      if (action.kind === 'commit') {
+        config.serialize(action.values, p)
         p.set('q', '1')
       } else {
         config.serialize(config.defaults, p) // defaults serialize → deletes every filter key
@@ -65,15 +67,14 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
       p.set('page', '1') // commit/clear always reset to page 1 (result set changes)
       return p
     })
-    setPending(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending])
+  }, [action])
 
   return {
     filters,
     hasSearched,
     signature,
-    commit: (values: T) => setPending({ kind: 'commit', values }),
-    clear: () => setPending({ kind: 'clear' }),
+    commit: (values: T) => setAction({ kind: 'commit', values }),
+    clear: () => setAction({ kind: 'clear' }),
   }
 }
