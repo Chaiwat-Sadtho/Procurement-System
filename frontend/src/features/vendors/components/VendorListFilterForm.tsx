@@ -30,13 +30,21 @@ const STATUS_OPTIONS = [
 
 interface VendorListFilterFormProps {
   categories: VendorCategory[]
+  /** seeds RHF defaultValues; consumed once at mount — remount via `key` to change after mount */
+  initialValues?: VendorListFilterValues
   onSubmit: (values: VendorListFilterValues) => void
   onClear?: () => void
   canClear?: boolean
 }
 
-export function VendorListFilterForm({ categories, onSubmit, onClear, canClear }: VendorListFilterFormProps) {
-  const defaultValues: VendorListFilterValues = {
+export function VendorListFilterForm({
+  categories,
+  initialValues,
+  onSubmit,
+  onClear,
+  canClear,
+}: VendorListFilterFormProps) {
+  const defaultValues: VendorListFilterValues = initialValues ?? {
     search: '',
     isBlacklisted: 'all',
     categoryId: 'all',
