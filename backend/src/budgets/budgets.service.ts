@@ -7,7 +7,15 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
+import {
+  Repository,
+  IsNull,
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  In,
+  Not,
+} from 'typeorm';
 import { Budget } from './entities/budget.entity';
 import { Department } from '../departments/entities/department.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -17,6 +25,9 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { BudgetQueryDto } from './dto/budget-query.dto';
 import { applyReserve, applyRelease, applyAdjust, applyConsume } from '../common/budget-math';
+import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
+import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
+import { BudgetTransactionDto } from './dto/budget-transaction.dto';
 
 @Injectable()
 export class BudgetsService {
@@ -29,6 +40,10 @@ export class BudgetsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(PurchaseRequest)
+    private readonly prRepository: Repository<PurchaseRequest>,
+    @InjectRepository(PurchaseOrder)
+    private readonly poRepository: Repository<PurchaseOrder>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
@@ -128,6 +143,67 @@ export class BudgetsService {
     const usagePercent = Math.round(((reserved + used) / total) * 100);
 
     return Object.assign(budget, { remaining, usagePercent });
+  }
+
+  // money trail: PR ที่อนุมัติแล้วและขยับงบก้อนนี้ + PO ที่ผูกอยู่ (ถ้ามี)
+  // 2-step ORM (ไม่ raw SQL → unit-testable): หา approved PR ตาม dept/year/quarter → join active PO
+  async getTransactions(
+    id: number,
+    user: { id: number; role: UserRole },
+  ): Promise<BudgetTransactionDto[]> {
+    const budget = await this.budgetRepository.findOne({ where: { id } });
+    if (!budget) throw new NotFoundException(`Budget ${id} not found`);
+    await this.assertCanAccessDept(budget.departmentId, user);
+
+    const prs = await this.prRepository.find({
+      where: {
+        departmentId: budget.departmentId,
+        fiscalYear: budget.fiscalYear,
+        // quarter null = งบรายปี (match PR ที่ quarter IS NULL) · มิฉะนั้น match ตรง (ไม่มี fallback)
+        quarter: (budget.quarter == null
+          ? IsNull()
+          : budget.quarter) as FindOptionsWhere<PurchaseRequest>['quarter'],
+        status: PrStatus.APPROVED,
+      },
+      relations: { requester: true },
+      order: { approvedAt: 'DESC' },
+    });
+    if (prs.length === 0) return [];
+
+    // active PO = 1 ใบ/PR (UQ_active_po_per_pr where status != cancelled)
+    const pos = await this.poRepository.find({
+      where: { prId: In(prs.map((p) => p.id)), status: Not(PoStatus.CANCELLED) },
+    });
+    const poByPr = new Map<number, PurchaseOrder>();
+    for (const po of pos) poByPr.set(po.prId, po);
+
+    return prs.map((pr) => {
+      const po = poByPr.get(pr.id) ?? null;
+      let bucket: 'reserved' | 'used';
+      let amount: number;
+      if (po && po.status === PoStatus.COMPLETED) {
+        bucket = 'used';
+        amount = Number(po.totalAmount);
+      } else if (po) {
+        bucket = 'reserved';
+        amount = Number(po.totalAmount);
+      } else {
+        bucket = 'reserved';
+        amount = Number(pr.totalEstimatedAmount);
+      }
+      return {
+        prId: pr.id,
+        prNumber: pr.prNumber,
+        prTitle: pr.title,
+        requesterName: pr.requester?.fullName ?? '',
+        approvedAt: pr.approvedAt ? pr.approvedAt.toISOString() : null,
+        poId: po?.id ?? null,
+        poNumber: po?.poNumber ?? null,
+        poStatus: po?.status ?? null,
+        amount,
+        bucket,
+      };
+    });
   }
 
   // P5-3: where clause กลางสำหรับ reserve/release/consume — เล็ง budget row ตาม quarter

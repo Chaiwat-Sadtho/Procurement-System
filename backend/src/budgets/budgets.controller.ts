@@ -58,6 +58,13 @@ export class BudgetsController {
     return this.budgetsService.getSummary(id, user);
   }
 
+  @ApiOperation({ summary: 'รายการ transaction ที่ขยับงบก้อนนี้ — money trail (Manager, PO)' })
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
+  @Get(':id/transactions')
+  getTransactions(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.budgetsService.getTransactions(id, user);
+  }
+
   @ApiOperation({ summary: 'ปรับจำนวนงบ (PO เท่านั้น)' })
   @Roles(UserRole.PROCUREMENT_OFFICER)
   @Patch(':id')

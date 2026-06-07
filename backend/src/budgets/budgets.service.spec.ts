@@ -11,6 +11,8 @@ import { Budget } from './entities/budget.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Department } from '../departments/entities/department.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
+import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 
 const mockBudget = {
   id: 1,
@@ -42,6 +44,13 @@ const mockDepartmentRepo = {
   findOne: jest.fn(),
 };
 
+const mockPrRepo = {
+  find: jest.fn().mockResolvedValue([]),
+};
+const mockPoRepo = {
+  find: jest.fn().mockResolvedValue([]),
+};
+
 const mockDataSource = {
   manager: {
     findOne: jest.fn(),
@@ -66,6 +75,8 @@ describe('BudgetsService', () => {
           provide: getRepositoryToken(Department),
           useValue: mockDepartmentRepo,
         },
+        { provide: getRepositoryToken(PurchaseRequest), useValue: mockPrRepo },
+        { provide: getRepositoryToken(PurchaseOrder), useValue: mockPoRepo },
         { provide: getDataSourceToken(), useValue: mockDataSource },
         { provide: NotificationsService, useValue: mockNotificationsService },
       ],
@@ -75,6 +86,8 @@ describe('BudgetsService', () => {
     mockUserRepo.find.mockResolvedValue([]);
     mockUserRepo.findOne.mockResolvedValue(null);
     mockNotificationsService.sendToMany.mockResolvedValue(undefined);
+    mockPrRepo.find.mockResolvedValue([]);
+    mockPoRepo.find.mockResolvedValue([]);
   });
 
   describe('create', () => {
@@ -424,6 +437,107 @@ describe('BudgetsService', () => {
       mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
       const result = await service.getSummary(1, managerUser);
       expect(result.remaining).toBe(1000000);
+    });
+  });
+
+  describe('getTransactions', () => {
+    const annualBudget = { ...mockBudget, id: 1, departmentId: 1, fiscalYear: 2026, quarter: null };
+
+    function pr(over: Partial<Record<string, unknown>> = {}) {
+      return {
+        id: 100,
+        prNumber: 'PR-2026-0001',
+        title: 'Laptops',
+        totalEstimatedAmount: 10000,
+        approvedAt: new Date('2026-03-01T00:00:00.000Z'),
+        requester: { fullName: 'John Doe' },
+        ...over,
+      };
+    }
+
+    it('throws NotFound when the budget does not exist', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(null);
+      await expect(service.getTransactions(999, poUser)).rejects.toThrow(NotFoundException);
+    });
+
+    it('maps a PR with no active PO to a reserved bucket using the PR estimate', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr()]);
+      mockPoRepo.find.mockResolvedValue([]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        prId: 100,
+        prNumber: 'PR-2026-0001',
+        requesterName: 'John Doe',
+        poId: null,
+        poStatus: null,
+        amount: 10000,
+        bucket: 'reserved',
+      });
+      expect(rows[0].approvedAt).toBe('2026-03-01T00:00:00.000Z');
+    });
+
+    it('maps an active (non-completed) PO to a reserved bucket using the PO total', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr()]);
+      mockPoRepo.find.mockResolvedValue([
+        { id: 500, prId: 100, poNumber: 'PO-2026-0001', status: PoStatus.SENT, totalAmount: 9500 },
+      ]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows[0]).toMatchObject({
+        poId: 500,
+        poNumber: 'PO-2026-0001',
+        poStatus: PoStatus.SENT,
+        amount: 9500,
+        bucket: 'reserved',
+      });
+    });
+
+    it('maps a completed PO to a used bucket using the PO total', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(annualBudget);
+      mockPrRepo.find.mockResolvedValue([pr()]);
+      mockPoRepo.find.mockResolvedValue([
+        {
+          id: 500,
+          prId: 100,
+          poNumber: 'PO-2026-0001',
+          status: PoStatus.COMPLETED,
+          totalAmount: 9500,
+        },
+      ]);
+
+      const rows = await service.getTransactions(1, poUser);
+
+      expect(rows[0]).toMatchObject({ amount: 9500, bucket: 'used', poStatus: PoStatus.COMPLETED });
+    });
+
+    it('queries approved PRs scoped to the budget dept/year/quarter', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, quarter: 2 });
+      mockPrRepo.find.mockResolvedValue([]);
+
+      await service.getTransactions(1, poUser);
+
+      expect(mockPrRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            departmentId: 1,
+            fiscalYear: 2026,
+            quarter: 2,
+            status: PrStatus.APPROVED,
+          }) as unknown,
+        }),
+      );
+    });
+
+    it('forbids a manager from reading another department money trail', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, departmentId: 1 });
+      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
+      await expect(service.getTransactions(1, managerUser)).rejects.toThrow(ForbiddenException);
     });
   });
 });
