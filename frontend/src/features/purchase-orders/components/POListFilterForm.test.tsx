@@ -80,6 +80,11 @@ describe('POListFilterForm', () => {
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
   })
 
+  it('keeps ล้าง enabled while pristine when canClear is true', () => {
+    renderForm({ canClear: true })
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
+
   it('ล้าง resets to all and calls onClear', async () => {
     const { onClear } = renderForm()
     await userEvent.click(screen.getByLabelText('สถานะ'))

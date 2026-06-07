@@ -45,6 +45,11 @@ describe('VendorListFilterForm', () => {
     expect(onClear).toHaveBeenCalled()
   })
 
+  it('keeps ล้าง enabled while pristine when canClear is true', () => {
+    renderForm({ canClear: true })
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
+
   it('changing only the category (Combobox) flips isDirty → enables ล้าง', async () => {
     renderForm()
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()

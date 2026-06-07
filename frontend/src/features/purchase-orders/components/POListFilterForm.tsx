@@ -34,9 +34,10 @@ interface POListFilterFormProps {
   vendors: Vendor[]
   onSubmit: (values: POListFilterValues) => void
   onClear?: () => void
+  canClear?: boolean
 }
 
-export function POListFilterForm({ vendors, onSubmit, onClear }: POListFilterFormProps) {
+export function POListFilterForm({ vendors, onSubmit, onClear, canClear }: POListFilterFormProps) {
   const defaultValues: POListFilterValues = {
     status: 'all',
     vendorId: 'all',
@@ -108,7 +109,7 @@ export function POListFilterForm({ vendors, onSubmit, onClear }: POListFilterFor
           type="button"
           variant="destructive"
           className="w-full md:col-start-4"
-          disabled={!isDirty}
+          disabled={!isDirty && !canClear}
           onClick={handleClear}
         >
           ล้าง

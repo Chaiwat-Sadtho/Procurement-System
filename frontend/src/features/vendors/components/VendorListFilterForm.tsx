@@ -32,9 +32,10 @@ interface VendorListFilterFormProps {
   categories: VendorCategory[]
   onSubmit: (values: VendorListFilterValues) => void
   onClear?: () => void
+  canClear?: boolean
 }
 
-export function VendorListFilterForm({ categories, onSubmit, onClear }: VendorListFilterFormProps) {
+export function VendorListFilterForm({ categories, onSubmit, onClear, canClear }: VendorListFilterFormProps) {
   const defaultValues: VendorListFilterValues = {
     search: '',
     isBlacklisted: 'all',
@@ -113,7 +114,7 @@ export function VendorListFilterForm({ categories, onSubmit, onClear }: VendorLi
           type="button"
           variant="destructive"
           className="w-full md:col-start-4"
-          disabled={!isDirty}
+          disabled={!isDirty && !canClear}
           onClick={handleClear}
         >
           ล้าง
