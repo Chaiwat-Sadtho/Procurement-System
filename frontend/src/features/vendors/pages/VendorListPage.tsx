@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Badge } from '@/shared/components/ui/badge'
@@ -28,18 +27,13 @@ import {
 import { useVendors } from '../hooks/useVendors'
 import { useVendorCategories } from '../hooks/useVendorCategories'
 import { formatRating, toCategoryIdParam, toIsBlacklistedParam } from '../lib/vendorFilters'
-
-const DEFAULT_FILTERS: VendorListFilterValues = {
-  search: '',
-  isBlacklisted: 'all',
-  categoryId: 'all',
-}
+import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
+import { vendorUrlFilterConfig } from '../lib/vendorUrlFilters'
 
 export function VendorListPage() {
   const navigate = useNavigate()
-  const { page, limit, setPage, nextPage, prevPage, setLimit } = usePagination()
-  const [filters, setFilters] = useState<VendorListFilterValues>(DEFAULT_FILTERS)
-  const [hasSearched, setHasSearched] = useState(false)
+  const { page, limit, nextPage, prevPage, setLimit } = usePagination()
+  const { filters, hasSearched, signature, commit, clear } = useUrlFilters(vendorUrlFilterConfig)
 
   const { data: categories } = useVendorCategories()
   const { data: user } = useCurrentUser()
@@ -61,17 +55,8 @@ export function VendorListPage() {
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 
-  const handleSubmit = (values: VendorListFilterValues) => {
-    setPage(1)
-    setFilters(values)
-    setHasSearched(true)
-  }
-
-  const handleClear = () => {
-    setPage(1)
-    setFilters(DEFAULT_FILTERS)
-    setHasSearched(false)
-  }
+  const handleSubmit = (values: VendorListFilterValues) => commit(values)
+  const handleClear = () => clear()
 
   return (
     <div>
@@ -86,6 +71,8 @@ export function VendorListPage() {
       />
 
       <VendorListFilterForm
+        key={signature}
+        initialValues={filters}
         categories={categories ?? []}
         onSubmit={handleSubmit}
         onClear={handleClear}
