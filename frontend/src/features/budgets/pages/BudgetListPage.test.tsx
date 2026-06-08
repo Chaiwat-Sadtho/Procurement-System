@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import type { Budget } from '../types'
 import type { User } from '@/shared/types'
 
@@ -14,14 +15,29 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
-// the filter form owns its own department source + year input; stub it to a single
-// button that submits a fixed result so this test stays focused on the page's logic
-// (search-first gate, manager dept-lock, remaining sort) not the filter internals.
+// the filter form owns its own department source + year input; stub it to two buttons
+// (search + clear) so this test stays focused on the page's logic (search-first gate,
+// manager dept-lock, remaining sort, URL write) not the filter internals. mockFilter.values
+// lets a test drive a specific submission so the value->URL/query mapping is exercised.
+const mockFilter = vi.hoisted(() => ({
+  values: { fiscalYear: 2026, departmentId: 999 } as { fiscalYear: number; departmentId?: number },
+}))
 vi.mock('../components/BudgetListFilterForm', () => ({
-  BudgetListFilterForm: ({ onSubmit }: { onSubmit: (v: unknown) => void }) => (
-    <button type="button" onClick={() => onSubmit({ fiscalYear: 2026, departmentId: 999 })}>
-      ค้นหา
-    </button>
+  BudgetListFilterForm: ({
+    onSubmit,
+    onClear,
+  }: {
+    onSubmit: (v: unknown) => void
+    onClear?: () => void
+  }) => (
+    <div>
+      <button type="button" onClick={() => onSubmit(mockFilter.values)}>
+        ค้นหา
+      </button>
+      <button type="button" onClick={() => onClear?.()}>
+        ล้างตัวกรอง
+      </button>
+    </div>
   ),
 }))
 
@@ -71,19 +87,32 @@ function asUser(u: Partial<User> | undefined) {
   >)
 }
 
-function renderPage() {
-  return render(
-    <MemoryRouter>
+function renderPage(initialEntries: string[] = ['/']) {
+  const locRef = { current: '' }
+  function LocationProbe() {
+    const loc = useLocation()
+    useEffect(() => {
+      locRef.current = loc.search
+    }, [loc])
+    return null
+  }
+  const utils = render(
+    <MemoryRouter initialEntries={initialEntries}>
       <BudgetListPage />
+      <LocationProbe />
     </MemoryRouter>,
   )
+  return { ...utils, locRef }
 }
 
 const poUser = { id: 9, role: 'procurement_officer', departmentId: 1 } as User
 const managerUser = { id: 2, role: 'manager', departmentId: 7 } as User
 
 describe('BudgetListPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFilter.values = { fiscalYear: 2026, departmentId: 999 }
+  })
 
   it('is search-first: the query is disabled (enabled:false) and a prompt is shown before searching', () => {
     setup({ data: undefined })
@@ -151,5 +180,57 @@ describe('BudgetListPage', () => {
     asUser(managerUser)
     renderPage()
     expect(screen.queryByRole('button', { name: 'สร้างงบประมาณ' })).not.toBeInTheDocument()
+  })
+
+  // --- filters in URL ---
+
+  it('restores filters from the URL and auto-searches when q is present', () => {
+    setup({ data: [] })
+    asUser(poUser)
+    renderPage(['/?q=1&fiscalYear=2025'])
+    expect(vi.mocked(useBudgets).mock.calls[0][1]).toEqual({ enabled: true })
+    expect(vi.mocked(useBudgets).mock.calls[0][0].fiscalYear).toBe(2025)
+    expect(screen.getByRole('table')).toBeInTheDocument() // auto-searched (not the prompt)
+  })
+
+  it('parses URL filters even without q but stays on the prompt (parse independent of q)', () => {
+    setup({ data: [] })
+    asUser(poUser)
+    renderPage(['/?fiscalYear=2025'])
+    expect(vi.mocked(useBudgets).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(vi.mocked(useBudgets).mock.calls[0][0].fiscalYear).toBe(2025)
+    expect(screen.getByRole('status')).toHaveTextContent(/เลือกปีงบประมาณ/)
+  })
+
+  it('writes q + fiscalYear to the URL on submit, with no page param (not paginated)', async () => {
+    setup({ data: [] })
+    asUser(poUser)
+    mockFilter.values = { fiscalYear: 2025, departmentId: undefined }
+    const { locRef } = renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'ค้นหา' }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.get('q')).toBe('1')
+    expect(params.get('fiscalYear')).toBe('2025')
+    expect(params.has('page')).toBe(false)
+  })
+
+  it('removes q + filters from the URL on clear, with no page param', async () => {
+    setup({ data: [] })
+    asUser(poUser)
+    const { locRef } = renderPage(['/?q=1&fiscalYear=2025'])
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.has('q')).toBe(false)
+    expect(params.has('fiscalYear')).toBe(false)
+    expect(params.has('page')).toBe(false)
+    expect(screen.getByRole('status')).toHaveTextContent(/เลือกปีงบประมาณ/)
+  })
+
+  it('forces a manager onto their own department even when the URL names another (restore)', () => {
+    setup({ data: [] })
+    asUser(managerUser) // departmentId 7
+    renderPage(['/?q=1&fiscalYear=2026&departmentId=999'])
+    expect(vi.mocked(useBudgets).mock.calls[0][0].departmentId).toBe(7)
   })
 })
