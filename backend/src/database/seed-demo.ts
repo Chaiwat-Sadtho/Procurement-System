@@ -178,7 +178,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     );
     const est = sumMoney(prItems.map((i) => i.estimatedTotalPrice));
     const isApproved = sc.status === PrStatus.APPROVED;
-    const pr = (await prRepo.save(
+    const pr = await prRepo.save(
       prRepo.create({
         prNumber: nextNo('PR', sc.fy),
         requesterId,
@@ -196,7 +196,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
         rejectReason: sc.status === PrStatus.REJECTED ? sc.rejectReason! : undefined,
         items: prItems,
       }),
-    )) as PurchaseRequest;
+    );
     await backdate(ds, 'purchase_requests', pr.id, createdAt);
 
     if (!sc.po) {
@@ -224,7 +224,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       }),
     );
     const poTotal = sumMoney(poItems.map((i) => i.totalPrice));
-    const po = (await poRepo.save(
+    const po = await poRepo.save(
       poRepo.create({
         poNumber: nextNo('PO', sc.fy),
         prId: pr.id,
@@ -236,7 +236,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
         notes: undefined,
         items: poItems,
       }),
-    )) as PurchaseOrder;
+    );
     await backdate(ds, 'purchase_orders', po.id, quarterDate(sc.fy, sc.quarter, 5));
     const savedPoItems = await poItemRepo.find({
       where: { poId: po.id },

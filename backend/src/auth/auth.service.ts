@@ -102,16 +102,20 @@ export class AuthService {
   }
 
   async getProfile(userId: number): Promise<User> {
-    const cached = await this.cache.getOrSet(CacheKeys.authMe(userId), CacheTtl.AUTH_ME, async () => {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        relations: { department: true },
-      });
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-      return user;
-    });
+    const cached = await this.cache.getOrSet(
+      CacheKeys.authMe(userId),
+      CacheTtl.AUTH_ME,
+      async () => {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+          relations: { department: true },
+        });
+        if (!user) {
+          throw new UnauthorizedException('User not found');
+        }
+        return user;
+      },
+    );
     // A cache hit comes back JSON-deserialized (plain object): the @Expose() fullName
     // getter and Date types are lost, so ClassSerializerInterceptor would drop fullName.
     // Rebuild the User instance so the response shape is identical on hit and miss.

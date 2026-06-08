@@ -39,8 +39,8 @@ const mockVendorRepo = {
 };
 
 const mockCache = {
-  getOrSetNamespaced: jest.fn(
-    (_ns: string, _sub: string, _ttl: number, factory: () => unknown) => factory(),
+  getOrSetNamespaced: jest.fn((_ns: string, _sub: string, _ttl: number, factory: () => unknown) =>
+    factory(),
   ),
   invalidateNamespace: jest.fn(),
 };
