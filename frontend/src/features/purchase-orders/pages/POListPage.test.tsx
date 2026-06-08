@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import type { PurchaseOrder, POListResponse } from '../types'
 import type { User } from '@/shared/types'
 
@@ -13,6 +14,9 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../hooks/usePurchaseOrders', () => ({ usePurchaseOrders: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
+const mockFilter = vi.hoisted(() => ({
+  values: { status: 'all', vendorId: 'all' } as { status: string; vendorId: string },
+}))
 // POListFilterForm (slice D) owns its own vendor source; stub it to a minimal inert
 // form so this page test stays focused on the page, not the filter internals.
 vi.mock('../components/POListFilterForm', () => ({
@@ -24,7 +28,7 @@ vi.mock('../components/POListFilterForm', () => ({
     onClear?: () => void
   }) => (
     <div>
-      <button type="button" onClick={() => onSubmit({ status: 'all', vendorId: 'all' })}>
+      <button type="button" onClick={() => onSubmit(mockFilter.values)}>
         ค้นหา
       </button>
       <button type="button" onClick={() => onClear?.()}>
@@ -94,19 +98,32 @@ function setup({
   return { refetch }
 }
 
-function renderPage() {
-  return render(
-    <MemoryRouter>
+function renderPage(initialEntries: string[] = ['/']) {
+  const locRef = { current: '' }
+  function LocationProbe() {
+    const loc = useLocation()
+    useEffect(() => {
+      locRef.current = loc.search
+    }, [loc])
+    return null
+  }
+  const utils = render(
+    <MemoryRouter initialEntries={initialEntries}>
       <POListPage />
+      <LocationProbe />
     </MemoryRouter>,
   )
+  return { ...utils, locRef }
 }
 
 const poUser = { id: 9, role: 'procurement_officer' } as User
 const managerUser = { id: 2, role: 'manager' } as User
 
 describe('POListPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFilter.values = { status: 'all', vendorId: 'all' }
+  })
 
   it('is search-first: query disabled and a prompt is shown before searching', () => {
     setup({ data: undefined })
@@ -240,5 +257,47 @@ describe('POListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     const lastCall = vi.mocked(usePurchaseOrders).mock.calls.at(-1)!
     expect(lastCall[0]).toEqual(expect.objectContaining({ page: 1 }))
+  })
+
+  // --- filters in URL ---
+
+  it('restores filters from the URL and auto-searches when q is present', () => {
+    setup({ data: listData([mockPO]) })
+    renderPage(['/?q=1&status=sent'])
+    expect(vi.mocked(usePurchaseOrders).mock.calls[0][1]).toEqual({ enabled: true })
+    expect(vi.mocked(usePurchaseOrders).mock.calls[0][0]!.status).toBe('sent')
+    expect(screen.getByRole('table')).toBeInTheDocument()
+  })
+
+  it('parses URL filters even without q but stays on the prompt (parse independent of q)', () => {
+    setup({ data: listData([mockPO]) })
+    renderPage(['/?status=sent'])
+    expect(vi.mocked(usePurchaseOrders).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(vi.mocked(usePurchaseOrders).mock.calls[0][0]!.status).toBe('sent')
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงใบสั่งซื้อ/)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('writes q + status + page=1 to the URL on submit', async () => {
+    setup({ data: listData([mockPO]) })
+    mockFilter.values = { status: 'sent', vendorId: 'all' }
+    const { locRef } = renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.get('q')).toBe('1')
+    expect(params.get('status')).toBe('sent')
+    expect(params.get('page')).toBe('1')
+  })
+
+  it('removes q + filters from the URL (keeps page=1) on clear', async () => {
+    setup({ data: listData([mockPO]) })
+    const { locRef } = renderPage(['/?q=1&status=sent'])
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.has('q')).toBe(false)
+    expect(params.has('status')).toBe(false)
+    expect(params.get('page')).toBe('1')
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงใบสั่งซื้อ/)).toBeInTheDocument()
   })
 })

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Button } from '@/shared/components/ui/button'
@@ -23,18 +22,14 @@ import { POStatusBadge } from '../components/POStatusBadge'
 import { POListFilterForm, type POListFilterValues } from '../components/POListFilterForm'
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
+import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
+import { poUrlFilterConfig } from '../lib/poUrlFilters'
 import type { PoStatus } from '../types'
-
-const DEFAULT_FILTERS: POListFilterValues = {
-  status: 'all',
-  vendorId: 'all',
-}
 
 export function POListPage() {
   const navigate = useNavigate()
-  const { page, limit, nextPage, prevPage, setLimit, setPage } = usePagination()
-  const [filters, setFilters] = useState<POListFilterValues>(DEFAULT_FILTERS)
-  const [hasSearched, setHasSearched] = useState(false)
+  const { page, limit, nextPage, prevPage, setLimit } = usePagination()
+  const { filters, hasSearched, signature, commit, clear } = useUrlFilters(poUrlFilterConfig)
 
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
@@ -59,17 +54,8 @@ export function POListPage() {
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 
-  const handleSubmit = (values: POListFilterValues) => {
-    setHasSearched(true)
-    setPage(1)
-    setFilters(values)
-  }
-
-  const handleClear = () => {
-    setHasSearched(false)
-    setPage(1)
-    setFilters(DEFAULT_FILTERS)
-  }
+  const handleSubmit = (values: POListFilterValues) => commit(values)
+  const handleClear = () => clear()
 
   return (
     <div>
@@ -83,7 +69,14 @@ export function POListPage() {
         }
       />
 
-      <POListFilterForm vendors={vendors} onSubmit={handleSubmit} onClear={handleClear} canClear={hasSearched} />
+      <POListFilterForm
+        key={signature}
+        vendors={vendors}
+        initialValues={filters}
+        onSubmit={handleSubmit}
+        onClear={handleClear}
+        canClear={hasSearched}
+      />
 
       {!hasSearched ? (
         <ListSearchPrompt
