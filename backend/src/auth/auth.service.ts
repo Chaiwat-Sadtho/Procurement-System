@@ -132,7 +132,10 @@ export class AuthService {
     if (dto.middleName !== undefined) user.middleName = dto.middleName ?? null;
     if (dto.lastName !== undefined) user.lastName = dto.lastName;
     await this.userRepository.save(user);
-    // del before getProfile so the re-read repopulates the cache with fresh data
+    // del before getProfile so the re-read repopulates the cache with fresh data.
+    // A name change is deliberately NOT propagated to vendor:ratings caches, which embed
+    // a denormalized ratedBy.fullName — that staleness self-heals within the ratings TTL
+    // (120s) and is display-only (see VendorsService.queryRatings).
     await this.cache.del(CacheKeys.authMe(userId));
     return this.getProfile(userId);
   }
