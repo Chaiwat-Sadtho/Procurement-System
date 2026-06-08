@@ -137,6 +137,11 @@ async function searchDateRange() {
   await userEvent.clear(to)
   await userEvent.type(to, '31122569')
   await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+  // commit routes through the hook's setState→effect (#47): hasSearched flips only
+  // after the URL write lands a render later, so wait for the prompt to disappear
+  await waitFor(() =>
+    expect(screen.queryByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).not.toBeInTheDocument(),
+  )
 }
 
 describe('PRListPage', () => {
@@ -154,7 +159,39 @@ describe('PRListPage', () => {
     expect(vi.mocked(usePurchaseRequests).mock.calls[0][1]).toEqual({ enabled: false })
   })
 
-  it('initializes filter from URL ?status= and fetches immediately (no manual submit)', () => {
+  it('a deep link with ?q= fetches immediately and restores every filter from the URL', () => {
+    setupMocks({ user: { ...baseUser, role: 'manager' }, prData: undefined })
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter
+          initialEntries={[
+            '/purchase-requests?q=1&status=approved&from=2026-01-01&to=2026-12-31&search=office&requesterName=somchai',
+          ]}
+        >
+          <PRListPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const firstCall = vi.mocked(usePurchaseRequests).mock.calls[0]
+    expect(firstCall[0]).toEqual(
+      expect.objectContaining({
+        status: 'approved',
+        from: '2026-01-01',
+        to: '2026-12-31',
+        search: 'office',
+        requesterName: 'somchai',
+      }),
+    )
+    expect(firstCall[1]).toEqual({ enabled: true })
+    // the form is restored too (not just the query)
+    expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('01/01/2569')
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+  })
+
+  it('a deep link carrying ?status= but no ?q= shows the prompt (status alone is not a search)', () => {
     setupMocks({ prData: undefined })
 
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -166,9 +203,8 @@ describe('PRListPage', () => {
       </QueryClientProvider>,
     )
 
-    const firstCall = vi.mocked(usePurchaseRequests).mock.calls[0]
-    expect(firstCall[0]).toEqual(expect.objectContaining({ status: 'draft' }))
-    expect(firstCall[1]).toEqual({ enabled: true })
+    expect(screen.getByRole('status')).toHaveTextContent(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)
+    expect(vi.mocked(usePurchaseRequests).mock.calls[0][1]).toEqual({ enabled: false })
   })
 
   it('after submit with valid dates: usePurchaseRequests called with filter params', async () => {
@@ -265,7 +301,10 @@ describe('PRListPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
 
-    expect(screen.getByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).toBeInTheDocument()
+    // clear also routes through the hook's setState→effect — wait for the prompt back
+    await waitFor(() =>
+      expect(screen.getByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).toBeInTheDocument(),
+    )
     const lastCall = vi.mocked(usePurchaseRequests).mock.calls.at(-1)!
     expect(lastCall[1]).toEqual({ enabled: false })
   })
@@ -310,7 +349,7 @@ describe('PRListPage', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+        <MemoryRouter initialEntries={['/purchase-requests?q=1&status=draft']}>
           <PRListPage />
         </MemoryRouter>
       </QueryClientProvider>,
@@ -320,14 +359,14 @@ describe('PRListPage', () => {
   })
 
   it('changes page size: limit flows to the query and page resets to 1', async () => {
-    // start at &page=3 to prove the reset (status=draft to enable the query)
+    // start at &page=3 to prove the reset (q=1 + status=draft to enable the query)
     setupMocks({
       prData: { data: [mockPR], meta: { page: 3, limit: 5, total: 30, totalPages: 6 } },
     })
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/purchase-requests?status=draft&page=3']}>
+        <MemoryRouter initialEntries={['/purchase-requests?q=1&status=draft&page=3']}>
           <PRListPage />
         </MemoryRouter>
       </QueryClientProvider>,
@@ -353,7 +392,7 @@ describe('PRListPage', () => {
     }
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/purchase-requests?status=draft']}>
+        <MemoryRouter initialEntries={['/purchase-requests?q=1&status=draft']}>
           <PRListPage />
           <LocationProbe />
         </MemoryRouter>
@@ -399,9 +438,9 @@ describe('PRListPage', () => {
     expect(screen.getByTestId('loc-search')).toHaveTextContent('page=1')
   })
 
-  // StrictMode double-invokes effects on mount; the status-sync effect must be a
-  // no-op when the URL already matches, else a deep-linked ?page= is wiped to 1.
-  it('preserves a deep-linked page on mount under StrictMode (no spurious sync)', () => {
+  // StrictMode double-invokes the hook's write effect on mount; with action===null
+  // on mount it must be a no-op, else a deep-linked ?page= would be wiped to 1.
+  it('preserves a deep-linked page on mount under StrictMode (no spurious write)', () => {
     setupMocks({
       prData: { data: [mockPR], meta: { page: 3, limit: 5, total: 30, totalPages: 6 } },
     })
@@ -413,7 +452,7 @@ describe('PRListPage', () => {
     render(
       <StrictMode>
         <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={['/purchase-requests?status=draft&page=3']}>
+          <MemoryRouter initialEntries={['/purchase-requests?q=1&status=draft&page=3']}>
             <PRListPage />
             <LocationProbe />
           </MemoryRouter>
