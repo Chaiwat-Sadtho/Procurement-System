@@ -16,7 +16,7 @@ export function ApprovalQueue() {
         </CardTitle>
         {data && data.length >= 5 && (
           <Button asChild variant="link" size="sm" className="h-auto p-0">
-            <Link to="/purchase-requests?status=submitted">ดูทั้งหมด</Link>
+            <Link to="/purchase-requests?status=submitted&q=1">ดูทั้งหมด</Link>
           </Button>
         )}
       </CardHeader>

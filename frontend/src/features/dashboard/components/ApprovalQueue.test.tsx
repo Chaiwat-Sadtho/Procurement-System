@@ -69,7 +69,7 @@ describe('ApprovalQueue', () => {
     renderQueue()
     expect(screen.getByRole('link', { name: /ดูทั้งหมด/ })).toHaveAttribute(
       'href',
-      '/purchase-requests?status=submitted',
+      '/purchase-requests?status=submitted&q=1',
     )
   })
 })
