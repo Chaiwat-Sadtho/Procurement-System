@@ -22,12 +22,12 @@ React SPA สำหรับระบบจัดซื้อ-จัดจ้า
 
 ## โครงสร้าง (`src/`)
 
-จัดแบบ **feature-folder** — แต่ละ feature มี `api.ts` / `hooks/` / `components/` / `pages/` / `lib/` / `types.ts` ของตัวเอง
+จัดแบบ **feature-folder** — baseline ของแต่ละ feature คือ `api.ts` + `pages/` แล้วเพิ่ม `hooks/` / `components/` / `lib/` / `types.ts` ตามความซับซ้อน (auth/settings เป็น feature เล็ก มีแค่ `api.ts` + `pages/`; settings มี `layout/` เพิ่ม)
 
 | โฟลเดอร์ | หน้าที่ |
 |---|---|
 | `app/` | `providers.tsx` (QueryClient + theme + toaster) · `router.tsx` (เส้นทาง + `ProtectedRoute`) |
-| `features/auth` | login + เก็บ token, hook `useCurrentUser` |
+| `features/auth` | login + `/auth/me` API (`api.ts` + `LoginPage`); token แนบ/ลบใน `shared/lib/axios` interceptor |
 | `features/dashboard` | สรุปภาพรวม — stat cards, donut, recent PRs, budget summary, attention list |
 | `features/purchase-requests` | PR list/detail/form + status badge + filter |
 | `features/purchase-orders` | PO list/detail/form + budget preview + ให้คะแนนผู้ขาย |
