@@ -11,6 +11,7 @@ import { VendorRating } from '../vendors/entities/vendor-rating.entity';
 import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CacheService } from '../cache/cache.service';
 
 const mockApprovedPr: Partial<PurchaseRequest> = {
   id: 1,
@@ -73,6 +74,9 @@ const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
 const mockNotificationsService = {
   send: jest.fn().mockResolvedValue(undefined),
 };
+const mockCacheService = {
+  invalidateNamespace: jest.fn().mockResolvedValue(undefined),
+};
 
 describe('PurchaseOrdersService', () => {
   let service: PurchaseOrdersService;
@@ -93,6 +97,7 @@ describe('PurchaseOrdersService', () => {
         { provide: BudgetsService, useValue: mockBudgetsService },
         { provide: AuditLogsService, useValue: mockAuditLogsService },
         { provide: NotificationsService, useValue: mockNotificationsService },
+        { provide: CacheService, useValue: mockCacheService },
       ],
     }).compile();
     service = module.get<PurchaseOrdersService>(PurchaseOrdersService);
@@ -542,6 +547,24 @@ describe('PurchaseOrdersService', () => {
       const result = await service.rateVendor(1, 1, { score: 4 });
       expect(result.score).toBe(4);
       expect(mockVendorRepo.update).toHaveBeenCalledWith(1, { ratingAvg: 4 });
+    });
+
+    it('should invalidate vendor list and that vendor ratings namespaces', async () => {
+      mockPoRepo.findOne.mockResolvedValue({ ...mockCompletedPo, vendorId: 9 });
+      mockRatingRepo.findOne.mockResolvedValue(null);
+      const mockRating = { id: 1, score: 4, poId: 1, vendorId: 9 };
+      mockRatingRepo.create.mockReturnValue(mockRating);
+      mockRatingRepo.save.mockResolvedValue(mockRating);
+      mockRatingRepo.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ avg: '4.00' }),
+      });
+
+      await service.rateVendor(1, 1, { score: 4 });
+
+      expect(mockCacheService.invalidateNamespace).toHaveBeenCalledWith('vendor:list');
+      expect(mockCacheService.invalidateNamespace).toHaveBeenCalledWith('vendor:ratings:9');
     });
 
     it('should throw BadRequest if PO is not completed', async () => {

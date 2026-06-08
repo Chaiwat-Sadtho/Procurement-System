@@ -22,6 +22,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
 import { formatRunningNumber } from '../common/running-number';
+import { CacheService } from '../cache/cache.service';
+import { CacheKeys } from '../cache/cache-keys';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -43,6 +45,7 @@ export class PurchaseOrdersService {
     private readonly budgetsService: BudgetsService,
     private readonly auditLogsService: AuditLogsService,
     private readonly notificationsService: NotificationsService,
+    private readonly cache: CacheService,
   ) {}
 
   private async generatePoNumber(): Promise<string> {
@@ -405,6 +408,10 @@ export class PurchaseOrdersService {
     await this.vendorRepository.update(po.vendorId, {
       ratingAvg: Number(parseFloat(avgResult!.avg).toFixed(2)),
     });
+
+    // ratingAvg changed → drop the vendor list cache and this vendor's ratings cache
+    await this.cache.invalidateNamespace(CacheKeys.vendorListNs);
+    await this.cache.invalidateNamespace(CacheKeys.vendorRatingsNs(po.vendorId));
 
     return savedRating;
   }
