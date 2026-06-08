@@ -13,20 +13,35 @@ export interface BudgetListFilterResult {
 interface BudgetListFilterFormProps {
   departments: DashboardDepartment[]
   defaultFiscalYear: number
+  /** seeds the year + dept inputs from the URL; consumed once at mount — remount via key to change */
+  initialValues?: BudgetListFilterResult
   // manager: ล็อกแผนกตัวเอง (disabled + prefill) — BE enforce ซ้ำ (defense in depth)
   lockedDepartmentId?: number | null
   onSubmit: (result: BudgetListFilterResult) => void
+  onClear?: () => void
+  canClear?: boolean
 }
 
 export function BudgetListFilterForm({
   departments,
   defaultFiscalYear,
+  initialValues,
   lockedDepartmentId,
   onSubmit,
+  onClear,
+  canClear,
 }: BudgetListFilterFormProps) {
   const isLocked = lockedDepartmentId != null
-  const [year, setYear] = useState(String(defaultFiscalYear))
-  const [deptValue, setDeptValue] = useState<string>(isLocked ? String(lockedDepartmentId) : 'all')
+  const initialYear = String(initialValues?.fiscalYear ?? defaultFiscalYear)
+  // manager lock wins over any URL value; else restore from initialValues, else 'all'
+  const initialDept = isLocked
+    ? String(lockedDepartmentId)
+    : initialValues?.departmentId != null
+      ? String(initialValues.departmentId)
+      : 'all'
+  const [year, setYear] = useState(initialYear)
+  const [deptValue, setDeptValue] = useState<string>(initialDept)
+  const isDirty = year !== initialYear || deptValue !== initialDept
 
   const deptOptions = [
     { value: 'all', label: 'ทุกแผนก' },
@@ -39,6 +54,12 @@ export function BudgetListFilterForm({
     if (!Number.isInteger(fiscalYear) || fiscalYear < 2020 || fiscalYear > 2100) return
     const departmentId = deptValue !== 'all' ? Number(deptValue) : undefined
     onSubmit({ fiscalYear, departmentId })
+  }
+
+  function handleClear() {
+    setYear(String(defaultFiscalYear))
+    setDeptValue(isLocked ? String(lockedDepartmentId) : 'all')
+    onClear?.()
   }
 
   return (
@@ -69,8 +90,17 @@ export function BudgetListFilterForm({
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Button type="submit" className="w-full md:col-start-4">
+        <Button type="submit" className="w-full md:col-start-3">
           ค้นหา
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          className="w-full md:col-start-4"
+          disabled={!isDirty && !canClear}
+          onClick={handleClear}
+        >
+          ล้าง
         </Button>
       </div>
     </form>
