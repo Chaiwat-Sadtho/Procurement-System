@@ -190,7 +190,7 @@ export class PurchaseRequestsService {
           ? 'pr.title'
           : 'pr.createdAt';
 
-    qb.orderBy(sortField, order as 'ASC' | 'DESC')
+    qb.orderBy(sortField, order)
       .skip((page - 1) * limit)
       .take(limit);
 

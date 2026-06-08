@@ -12,6 +12,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { HealthModule } from './health/health.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { HealthModule } from './health/health.module';
       }),
       inject: [ConfigService],
     }),
+    CacheModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,

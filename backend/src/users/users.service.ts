@@ -9,12 +9,15 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { CacheService } from '../cache/cache.service';
+import { CacheKeys } from '../cache/cache-keys';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly cache: CacheService,
   ) {}
 
   async findAll(currentUser: { role: UserRole; departmentId: number | null }): Promise<User[]> {
@@ -47,7 +50,10 @@ export class UsersService {
       user.role === UserRole.PROCUREMENT_OFFICER && dto.role !== UserRole.PROCUREMENT_OFFICER;
     if (isDemotingPo) await this.assertNotLastActivePo();
     user.role = dto.role;
-    return this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    // role is embedded in the cached /auth/me payload → drop it so the target re-reads fresh
+    await this.cache.del(CacheKeys.authMe(id));
+    return saved;
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto, actorId: number): Promise<User> {
@@ -60,7 +66,10 @@ export class UsersService {
       !dto.isActive && user.isActive && user.role === UserRole.PROCUREMENT_OFFICER;
     if (isDeactivatingActivePo) await this.assertNotLastActivePo();
     user.isActive = dto.isActive;
-    return this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    // isActive is embedded in the cached /auth/me payload → drop it so the target re-reads fresh
+    await this.cache.del(CacheKeys.authMe(id));
+    return saved;
   }
 
   private async assertNotLastActivePo(): Promise<void> {

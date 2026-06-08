@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../users/entities/user.entity';
+import { CacheService } from '../cache/cache.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser: User = {
@@ -33,6 +34,11 @@ const mockJwtService = {
   sign: jest.fn().mockReturnValue('mock-jwt-token'),
 };
 
+const mockCache = {
+  getOrSet: jest.fn(async (_key: string, _ttl: number, factory: () => unknown) => await factory()),
+  del: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -42,6 +48,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: CacheService, useValue: mockCache },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);
@@ -59,7 +66,7 @@ describe('AuthService', () => {
         email: 'test@test.com',
         password: 'password123',
         departmentId: 1,
-      } as never);
+      });
 
       expect(result).toHaveProperty('access_token');
       expect(mockUserRepository.save).toHaveBeenCalled();
@@ -159,7 +166,10 @@ describe('AuthService', () => {
 
       const result = await service.getProfile(1);
 
-      expect(result).toBe(mockUser);
+      // re-hydrated into a real User (carries the fullName getter), content preserved
+      expect(result).toBeInstanceOf(User);
+      expect(result.email).toBe(mockUser.email);
+      expect(result.fullName).toBe('Test User');
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
         relations: { department: true },
@@ -170,6 +180,38 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(service.getProfile(999)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('caches the profile under auth:me:{id} with the auth TTL', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      await service.getProfile(7);
+
+      expect(mockCache.getOrSet).toHaveBeenCalledWith('auth:me:7', 300, expect.any(Function));
+    });
+
+    it('rehydrates a JSON-round-tripped cache hit into a User so fullName survives', async () => {
+      // A Redis hit returns a plain object (Keyv serializes to JSON → the fullName
+      // getter and the User prototype are gone). getProfile must rebuild the instance
+      // so ClassSerializerInterceptor still emits fullName.
+      const cachedPlain = {
+        id: 7,
+        email: 'c@d.com',
+        firstName: 'John',
+        middleName: 'Michael',
+        lastName: 'Doe',
+        role: UserRole.EMPLOYEE,
+        isActive: true,
+        departmentId: 1,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      mockCache.getOrSet.mockResolvedValueOnce(cachedPlain); // simulate hit (factory not run)
+
+      const result = await service.getProfile(7);
+
+      expect(result).toBeInstanceOf(User);
+      expect(result.fullName).toBe('John Michael Doe');
     });
   });
 
@@ -207,6 +249,37 @@ describe('AuthService', () => {
       await expect(service.updateProfile(999, { firstName: 'X' })).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('invalidates the auth:me cache on profile update', async () => {
+      const editable = { ...mockUser };
+      mockUserRepository.findOne.mockResolvedValueOnce(editable).mockResolvedValueOnce(editable);
+      mockUserRepository.save.mockResolvedValue(editable);
+
+      await service.updateProfile(7, { firstName: 'New' });
+
+      expect(mockCache.del).toHaveBeenCalledWith('auth:me:7');
+    });
+
+    it('invalidates auth:me BEFORE re-reading the profile (del precedes the re-read)', async () => {
+      // guards the del-then-getProfile order: re-reading first would re-cache stale data
+      const calls: string[] = [];
+      mockCache.del.mockImplementationOnce(() => {
+        calls.push('del');
+      });
+      mockCache.getOrSet.mockImplementationOnce(
+        async (_k: string, _t: number, f: () => unknown) => {
+          calls.push('getOrSet');
+          return await f();
+        },
+      );
+      const editable = { ...mockUser, id: 7 };
+      mockUserRepository.findOne.mockResolvedValueOnce(editable).mockResolvedValueOnce(editable);
+      mockUserRepository.save.mockResolvedValue(editable);
+
+      await service.updateProfile(7, { firstName: 'New' });
+
+      expect(calls).toEqual(['del', 'getOrSet']);
     });
   });
 });

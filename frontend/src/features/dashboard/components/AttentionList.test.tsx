@@ -79,7 +79,7 @@ describe('AttentionList', () => {
     )
     expect(screen.getByRole('link', { name: /ดูทั้งหมด/ })).toHaveAttribute(
       'href',
-      '/purchase-requests?status=rejected',
+      '/purchase-requests?status=rejected&q=1',
     )
   })
 

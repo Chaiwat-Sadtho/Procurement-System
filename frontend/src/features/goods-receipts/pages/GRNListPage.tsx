@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Button } from '@/shared/components/ui/button'
@@ -23,18 +22,14 @@ import { GrnStatusBadge } from '../components/GrnStatusBadge'
 import { GRNListFilterForm, type GRNListFilterValues } from '../components/GRNListFilterForm'
 import { useGoodsReceipts } from '../hooks/useGoodsReceipts'
 import { useReceivablePOs } from '../hooks/useReceivablePOs'
+import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
+import { grnUrlFilterConfig } from '../lib/grnUrlFilters'
 import type { GrnStatus } from '../types'
-
-const DEFAULT_FILTERS: GRNListFilterValues = {
-  status: 'all',
-  poId: 'all',
-}
 
 export function GRNListPage() {
   const navigate = useNavigate()
-  const { page, limit, nextPage, prevPage, setLimit, setPage } = usePagination()
-  const [filters, setFilters] = useState<GRNListFilterValues>(DEFAULT_FILTERS)
-  const [hasSearched, setHasSearched] = useState(false)
+  const { page, limit, nextPage, prevPage, setLimit } = usePagination()
+  const { filters, hasSearched, signature, commit, clear } = useUrlFilters(grnUrlFilterConfig)
 
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
@@ -57,17 +52,8 @@ export function GRNListPage() {
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 
-  const handleSubmit = (values: GRNListFilterValues) => {
-    setHasSearched(true)
-    setPage(1)
-    setFilters(values)
-  }
-
-  const handleClear = () => {
-    setHasSearched(false)
-    setPage(1)
-    setFilters(DEFAULT_FILTERS)
-  }
+  const handleSubmit = (values: GRNListFilterValues) => commit(values)
+  const handleClear = () => clear()
 
   return (
     <div>
@@ -81,7 +67,14 @@ export function GRNListPage() {
         }
       />
 
-      <GRNListFilterForm pos={poOptions} onSubmit={handleSubmit} onClear={handleClear} canClear={hasSearched} />
+      <GRNListFilterForm
+        key={signature}
+        pos={poOptions}
+        initialValues={filters}
+        onSubmit={handleSubmit}
+        onClear={handleClear}
+        canClear={hasSearched}
+      />
 
       {!hasSearched ? (
         <ListSearchPrompt

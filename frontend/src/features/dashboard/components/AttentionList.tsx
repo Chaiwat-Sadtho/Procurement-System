@@ -20,7 +20,7 @@ function Section({
           {title} ({prs.length})
         </p>
         <Link
-          to={`/purchase-requests?status=${status}`}
+          to={`/purchase-requests?status=${status}&q=1`}
           className="text-xs text-muted-foreground hover:underline"
         >
           ดูทั้งหมด

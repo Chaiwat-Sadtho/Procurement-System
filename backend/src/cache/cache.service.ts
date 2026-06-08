@@ -1,0 +1,82 @@
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+
+/**
+ * Single abstraction over the cache backend. Feature services depend on this,
+ * never on cache-manager directly, so the store can be swapped and mocked easily.
+ * Every method swallows backend errors (graceful degradation): a downed Redis
+ * degrades to a cache miss / no-op invalidate rather than failing the request.
+ */
+@Injectable()
+export class CacheService {
+  private readonly logger = new Logger(CacheService.name);
+
+  constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
+
+  async get<T>(key: string): Promise<T | undefined> {
+    try {
+      return (await this.cache.get<T>(key)) ?? undefined;
+    } catch (err) {
+      this.logger.warn(`cache get failed for ${key}: ${err}`);
+      return undefined;
+    }
+  }
+
+  async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+    try {
+      // cache-manager v7 takes TTL in milliseconds; helpers here take seconds.
+      await this.cache.set(key, value, ttlSeconds * 1000);
+    } catch (err) {
+      this.logger.warn(`cache set failed for ${key}: ${err}`);
+    }
+  }
+
+  async del(key: string): Promise<void> {
+    try {
+      await this.cache.del(key);
+    } catch (err) {
+      this.logger.warn(`cache del failed for ${key}: ${err}`);
+    }
+  }
+
+  async getOrSet<T>(key: string, ttlSeconds: number, factory: () => Promise<T>): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== undefined) return cached;
+    const fresh = await factory();
+    await this.set(key, fresh, ttlSeconds);
+    return fresh;
+  }
+
+  private genKey(namespace: string): string {
+    return `${namespace}:gen`;
+  }
+
+  private async generation(namespace: string): Promise<number> {
+    const gen = await this.get<number>(this.genKey(namespace));
+    return gen ?? 1;
+  }
+
+  /**
+   * Namespaced cache-aside. The key embeds the namespace's current generation
+   * (`{namespace}:g{gen}:{subkey}`) so invalidateNamespace can retire every key
+   * in the namespace at once by bumping the counter — no SCAN/delByPrefix needed.
+   */
+  async getOrSetNamespaced<T>(
+    namespace: string,
+    subkey: string,
+    ttlSeconds: number,
+    factory: () => Promise<T>,
+  ): Promise<T> {
+    const gen = await this.generation(namespace);
+    const key = `${namespace}:g${gen}:${subkey}`;
+    return this.getOrSet(key, ttlSeconds, factory);
+  }
+
+  async invalidateNamespace(namespace: string): Promise<void> {
+    const gen = await this.generation(namespace);
+    // TTL 0 = no expiry: the generation counter must outlive cached values,
+    // otherwise it could reset and resurrect a stale generation's keys.
+    await this.set(this.genKey(namespace), gen + 1, 0);
+  }
+}

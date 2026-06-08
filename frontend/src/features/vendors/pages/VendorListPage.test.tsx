@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { VendorListPage } from './VendorListPage'
 import type { Vendor, VendorListResponse } from '../types'
 
@@ -99,15 +100,25 @@ function setup({
   return { refetch }
 }
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ['/']) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
+  const locRef = { current: '' }
+  function LocationProbe() {
+    const loc = useLocation()
+    useEffect(() => {
+      locRef.current = loc.search
+    }, [loc])
+    return null
+  }
+  const utils = render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <VendorListPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   )
+  return { ...utils, locRef }
 }
 
 describe('VendorListPage', () => {
@@ -317,5 +328,45 @@ describe('VendorListPage', () => {
     >)
     renderPage()
     expect(screen.queryByRole('button', { name: 'เพิ่มผู้ขาย' })).not.toBeInTheDocument()
+  })
+
+  it('restores filters from the URL and auto-searches when q is present', () => {
+    setup({ data: listData([mockVendor]) })
+    renderPage(['/?q=1&search=acme'])
+    expect(vi.mocked(useVendors).mock.calls[0][1]).toEqual({ enabled: true })
+    expect(vi.mocked(useVendors).mock.calls[0][0]!.search).toBe('acme')
+    expect(screen.getByRole('table')).toBeInTheDocument()
+  })
+
+  it('parses URL filters even without q but stays on the prompt (parse independent of q)', () => {
+    setup({ data: listData([mockVendor]) })
+    renderPage(['/?search=acme'])
+    expect(vi.mocked(useVendors).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(vi.mocked(useVendors).mock.calls[0][0]!.search).toBe('acme')
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('writes q + search + page=1 to the URL on submit', async () => {
+    setup({ data: listData([mockVendor]) })
+    mockFilter.values = { search: 'somchai', isBlacklisted: 'all', categoryId: 'all' }
+    const { locRef } = renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.get('q')).toBe('1')
+    expect(params.get('search')).toBe('somchai')
+    expect(params.get('page')).toBe('1')
+  })
+
+  it('removes q + filters from the URL (keeps page=1) on clear', async () => {
+    setup({ data: listData([mockVendor]) })
+    const { locRef } = renderPage(['/?q=1&search=acme'])
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.has('q')).toBe(false)
+    expect(params.has('search')).toBe(false)
+    expect(params.get('page')).toBe('1')
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 })

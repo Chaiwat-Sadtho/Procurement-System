@@ -7,12 +7,15 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryFailedError } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CacheService } from '../cache/cache.service';
+import { CacheKeys, CacheTtl } from '../cache/cache-keys';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +23,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly cache: CacheService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -97,15 +101,26 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  async getProfile(userId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: { department: true },
-    });
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-    return user;
+  async getProfile(userId: number): Promise<User> {
+    const cached = await this.cache.getOrSet(
+      CacheKeys.authMe(userId),
+      CacheTtl.AUTH_ME,
+      async () => {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+          relations: { department: true },
+        });
+        if (!user) {
+          throw new UnauthorizedException('User not found');
+        }
+        return user;
+      },
+    );
+    // A cache hit comes back JSON-deserialized (plain object): the @Expose() fullName
+    // getter and Date types are lost, so ClassSerializerInterceptor would drop fullName.
+    // Rebuild the User instance so the response shape is identical on hit and miss.
+    // (cast to object so plainToInstance picks the single-object overload, not the array one)
+    return cached instanceof User ? cached : plainToInstance(User, cached as object);
   }
 
   async updateProfile(userId: number, dto: UpdateProfileDto) {
@@ -117,6 +132,11 @@ export class AuthService {
     if (dto.middleName !== undefined) user.middleName = dto.middleName ?? null;
     if (dto.lastName !== undefined) user.lastName = dto.lastName;
     await this.userRepository.save(user);
+    // del before getProfile so the re-read repopulates the cache with fresh data.
+    // A name change is deliberately NOT propagated to vendor:ratings caches, which embed
+    // a denormalized ratedBy.fullName — that staleness self-heals within the ratings TTL
+    // (120s) and is display-only (see VendorsService.queryRatings).
+    await this.cache.del(CacheKeys.authMe(userId));
     return this.getProfile(userId);
   }
 

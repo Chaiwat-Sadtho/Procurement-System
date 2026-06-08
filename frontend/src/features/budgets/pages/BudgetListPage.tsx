@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { useDepartments } from '@/features/dashboard/hooks/useDepartments'
@@ -15,10 +15,13 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListErrorState } from '@/shared/components/ListErrorState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { RowLink } from '@/shared/components/RowLink'
 import { formatCurrency } from '@/shared/lib/utils'
 import { BudgetListFilterForm, type BudgetListFilterResult } from '../components/BudgetListFilterForm'
 import { useBudgets } from '../hooks/useBudgets'
+import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
+import { budgetUrlFilterConfig } from '../lib/budgetUrlFilters'
 import type { BudgetListParams } from '../types'
 
 function periodLabel(fiscalYear: number, quarter: number | null): string {
@@ -32,14 +35,23 @@ export function BudgetListPage() {
   const isManager = user?.role === 'manager'
   const canCreate = user?.role === 'procurement_officer'
 
-  // search-first: appliedParams = null จนกว่าจะกดค้นหา
-  const [appliedParams, setAppliedParams] = useState<BudgetListParams | null>(null)
-  const { data, isLoading, isError, refetch } = useBudgets(appliedParams)
+  // search-first + filters-in-URL (มิเรอร์ group A): filters/q อยู่ใน URL (survive refresh); query ยิงเมื่อ hasSearched
+  const { filters, hasSearched, signature, commit, clear } = useUrlFilters(budgetUrlFilterConfig)
+  // manager: บังคับแผนกตัวเอง แม้ URL ถูกปั้นเป็นแผนกอื่น (BE enforce ซ้ำ — defense in depth)
+  const appliedParams: BudgetListParams = {
+    fiscalYear: filters.fiscalYear,
+    departmentId: isManager ? (user?.departmentId ?? undefined) : filters.departmentId,
+  }
+  const { data, isLoading, isError, refetch } = useBudgets(appliedParams, { enabled: hasSearched })
 
   function handleSubmit(result: BudgetListFilterResult) {
     // manager: บังคับแผนกตัวเอง (BE enforce ซ้ำ)
     const departmentId = isManager ? (user?.departmentId ?? undefined) : result.departmentId
-    setAppliedParams({ fiscalYear: result.fiscalYear, departmentId })
+    commit({ fiscalYear: result.fiscalYear, departmentId })
+  }
+
+  function handleClear() {
+    clear()
   }
 
   // เรียง remaining น้อย→มาก (ใกล้หมดขึ้นก่อน); remaining = total - reserved - used (FE คำนวณ)
@@ -63,16 +75,18 @@ export function BudgetListPage() {
       />
 
       <BudgetListFilterForm
+        key={signature}
         departments={departments ?? []}
         defaultFiscalYear={new Date().getFullYear()}
+        initialValues={filters}
         lockedDepartmentId={isManager ? user?.departmentId : null}
         onSubmit={handleSubmit}
+        onClear={handleClear}
+        canClear={hasSearched}
       />
 
-      {appliedParams === null ? (
-        <p className="py-12 text-center text-muted-foreground">
-          เลือกปีงบประมาณ/แผนก แล้วกดค้นหา
-        </p>
+      {!hasSearched ? (
+        <ListSearchPrompt message="เลือกปีงบประมาณ/แผนก แล้วกดค้นหา" />
       ) : isError ? (
         <ListErrorState message="โหลดข้อมูลงบประมาณไม่สำเร็จ" onRetry={() => refetch()} />
       ) : isLoading ? (

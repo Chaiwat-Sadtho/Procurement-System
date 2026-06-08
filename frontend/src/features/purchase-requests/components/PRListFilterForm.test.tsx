@@ -107,4 +107,29 @@ describe('PRListFilterForm', () => {
     await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-2026')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
   })
+
+  it('seeds every field from initialValues (restore from a deep-linked URL)', () => {
+    renderForm({
+      showRequester: true,
+      initialValues: {
+        prNumber: 'PR-2026-0009',
+        search: 'office',
+        from: '2026-01-01',
+        to: '2026-12-31',
+        requesterName: 'สมชาย',
+        status: 'approved',
+      },
+    })
+    expect(screen.getByLabelText(/PR Number/i)).toHaveValue('PR-2026-0009')
+    expect(screen.getByLabelText('Title')).toHaveValue('office')
+    expect(screen.getByLabelText(/ผู้ขอ/i)).toHaveValue('สมชาย')
+    expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('01/01/2569')
+    expect(screen.getByLabelText(/วันที่สิ้นสุด/i)).toHaveValue('31/12/2569')
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+  })
+
+  it('ล้าง button is enabled when canClear even if the form is pristine', () => {
+    renderForm({ canClear: true })
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })

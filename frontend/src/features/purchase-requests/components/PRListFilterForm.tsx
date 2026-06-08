@@ -42,26 +42,35 @@ const STATUS_OPTIONS = [
 
 interface PRListFilterFormProps {
   showRequester: boolean
-  initialStatus?: string
+  /** seeds RHF defaultValues; consumed once at mount — remount via `key` to change after mount */
+  initialValues?: PRListFilterValues
   onSubmit: (values: PRListFilterValues) => void
   onClear?: () => void
+  canClear?: boolean
+}
+
+const EMPTY_FILTERS: PRListFilterValues = {
+  prNumber: '',
+  search: '',
+  from: '',
+  to: '',
+  requesterName: '',
+  status: 'all',
 }
 
 export function PRListFilterForm({
   showRequester,
-  initialStatus,
+  initialValues,
   onSubmit,
   onClear,
+  canClear,
 }: PRListFilterFormProps) {
   const [resetKey, setResetKey] = useState(0)
 
-  const defaultValues: PRListFilterValues = {
-    prNumber: '',
-    search: '',
-    from: '',
-    to: dateToIso(new Date()), // วันสิ้นสุด default = วันนี้ (#6)
-    requesterName: '',
-    status: initialStatus ?? 'all',
+  // restore (initialValues from URL) wins; a fresh form defaults วันสิ้นสุด = วันนี้ (#6)
+  const defaultValues: PRListFilterValues = initialValues ?? {
+    ...EMPTY_FILTERS,
+    to: dateToIso(new Date()),
   }
 
   const {
@@ -79,8 +88,9 @@ export function PRListFilterForm({
   const statusValue = useWatch({ control, name: 'status' }) ?? 'all'
 
   function handleClear() {
-    // ล้าง = กลับเป็นค่าว่างทั้งหมด (รวม to ที่ default = วันนี้) ไม่ใช่ reset กลับ default
-    reset({ ...defaultValues, to: '' })
+    // ล้าง = กลับเป็นค่าว่างทั้งหมด (รวม to) ไม่ใช่ค่า restore/default — page remount (key) จะ
+    // re-seed เป็น fresh (to=วันนี้) อีกที; การ reset นี้ครอบ standalone form (ไม่มี remount)
+    reset(EMPTY_FILTERS)
     setResetKey((k) => k + 1) // remount DateField → ล้าง buffer ที่พิมพ์ค้าง
     onClear?.()
   }
@@ -182,7 +192,7 @@ export function PRListFilterForm({
           type="button"
           variant="destructive"
           className="w-full md:col-start-4"
-          disabled={!isDirty}
+          disabled={!isDirty && !canClear}
           onClick={handleClear}
         >
           ล้าง

@@ -62,4 +62,15 @@ describe('UserListFilterForm', () => {
     expect(screen.getByLabelText('ค้นหา')).toHaveValue('')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
   })
+
+  it('restores initialValues into the inputs and enables ล้าง when canClear', () => {
+    renderForm({
+      initialValues: { search: 'somchai', role: 'manager', status: 'inactive' },
+      canClear: true,
+    })
+    expect(screen.getByLabelText('ค้นหา')).toHaveValue('somchai')
+    expect(screen.getByLabelText('บทบาท')).toHaveTextContent('ผู้จัดการ') // role=manager
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('ปิดใช้งาน') // status=inactive
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })

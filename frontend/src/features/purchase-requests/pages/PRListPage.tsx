@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -14,27 +14,24 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
+import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
+import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
 import { formatCurrency, formatDate, getRowIndex } from '@/shared/lib/utils'
 import { getApiErrorMessage } from '@/shared/lib/getApiErrorMessage'
 import { PRStatusBadge } from '../components/PRStatusBadge'
 import { PRListFilterForm, type PRListFilterValues } from '../components/PRListFilterForm'
+import { prUrlFilterConfig } from '../lib/prUrlFilters'
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
 import { usePRMutations } from '../hooks/usePRMutations'
 import type { PRStatus, PurchaseRequest } from '../types'
 
 export function PRListPage() {
   const { data: user } = useCurrentUser()
-  const { page, limit, nextPage, prevPage, setLimit, setParams } = usePagination()
-  const [searchParams] = useSearchParams()
-  const urlStatus = searchParams.get('status') ?? undefined
-  const [filters, setFilters] = useState<PRListFilterValues | null>(
-    urlStatus
-      ? { prNumber: '', search: '', from: '', to: '', requesterName: '', status: urlStatus }
-      : null,
-  )
+  const { page, limit, nextPage, prevPage, setLimit } = usePagination()
+  const { filters, hasSearched, signature, commit, clear } = useUrlFilters(prUrlFilterConfig)
   const { deleteMutation } = usePRMutations()
   const [deleteTarget, setDeleteTarget] = useState<PurchaseRequest | null>(null)
 
@@ -43,20 +40,18 @@ export function PRListPage() {
 
   const showRequester = user?.role === 'manager' || user?.role === 'procurement_officer'
 
-  const queryParams = filters
-    ? {
-        page,
-        limit,
-        prNumber: filters.prNumber || undefined,
-        search: filters.search || undefined,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
-        requesterName: filters.requesterName?.trim() || undefined,
-        status: filters.status && filters.status !== 'all' ? filters.status : undefined,
-      }
-    : undefined
+  const queryParams = {
+    page,
+    limit,
+    prNumber: filters.prNumber?.trim() || undefined,
+    search: filters.search?.trim() || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    requesterName: filters.requesterName?.trim() || undefined,
+    status: filters.status && filters.status !== 'all' ? filters.status : undefined,
+  }
 
-  const { data, isLoading } = usePurchaseRequests(queryParams, { enabled: filters !== null })
+  const { data, isLoading } = usePurchaseRequests(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
   const canCreate = user?.role === 'employee'
@@ -65,36 +60,8 @@ export function PRListPage() {
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 
-  // Keep the URL ?status= in sync with the committed filter so a reload/deep-link
-  // restores what the user is viewing, not the stale value they arrived with.
-  // Driven by an effect (not the submit handler): RHF's handleSubmit runs its
-  // callback in an async microtask outside React's batching, where react-router's
-  // navigate is a no-op — only setState survives there. The effect runs post-commit
-  // in React's normal flow, so the write lands. It is idempotent (writes only when
-  // the desired status differs from the URL), which both prevents a render loop and
-  // is StrictMode-safe: the double-invoked mount effect is a no-op when the URL
-  // already matches, so a deep-linked page is preserved. Page resets to 1 on a real
-  // status change since the result set changes; merge-safe write keeps limit.
-  const desiredStatus =
-    filters && filters.status && filters.status !== 'all' ? filters.status : undefined
-  useEffect(() => {
-    if (desiredStatus === urlStatus) return
-    setParams((params) => {
-      params.set('page', '1')
-      if (desiredStatus) params.set('status', desiredStatus)
-      else params.delete('status')
-    })
-    // setParams is stable enough; re-run when the committed status or URL changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desiredStatus, urlStatus])
-
-  const handleSubmit = (values: PRListFilterValues) => {
-    setFilters(values)
-  }
-
-  const handleClear = () => {
-    setFilters(null)
-  }
+  const handleSubmit = (values: PRListFilterValues) => commit(values)
+  const handleClear = () => clear()
 
   return (
     <div>
@@ -111,16 +78,16 @@ export function PRListPage() {
       />
 
       <PRListFilterForm
+        key={signature}
         showRequester={showRequester}
-        initialStatus={urlStatus}
+        initialValues={hasSearched ? filters : undefined}
         onSubmit={handleSubmit}
         onClear={handleClear}
+        canClear={hasSearched}
       />
 
-      {filters === null ? (
-        <p className="text-center py-12 text-muted-foreground">
-          กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล
-        </p>
+      {!hasSearched ? (
+        <ListSearchPrompt message="กรุณาเลือกช่วงวันที่และกดค้นหาเพื่อดูข้อมูล" />
       ) : isLoading ? (
         <ListLoadingState testId="pr-list-loading" />
       ) : (

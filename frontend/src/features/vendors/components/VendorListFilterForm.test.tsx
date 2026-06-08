@@ -73,4 +73,15 @@ describe('VendorListFilterForm', () => {
     expect(screen.getByText('Hardware')).toBeInTheDocument()
     expect(screen.getByText('Software')).toBeInTheDocument()
   })
+
+  it('restores initialValues into the inputs and enables ล้าง when canClear', () => {
+    renderForm({
+      initialValues: { search: 'acme', isBlacklisted: 'true', categoryId: '2' },
+      canClear: true,
+    })
+    expect(screen.getByLabelText('ชื่อผู้ขาย')).toHaveValue('acme')
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('แบล็คลิสต์') // isBlacklisted=true
+    expect(screen.getByLabelText('หมวดหมู่')).toHaveTextContent('Software') // categoryId=2 → Software
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })

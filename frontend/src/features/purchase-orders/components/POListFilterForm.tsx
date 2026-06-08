@@ -32,13 +32,21 @@ const STATUS_OPTIONS = [
 
 interface POListFilterFormProps {
   vendors: Vendor[]
+  /** seeds RHF defaultValues; consumed once at mount — remount via `key` to change after mount */
+  initialValues?: POListFilterValues
   onSubmit: (values: POListFilterValues) => void
   onClear?: () => void
   canClear?: boolean
 }
 
-export function POListFilterForm({ vendors, onSubmit, onClear, canClear }: POListFilterFormProps) {
-  const defaultValues: POListFilterValues = {
+export function POListFilterForm({
+  vendors,
+  initialValues,
+  onSubmit,
+  onClear,
+  canClear,
+}: POListFilterFormProps) {
+  const defaultValues: POListFilterValues = initialValues ?? {
     status: 'all',
     vendorId: 'all',
   }

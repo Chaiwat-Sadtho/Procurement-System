@@ -29,12 +29,21 @@ const STATUS_FILTER_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
 ]
 
 interface UserListFilterFormProps {
+  /** seeds RHF defaultValues; consumed once at mount — remount via `key` to change after mount */
+  initialValues?: UserFilterValues
   onSubmit: (values: UserFilterValues) => void
   onClear?: () => void
   canClear?: boolean
 }
 
-export function UserListFilterForm({ onSubmit, onClear, canClear }: UserListFilterFormProps) {
+export function UserListFilterForm({
+  initialValues,
+  onSubmit,
+  onClear,
+  canClear,
+}: UserListFilterFormProps) {
+  const defaultValues: UserFilterValues = initialValues ?? DEFAULT_USER_FILTERS
+
   const {
     register,
     handleSubmit,
@@ -44,14 +53,14 @@ export function UserListFilterForm({ onSubmit, onClear, canClear }: UserListFilt
     formState: { isDirty },
   } = useForm<UserFilterValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: DEFAULT_USER_FILTERS,
+    defaultValues,
   })
 
   const role = useWatch({ control, name: 'role' })
   const status = useWatch({ control, name: 'status' })
 
   function handleClear() {
-    reset(DEFAULT_USER_FILTERS)
+    reset(defaultValues)
     onClear?.()
   }
 

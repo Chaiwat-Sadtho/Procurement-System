@@ -7,15 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import {
-  Repository,
-  IsNull,
-  DataSource,
-  EntityManager,
-  FindOptionsWhere,
-  In,
-  Not,
-} from 'typeorm';
+import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere, In, Not } from 'typeorm';
 import { Budget } from './entities/budget.entity';
 import { Department } from '../departments/entities/department.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -82,10 +74,7 @@ export class BudgetsService {
     }
   }
 
-  async findAll(
-    query: BudgetQueryDto,
-    user: { id: number; role: UserRole },
-  ): Promise<Budget[]> {
+  async findAll(query: BudgetQueryDto, user: { id: number; role: UserRole }): Promise<Budget[]> {
     const where: FindOptionsWhere<Budget> = {};
     if (query.fiscalYear) where.fiscalYear = query.fiscalYear;
 
