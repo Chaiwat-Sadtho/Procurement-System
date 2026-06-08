@@ -39,7 +39,7 @@ describe('PRDetailHeader', () => {
     renderHeader()
     expect(screen.getByText('PR-2026-0001')).toBeInTheDocument()
     expect(screen.getByText('Office Supplies')).toBeInTheDocument()
-    expect(screen.getByText('Draft')).toBeInTheDocument()
+    expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
   })
 
   it('renders meta fields including requester, department and amount', () => {

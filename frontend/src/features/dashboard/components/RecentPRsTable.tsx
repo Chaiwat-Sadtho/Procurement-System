@@ -35,10 +35,10 @@ export function RecentPRsTable() {
           <Table>
             <TableHeader className="bg-table-header text-table-header-foreground">
               <TableRow>
-                <TableHead>PR Number</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>เลขที่ PR</TableHead>
+                <TableHead>ชื่อรายการ</TableHead>
+                <TableHead>สถานะ</TableHead>
+                <TableHead>วันที่</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -62,7 +62,7 @@ export function RecentPRsTable() {
                     </TableCell>
                     <TableCell>
                       <Button asChild variant="ghost" size="sm">
-                        <Link to={`/purchase-requests/${pr.id}`}>View</Link>
+                        <Link to={`/purchase-requests/${pr.id}`}>ดู</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

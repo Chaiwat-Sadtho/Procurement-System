@@ -33,11 +33,11 @@ const filterSchema = z
 export type PRListFilterValues = z.infer<typeof filterSchema>
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'all', label: 'ทุกสถานะ' },
+  { value: 'draft', label: 'ฉบับร่าง' },
+  { value: 'submitted', label: 'รออนุมัติ' },
+  { value: 'approved', label: 'อนุมัติแล้ว' },
+  { value: 'rejected', label: 'ไม่อนุมัติ' },
 ]
 
 interface PRListFilterFormProps {
@@ -100,12 +100,12 @@ export function PRListFilterForm({
       {/* Row 1: PR Number / Title / Date from / Date to */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="space-y-1">
-          <Label htmlFor="prNumber">PR Number</Label>
+          <Label htmlFor="prNumber">เลขที่ PR</Label>
           <Input id="prNumber" placeholder="PR-2026-0001" {...register('prNumber')} />
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="search">Title</Label>
+          <Label htmlFor="search">ชื่อรายการ</Label>
           <Input id="search" placeholder="ค้นหาในชื่อ PR" {...register('search')} />
         </div>
 

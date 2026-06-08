@@ -62,23 +62,23 @@ describe('ProfilePage', () => {
 
   it('prefills first/middle/last name from current user', () => {
     renderProfilePage()
-    expect(screen.getByLabelText(/first name/i)).toHaveValue('Somchai')
-    expect(screen.getByLabelText(/last name/i)).toHaveValue('Jaidee')
+    expect(screen.getByLabelText('ชื่อจริง')).toHaveValue('Somchai')
+    expect(screen.getByLabelText('นามสกุล')).toHaveValue('Jaidee')
   })
 
   it('shows email and role as read-only text', () => {
     renderProfilePage()
     expect(screen.getByText('somchai@company.com')).toBeInTheDocument()
-    expect(screen.getByText(/employee/i)).toBeInTheDocument()
+    expect(screen.getByText(/พนักงาน/)).toBeInTheDocument()
   })
 
   it('shows validation error when first name is cleared', async () => {
     const user = userEvent.setup()
     renderProfilePage()
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
     await waitFor(() => {
-      expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/กรุณากรอกชื่อจริง/)).toBeInTheDocument()
     })
   })
 
@@ -91,9 +91,9 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     renderProfilePage()
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), 'Somsak')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
 
     await waitFor(() => {
       expect(settingsApi.updateProfile).toHaveBeenCalledWith({
@@ -106,7 +106,7 @@ describe('ProfilePage', () => {
 
   it('disables Save while the form has no unsaved changes (finding D)', () => {
     renderProfilePage()
-    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'บันทึก' })).toBeDisabled()
   })
 
   it('keeps unsaved edits when the current user is refetched (finding B)', async () => {
@@ -120,8 +120,8 @@ describe('ProfilePage', () => {
       </QueryClientProvider>,
     )
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), 'EditedName')
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), 'EditedName')
 
     // refetchOnWindowFocus returns a fresh user object (new reference) —
     // must NOT clobber the in-progress edit
@@ -136,7 +136,7 @@ describe('ProfilePage', () => {
       </QueryClientProvider>,
     )
 
-    expect(screen.getByLabelText(/first name/i)).toHaveValue('EditedName')
+    expect(screen.getByLabelText('ชื่อจริง')).toHaveValue('EditedName')
   })
 
   it('trims whitespace from names before submitting (finding C)', async () => {
@@ -144,12 +144,12 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     renderProfilePage()
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), '  Somsak  ')
-    await user.type(screen.getByLabelText(/middle name/i), '  Kiet  ')
-    await user.clear(screen.getByLabelText(/last name/i))
-    await user.type(screen.getByLabelText(/last name/i), '  Jaidee  ')
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), '  Somsak  ')
+    await user.type(screen.getByLabelText('ชื่อกลาง'), '  Kiet  ')
+    await user.clear(screen.getByLabelText('นามสกุล'))
+    await user.type(screen.getByLabelText('นามสกุล'), '  Jaidee  ')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
 
     await waitFor(() => {
       expect(settingsApi.updateProfile).toHaveBeenCalledWith({
@@ -170,11 +170,11 @@ describe('ProfilePage', () => {
     renderProfilePage()
 
     // make the form dirty via middle name so Save is enabled, leaving firstName empty
-    await user.type(screen.getByLabelText(/middle name/i), 'X')
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.type(screen.getByLabelText('ชื่อกลาง'), 'X')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
 
     await waitFor(() => {
-      expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/กรุณากรอกชื่อจริง/)).toBeInTheDocument()
     })
   })
 
@@ -188,9 +188,9 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     const { queryClient } = renderProfilePage()
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), 'Somsak')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
 
     await waitFor(() => {
       expect(queryClient.getQueryData(['currentUser'])).toEqual(updated)
@@ -200,10 +200,10 @@ describe('ProfilePage', () => {
   it('shows validation error when last name is cleared (finding K)', async () => {
     const user = userEvent.setup()
     renderProfilePage()
-    await user.clear(screen.getByLabelText(/last name/i))
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('นามสกุล'))
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
     await waitFor(() => {
-      expect(screen.getByText(/last name is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/กรุณากรอกนามสกุล/)).toBeInTheDocument()
     })
   })
 
@@ -225,9 +225,9 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     renderProfilePage()
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
-    await user.click(screen.getByRole('button', { name: /save/i }))
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), 'Somsak')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('บันทึกโปรไฟล์ไม่สำเร็จ')
@@ -243,9 +243,9 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     renderProfilePage()
 
-    await user.clear(screen.getByLabelText(/first name/i))
-    await user.type(screen.getByLabelText(/first name/i), 'Somsak')
-    const saveButton = screen.getByRole('button', { name: /save/i })
+    await user.clear(screen.getByLabelText('ชื่อจริง'))
+    await user.type(screen.getByLabelText('ชื่อจริง'), 'Somsak')
+    const saveButton = screen.getByRole('button', { name: 'บันทึก' })
     expect(saveButton).toBeEnabled()
 
     await user.click(saveButton)

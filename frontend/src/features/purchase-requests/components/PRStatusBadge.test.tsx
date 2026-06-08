@@ -5,26 +5,26 @@ import { PRStatusBadge } from './PRStatusBadge'
 describe('PRStatusBadge', () => {
   it('renders draft status', () => {
     render(<PRStatusBadge status="draft" />)
-    expect(screen.getByText('Draft')).toBeInTheDocument()
+    expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
   })
 
   it('renders submitted status', () => {
     render(<PRStatusBadge status="submitted" />)
-    expect(screen.getByText('Submitted')).toBeInTheDocument()
+    expect(screen.getByText('รออนุมัติ')).toBeInTheDocument()
   })
 
   it('renders under_review status', () => {
     render(<PRStatusBadge status="under_review" />)
-    expect(screen.getByText('Under Review')).toBeInTheDocument()
+    expect(screen.getByText('กำลังตรวจสอบ')).toBeInTheDocument()
   })
 
   it('renders approved status', () => {
     render(<PRStatusBadge status="approved" />)
-    expect(screen.getByText('Approved')).toBeInTheDocument()
+    expect(screen.getByText('อนุมัติแล้ว')).toBeInTheDocument()
   })
 
   it('renders rejected status', () => {
     render(<PRStatusBadge status="rejected" />)
-    expect(screen.getByText('Rejected')).toBeInTheDocument()
+    expect(screen.getByText('ไม่อนุมัติ')).toBeInTheDocument()
   })
 })

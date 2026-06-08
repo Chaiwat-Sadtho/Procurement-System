@@ -20,10 +20,10 @@ const stats: PrStatsResponse = { total: 10, draft: 2, submitted: 3, approved: 4,
 describe('StatusChart', () => {
   it('renders legend with each status label and count', () => {
     render(<StatusChart stats={stats} isLoading={false} />)
-    expect(screen.getByText('Draft')).toBeInTheDocument()
-    expect(screen.getByText('Submitted')).toBeInTheDocument()
-    expect(screen.getByText('Approved')).toBeInTheDocument()
-    expect(screen.getByText('Rejected')).toBeInTheDocument()
+    expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
+    expect(screen.getByText('รออนุมัติ')).toBeInTheDocument()
+    expect(screen.getByText('อนุมัติแล้ว')).toBeInTheDocument()
+    expect(screen.getByText('ไม่อนุมัติ')).toBeInTheDocument()
     // legend counts
     expect(screen.getByTestId('legend-approved')).toHaveTextContent('4')
   })

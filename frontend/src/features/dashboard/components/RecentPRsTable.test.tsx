@@ -70,7 +70,7 @@ describe('RecentPRsTable', () => {
       typeof useRecentPRs
     >)
     renderTable()
-    const thead = screen.getByText('PR Number').closest('thead')
+    const thead = screen.getByText('เลขที่ PR').closest('thead')
     expect(thead).toHaveClass('bg-table-header')
   })
 })

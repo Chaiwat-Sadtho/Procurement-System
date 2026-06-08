@@ -22,7 +22,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Dashboard"
+        title="แดชบอร์ด"
         action={
           isEmployee ? (
             <Button asChild>

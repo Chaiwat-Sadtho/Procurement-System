@@ -79,7 +79,7 @@ describe('PRListPage — real-form submit writes the URL', () => {
     await userEvent.clear(to)
     await userEvent.type(to, '31122569')
     await userEvent.click(screen.getByLabelText('สถานะ'))
-    await userEvent.click(await screen.findByRole('option', { name: 'Approved' }))
+    await userEvent.click(await screen.findByRole('option', { name: 'อนุมัติแล้ว' }))
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
 
     await waitFor(() => {

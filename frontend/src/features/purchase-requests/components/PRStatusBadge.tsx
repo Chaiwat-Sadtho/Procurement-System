@@ -3,13 +3,13 @@ import type { PRStatus } from '../types'
 
 const statusConfig: Record<
   PRStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' }
 > = {
-  draft: { label: 'Draft', variant: 'secondary' },
-  submitted: { label: 'Submitted', variant: 'default' },
-  under_review: { label: 'Under Review', variant: 'outline' },
-  approved: { label: 'Approved', variant: 'default' },
-  rejected: { label: 'Rejected', variant: 'destructive' },
+  draft: { label: 'ฉบับร่าง', variant: 'secondary' },
+  submitted: { label: 'รออนุมัติ', variant: 'default' },
+  under_review: { label: 'กำลังตรวจสอบ', variant: 'outline' },
+  approved: { label: 'อนุมัติแล้ว', variant: 'success' },
+  rejected: { label: 'ไม่อนุมัติ', variant: 'destructive' },
 }
 
 interface PRStatusBadgeProps {

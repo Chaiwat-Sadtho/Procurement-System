@@ -188,7 +188,7 @@ describe('PRListPage', () => {
     expect(firstCall[1]).toEqual({ enabled: true })
     // the form is restored too (not just the query)
     expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('01/01/2569')
-    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('อนุมัติแล้ว')
   })
 
   it('a deep link carrying ?status= but no ?q= shows the prompt (status alone is not a search)', () => {
@@ -429,7 +429,7 @@ describe('PRListPage', () => {
     await userEvent.clear(to)
     await userEvent.type(to, '31122569')
     await userEvent.click(screen.getByLabelText('สถานะ'))
-    await userEvent.click(await screen.findByRole('option', { name: 'Approved' }))
+    await userEvent.click(await screen.findByRole('option', { name: 'อนุมัติแล้ว' }))
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
     // status synced + page reset to 1 (the effect writes after the async submit settles)
     await waitFor(() => {

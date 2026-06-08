@@ -66,8 +66,8 @@ export function PRListPage() {
   return (
     <div>
       <PageHeader
-        title="Purchase Requests"
-        description="Manage purchase requests"
+        title="ใบขอซื้อ"
+        description="ค้นหาและเรียกดูใบขอซื้อ"
         action={
           canCreate ? (
             <Button asChild>
@@ -97,12 +97,12 @@ export function PRListPage() {
               <TableHeader className="bg-table-header text-table-header-foreground">
                 <TableRow>
                   <TableHead className="w-[60px] text-center">ลำดับ</TableHead>
-                  <TableHead className="w-[140px]">PR Number</TableHead>
-                  <TableHead className="min-w-[200px]">Title</TableHead>
-                  <TableHead className="w-[140px]">Requester</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[140px] text-right">Amount</TableHead>
-                  <TableHead className="w-[120px]">Date</TableHead>
+                  <TableHead className="w-[140px]">เลขที่ PR</TableHead>
+                  <TableHead className="min-w-[200px]">ชื่อรายการ</TableHead>
+                  <TableHead className="w-[140px]">ผู้ขอ</TableHead>
+                  <TableHead className="w-[120px]">สถานะ</TableHead>
+                  <TableHead className="w-[140px] text-right">มูลค่า</TableHead>
+                  <TableHead className="w-[120px]">วันที่</TableHead>
                   <TableHead className="w-[80px]" />
                 </TableRow>
               </TableHeader>
@@ -131,7 +131,7 @@ export function PRListPage() {
                       </TableCell>
                       <TableCell>
                         <Button asChild variant="ghost" size="sm">
-                          <Link to={`/purchase-requests/${pr.id}`}>View</Link>
+                          <Link to={`/purchase-requests/${pr.id}`}>ดู</Link>
                         </Button>
                         {canManageRow(pr) && (
                           <>

@@ -1,5 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Link } from 'react-router-dom'
+import { FileQuestion } from 'lucide-react'
 import { AppLayout } from '@/shared/components/AppLayout'
+import { Button } from '@/shared/components/ui/button'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
@@ -196,9 +198,15 @@ export const router = createBrowserRouter([
       {
         path: '*',
         element: (
-          <div className="flex flex-col items-center justify-center h-64 gap-2">
-            <h2 className="text-2xl font-semibold">404</h2>
-            <p className="text-muted-foreground">Page not found</p>
+          <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+            <FileQuestion className="h-16 w-16 text-muted-foreground" aria-hidden="true" />
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold">404</h2>
+              <p className="text-muted-foreground">ไม่พบหน้าที่คุณกำลังค้นหา</p>
+            </div>
+            <Button asChild>
+              <Link to="/dashboard">กลับสู่หน้าหลัก</Link>
+            </Button>
           </div>
         ),
       },

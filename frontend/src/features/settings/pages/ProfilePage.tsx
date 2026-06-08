@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import type { User } from '@/shared/types'
 import { settingsApi } from '@/features/settings/api'
+import { ROLE_LABELS } from '@/features/users/lib/roleLabels'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -20,9 +21,9 @@ import {
 import { Input } from '@/shared/components/ui/input'
 
 const schema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
+  firstName: z.string().min(1, 'กรุณากรอกชื่อจริง'),
   middleName: z.string(),
-  lastName: z.string().min(1, 'Last name is required'),
+  lastName: z.string().min(1, 'กรุณากรอกนามสกุล'),
 })
 
 type ProfileFormValues = z.infer<typeof schema>
@@ -85,16 +86,16 @@ export function ProfilePage() {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Email</p>
+            <p className="text-muted-foreground">อีเมล</p>
             <p className="font-medium">{user?.email}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Role</p>
-            <p className="font-medium">{user?.role}</p>
+            <p className="text-muted-foreground">บทบาท</p>
+            <p className="font-medium">{user ? ROLE_LABELS[user.role] : ''}</p>
           </div>
           {user?.department && (
             <div>
-              <p className="text-muted-foreground">Department</p>
+              <p className="text-muted-foreground">แผนก</p>
               <p className="font-medium">{user.department.name}</p>
             </div>
           )}
@@ -108,7 +109,7 @@ export function ProfilePage() {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel>ชื่อจริง</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -121,7 +122,7 @@ export function ProfilePage() {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel>นามสกุล</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -135,7 +136,7 @@ export function ProfilePage() {
               name="middleName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Middle Name</FormLabel>
+                  <FormLabel>ชื่อกลาง</FormLabel>
                   <FormControl>
                     <Input placeholder="(ไม่บังคับ)" {...field} />
                   </FormControl>
@@ -144,7 +145,7 @@ export function ProfilePage() {
               )}
             />
             <Button type="submit" disabled={mutation.isPending || !isDirty}>
-              Save
+              บันทึก
             </Button>
           </form>
         </Form>

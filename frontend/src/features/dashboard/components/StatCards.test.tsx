@@ -13,27 +13,27 @@ describe('StatCards', () => {
 
   it('employee: shows Draft/Submitted/Approved/Rejected values', () => {
     render(<StatCards stats={stats} isLoading={false} role="employee" />)
-    expect(screen.getByText('Draft')).toBeInTheDocument()
+    expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument() // draft
-    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+    expect(screen.queryByText('ทั้งหมด')).not.toBeInTheDocument()
   })
 
   it('manager: shows Total card', () => {
     render(<StatCards stats={stats} isLoading={false} role="manager" />)
-    expect(screen.getByText('Total')).toBeInTheDocument()
+    expect(screen.getByText('ทั้งหมด')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
   })
 
   it('procurement_officer: shows Total + Pending cards', () => {
     render(<StatCards stats={stats} isLoading={false} role="procurement_officer" />)
-    expect(screen.getByText('Total')).toBeInTheDocument()
-    expect(screen.getByText('Pending')).toBeInTheDocument()
-    expect(screen.queryByText('Draft')).not.toBeInTheDocument()
+    expect(screen.getByText('ทั้งหมด')).toBeInTheDocument()
+    expect(screen.getByText('รออนุมัติ')).toBeInTheDocument()
+    expect(screen.queryByText('ฉบับร่าง')).not.toBeInTheDocument()
   })
 
   it('undefined role: falls back to employee cards', () => {
     render(<StatCards stats={stats} isLoading={false} role={undefined} />)
-    expect(screen.getByText('Draft')).toBeInTheDocument()
-    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+    expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
+    expect(screen.queryByText('ทั้งหมด')).not.toBeInTheDocument()
   })
 })
