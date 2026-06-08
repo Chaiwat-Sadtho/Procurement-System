@@ -51,6 +51,26 @@ describe('BudgetSummary', () => {
     expect(screen.getByTestId('budget-warn-1')).toBeInTheDocument()
   })
 
+  it('labels the percent figure in Thai (ใช้แล้ว, not English "used")', () => {
+    mockBudgets([budget({ reservedAmount: 300, usedAmount: 200 })])
+    render(<BudgetSummary scope={{ departmentId: 1 }} />)
+    expect(screen.getByText(/ใช้แล้ว/)).toBeInTheDocument()
+    expect(screen.queryByText(/used/)).not.toBeInTheDocument()
+  })
+
+  it('labels an annual budget (quarter null) as รายปี, matching the budgets feature', () => {
+    mockBudgets([budget({ quarter: null })])
+    render(<BudgetSummary scope={{ departmentId: 1 }} />)
+    expect(screen.getByText('รายปี')).toBeInTheDocument()
+    expect(screen.queryByText('Annual')).not.toBeInTheDocument()
+  })
+
+  it('keeps quarterly budgets as Q{n} (feature convention)', () => {
+    mockBudgets([budget({ quarter: 2 })])
+    render(<BudgetSummary scope={{ departmentId: 1 }} />)
+    expect(screen.getByText('Q2')).toBeInTheDocument()
+  })
+
   it('shows empty state when no budgets', () => {
     mockBudgets([])
     render(<BudgetSummary scope={{}} />)

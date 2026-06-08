@@ -103,7 +103,7 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
                         {b.department?.name ?? `แผนก #${b.departmentId}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {b.quarter ? `Q${b.quarter}` : 'Annual'}
+                        {b.quarter ? `Q${b.quarter}` : 'รายปี'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -114,7 +114,7 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
                         data-testid={warn ? `budget-warn-${b.id}` : undefined}
                         className={`text-xs ${warn ? 'text-destructive font-medium' : 'text-muted-foreground'}`}
                       >
-                        {percent.toFixed(0)}% used{warn ? ' — เกิน 80%!' : ''}
+                        {percent.toFixed(0)}% ใช้แล้ว{warn ? ' — เกิน 80%!' : ''}
                       </p>
                     </div>
                   </div>
