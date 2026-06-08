@@ -226,7 +226,7 @@ describe('PurchaseRequestsService', () => {
           title: 'x',
           requiredDate: '2026-01-01',
           items: [],
-        } as never),
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -440,7 +440,7 @@ describe('PurchaseRequestsService', () => {
         role: UserRole.MANAGER,
         departmentId: null,
       });
-      await expect(service.findAll({ id: 2, role: UserRole.MANAGER }, {} as never)).rejects.toThrow(
+      await expect(service.findAll({ id: 2, role: UserRole.MANAGER }, {})).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -458,9 +458,12 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
-        prNumber: '0001',
-      } as any);
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {
+          prNumber: '0001',
+        },
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith('pr.prNumber ILIKE :prNumber', {
         prNumber: '%0001%',
@@ -478,9 +481,12 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
-        requesterId: 5,
-      } as any);
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {
+          requesterId: 5,
+        },
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith('pr.requesterId = :requesterId', { requesterId: 5 });
     });
@@ -497,9 +503,12 @@ describe('PurchaseRequestsService', () => {
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
       mockUserRepo.findOne.mockResolvedValue({ id: 2, departmentId: 1 });
 
-      await service.findAll({ id: 2, role: UserRole.MANAGER }, {
-        requesterId: 99,
-      } as any);
+      await service.findAll(
+        { id: 2, role: UserRole.MANAGER },
+        {
+          requesterId: 99,
+        },
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith('pr.departmentId = :deptId', {
         deptId: 1,
@@ -520,9 +529,12 @@ describe('PurchaseRequestsService', () => {
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
-        requesterName: 'สมชาย',
-      } as any);
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {
+          requesterName: 'สมชาย',
+        },
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith(
         "CONCAT_WS(' ', requester.firstName, requester.middleName, requester.lastName) ILIKE :requesterName",
@@ -545,9 +557,12 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
-        eligibleForPo: true,
-      } as any);
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {
+          eligibleForPo: true,
+        },
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith('pr.status = :eligibleStatus', {
         eligibleStatus: PrStatus.APPROVED,
@@ -563,9 +578,12 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {
-        eligibleForPo: false,
-      } as any);
+      await service.findAll(
+        { id: 99, role: UserRole.PROCUREMENT_OFFICER },
+        {
+          eligibleForPo: false,
+        },
+      );
 
       expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
       const calledWithNotExists = qb.andWhere.mock.calls.some(
@@ -578,7 +596,7 @@ describe('PurchaseRequestsService', () => {
       const qb = makeQb();
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {} as any);
+      await service.findAll({ id: 99, role: UserRole.PROCUREMENT_OFFICER }, {});
 
       expect(qb.andWhere).not.toHaveBeenCalledWith('pr.departmentId IS NOT NULL');
       const calledWithNotExists = qb.andWhere.mock.calls.some(
