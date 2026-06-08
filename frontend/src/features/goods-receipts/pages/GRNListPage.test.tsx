@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useEffect } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import type { GoodsReceiptListItem, GRNListResponse } from '../types'
 import type { User } from '@/shared/types'
 
@@ -90,11 +91,21 @@ function setup({
 }
 
 function renderPage(initialEntries: string[] = ['/']) {
-  return render(
+  const locRef = { current: '' }
+  function LocationProbe() {
+    const loc = useLocation()
+    useEffect(() => {
+      locRef.current = loc.search
+    }, [loc])
+    return null
+  }
+  const utils = render(
     <MemoryRouter initialEntries={initialEntries}>
       <GRNListPage />
+      <LocationProbe />
     </MemoryRouter>,
   )
+  return { ...utils, locRef }
 }
 
 const poUser = { id: 9, role: 'procurement_officer' } as User
@@ -269,5 +280,47 @@ describe('GRNListPage', () => {
     expect(afterClear[0]?.status).toBeUndefined()
     expect(afterClear[0]?.poId).toBeUndefined()
     expect(afterClear[0]).toEqual(expect.objectContaining({ page: 1 }))
+  })
+
+  // --- filters in URL ---
+
+  it('restores filters from the URL and auto-searches when q is present', () => {
+    setup({ data: listData([mockGrn]) })
+    renderPage(['/?q=1&status=complete'])
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][1]).toEqual({ enabled: true })
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][0]!.status).toBe('complete')
+    expect(screen.getByRole('table')).toBeInTheDocument()
+  })
+
+  it('parses URL filters even without q but stays on the prompt (parse independent of q)', () => {
+    setup({ data: listData([mockGrn]) })
+    renderPage(['/?status=complete'])
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][1]).toEqual({ enabled: false })
+    expect(vi.mocked(useGoodsReceipts).mock.calls[0][0]!.status).toBe('complete')
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงการรับของ/)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('writes q + status + page=1 to the URL on submit', async () => {
+    setup({ data: listData([mockGrn]) })
+    mockFilter.values = { status: 'complete', poId: 'all' }
+    const { locRef } = renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.get('q')).toBe('1')
+    expect(params.get('status')).toBe('complete')
+    expect(params.get('page')).toBe('1')
+  })
+
+  it('removes q + filters from the URL (keeps page=1) on clear', async () => {
+    setup({ data: listData([mockGrn]) })
+    const { locRef } = renderPage(['/?q=1&status=complete'])
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /ล้างตัวกรอง/i }))
+    const params = new URLSearchParams(locRef.current)
+    expect(params.has('q')).toBe(false)
+    expect(params.has('status')).toBe(false)
+    expect(params.get('page')).toBe('1')
+    expect(screen.getByText(/กดค้นหาเพื่อแสดงการรับของ/)).toBeInTheDocument()
   })
 })
