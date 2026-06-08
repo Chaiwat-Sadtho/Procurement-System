@@ -88,6 +88,12 @@ export class VendorsService {
     return saved;
   }
 
+  // The cached payload round-trips through Redis as JSON: on a hit, Vendor instances
+  // come back as plain objects and Date columns as ISO strings. That is lossless here
+  // ONLY because Vendor has no @Expose getters or @Transform members, so
+  // ClassSerializerInterceptor emits identical JSON on hit and miss — unlike /auth/me,
+  // which must re-hydrate via plainToInstance (see AuthService.getProfile). Adding an
+  // @Expose/@Transform member to Vendor would require re-hydrating here too.
   findAll(query: VendorQueryDto): Promise<VendorListResult> {
     return this.cache.getOrSetNamespaced(
       CacheKeys.vendorListNs,
@@ -198,6 +204,10 @@ export class VendorsService {
       comment: r.comment,
       ratedBy: {
         id: r.raterId,
+        // Denormalized name snapshot. This payload is cached under vendorRatingsNs
+        // (TTL VENDOR_RATINGS = 120s) and is intentionally NOT invalidated when the rater
+        // renames via AuthService.updateProfile. A hit may therefore show the old name for
+        // up to the TTL — accepted as bounded, self-healing, display-only staleness.
         fullName: [r.raterFirstName, r.raterMiddleName, r.raterLastName].filter(Boolean).join(' '),
       },
       createdAt: r.createdAt,
