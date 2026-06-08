@@ -87,4 +87,11 @@ describe('GRNListFilterForm', () => {
     expect(screen.getByLabelText('ใบสั่งซื้อ (PO)')).toHaveTextContent('ทุกใบสั่งซื้อ')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
   })
+
+  it('restores initialValues into the inputs and enables ล้าง when canClear', () => {
+    renderForm({ initialValues: { status: 'complete', poId: '8' }, canClear: true })
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('รับครบถ้วน') // status=complete
+    expect(screen.getByLabelText('ใบสั่งซื้อ (PO)')).toHaveTextContent('PO-2026-0008') // poId=8
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })

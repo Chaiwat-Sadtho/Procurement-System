@@ -28,13 +28,21 @@ const STATUS_OPTIONS = [
 
 interface GRNListFilterFormProps {
   pos: ReceivablePO[]
+  /** seeds RHF defaultValues; consumed once at mount — remount via `key` to change after mount */
+  initialValues?: GRNListFilterValues
   onSubmit: (values: GRNListFilterValues) => void
   onClear?: () => void
   canClear?: boolean
 }
 
-export function GRNListFilterForm({ pos, onSubmit, onClear, canClear }: GRNListFilterFormProps) {
-  const defaultValues: GRNListFilterValues = {
+export function GRNListFilterForm({
+  pos,
+  initialValues,
+  onSubmit,
+  onClear,
+  canClear,
+}: GRNListFilterFormProps) {
+  const defaultValues: GRNListFilterValues = initialValues ?? {
     status: 'all',
     poId: 'all',
   }
