@@ -8,6 +8,11 @@ export interface UrlFilterConfig<T> {
   parse: (params: URLSearchParams) => T
   /** เขียน canonical filter ลง params (mutate): set ค่าที่ไม่ใช่ default, delete ตัวที่เป็น default */
   serialize: (values: T, params: URLSearchParams) => void
+  /**
+   * commit/clear reset page=1 หรือไม่ (default true = หน้า paginated เช่น Vendors).
+   * หน้า client-side filter ที่ไม่มี usePagination (Users) ตั้ง false → URL ไม่มี page ค้าง
+   */
+  resetPage?: boolean
 }
 
 export interface UseUrlFiltersResult<T> {
@@ -64,7 +69,7 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
         config.serialize(config.defaults, p) // defaults serialize → deletes every filter key
         p.delete('q')
       }
-      p.set('page', '1') // commit/clear always reset to page 1 (result set changes)
+      if (config.resetPage !== false) p.set('page', '1') // paginated pages reset to page 1 (result set changes); non-paginated (Users) opt out
       return p
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps

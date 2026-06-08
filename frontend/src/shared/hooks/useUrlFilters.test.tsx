@@ -123,3 +123,39 @@ describe('useUrlFilters', () => {
     expect(result.current.api.signature).not.toBe(sigAfterSearch)
   })
 })
+
+// resetPage defaults to true (paginated pages reset to page 1 on commit/clear).
+// A non-paginated page (Users — client-side filtering, no usePagination) opts out via
+// `resetPage: false` so the URL stays clean (no inert page=1).
+describe('useUrlFilters with resetPage: false (non-paginated page)', () => {
+  const noResetConfig: UrlFilterConfig<TestFilters> = { ...testConfig, resetPage: false }
+
+  function renderNoReset(initialEntries: string[]) {
+    return renderHook(
+      () => {
+        const api = useUrlFilters(noResetConfig)
+        const [params] = useSearchParams()
+        return { api, params }
+      },
+      { wrapper: wrapperWith(initialEntries) },
+    )
+  }
+
+  it('commit writes q + filters but no page param', () => {
+    const { result } = renderNoReset(['/'])
+    act(() => result.current.api.commit({ search: 'x', isBlacklisted: 'all', categoryId: 'all' }))
+    const p = result.current.params
+    expect(p.has('q')).toBe(true)
+    expect(p.get('search')).toBe('x')
+    expect(p.has('page')).toBe(false)
+  })
+
+  it('clear removes q + filters and writes no page param', () => {
+    const { result } = renderNoReset(['/?q=1&search=acme'])
+    act(() => result.current.api.clear())
+    const p = result.current.params
+    expect(p.has('q')).toBe(false)
+    expect(p.has('search')).toBe(false)
+    expect(p.has('page')).toBe(false)
+  })
+})
