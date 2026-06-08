@@ -35,7 +35,7 @@ const mockJwtService = {
 };
 
 const mockCache = {
-  getOrSet: jest.fn(async (_key: string, _ttl: number, factory: () => unknown) => factory()),
+  getOrSet: jest.fn(async (_key: string, _ttl: number, factory: () => unknown) => await factory()),
   del: jest.fn(),
 };
 
@@ -66,7 +66,7 @@ describe('AuthService', () => {
         email: 'test@test.com',
         password: 'password123',
         departmentId: 1,
-      } as never);
+      });
 
       expect(result).toHaveProperty('access_token');
       expect(mockUserRepository.save).toHaveBeenCalled();
@@ -264,13 +264,15 @@ describe('AuthService', () => {
     it('invalidates auth:me BEFORE re-reading the profile (del precedes the re-read)', async () => {
       // guards the del-then-getProfile order: re-reading first would re-cache stale data
       const calls: string[] = [];
-      mockCache.del.mockImplementationOnce(async () => {
+      mockCache.del.mockImplementationOnce(() => {
         calls.push('del');
       });
-      mockCache.getOrSet.mockImplementationOnce(async (_k: string, _t: number, f: () => unknown) => {
-        calls.push('getOrSet');
-        return f();
-      });
+      mockCache.getOrSet.mockImplementationOnce(
+        async (_k: string, _t: number, f: () => unknown) => {
+          calls.push('getOrSet');
+          return await f();
+        },
+      );
       const editable = { ...mockUser, id: 7 };
       mockUserRepository.findOne.mockResolvedValueOnce(editable).mockResolvedValueOnce(editable);
       mockUserRepository.save.mockResolvedValue(editable);

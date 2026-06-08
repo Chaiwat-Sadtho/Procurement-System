@@ -17,11 +17,25 @@ export const CacheKeys = {
   vendorRatingsNs: (vendorId: number) => `vendor:ratings:${vendorId}`,
 } as const;
 
+/** Coerce a query value to a stable string without tripping no-base-to-string on objects. */
+function stringifyValue(value: unknown): string {
+  switch (typeof value) {
+    case 'string':
+      return value;
+    case 'number':
+    case 'boolean':
+    case 'bigint':
+      return String(value);
+    default:
+      return value == null ? '' : JSON.stringify(value);
+  }
+}
+
 /** Stable hash of a query object (sorted keys) so each page/filter caches separately. */
 export function hashQuery(query: Record<string, unknown>): string {
   const sorted = Object.keys(query)
     .sort()
-    .map((k) => `${k}=${String(query[k] ?? '')}`)
+    .map((k) => `${k}=${stringifyValue(query[k])}`)
     .join('&');
   return sorted || 'default';
 }
