@@ -93,4 +93,11 @@ describe('POListFilterForm', () => {
     expect(onClear).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
   })
+
+  it('restores initialValues into the inputs and enables ล้าง when canClear', () => {
+    renderForm({ initialValues: { status: 'sent', vendorId: '8' }, canClear: true })
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('ส่งแล้ว') // status=sent
+    expect(screen.getByLabelText('ผู้ขาย')).toHaveTextContent('Beta Ltd') // vendorId=8
+    expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
+  })
 })
