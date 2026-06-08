@@ -14,6 +14,8 @@ import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { BlacklistVendorDto } from './dto/blacklist-vendor.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
 import { VendorRatingQueryDto } from './dto/vendor-rating-query.dto';
+import { CacheService } from '../cache/cache.service';
+import { CacheKeys, CacheTtl, hashQuery } from '../cache/cache-keys';
 
 interface RawRatingRow {
   id: number;
@@ -29,6 +31,24 @@ interface RawRatingRow {
   raterLastName: string | null;
 }
 
+type PaginationMeta = { page: number; limit: number; total: number; totalPages: number };
+
+type VendorListResult = { data: Vendor[]; meta: PaginationMeta };
+
+type VendorRatingsResult = {
+  data: Array<{
+    id: number;
+    vendorId: number;
+    poId: number;
+    purchaseOrder: { id: number; poNumber: string };
+    score: number;
+    comment: string | null;
+    ratedBy: { id: number; fullName: string };
+    createdAt: Date;
+  }>;
+  meta: PaginationMeta;
+};
+
 @Injectable()
 export class VendorsService {
   constructor(
@@ -38,6 +58,7 @@ export class VendorsService {
     private readonly categoryRepository: Repository<VendorCategory>,
     @InjectRepository(VendorRating)
     private readonly ratingRepository: Repository<VendorRating>,
+    private readonly cache: CacheService,
   ) {}
 
   async create(dto: CreateVendorDto): Promise<Vendor> {
@@ -62,13 +83,21 @@ export class VendorsService {
       });
     }
 
-    return this.vendorRepository.save(vendor);
+    const saved = await this.vendorRepository.save(vendor);
+    await this.cache.invalidateNamespace(CacheKeys.vendorListNs);
+    return saved;
   }
 
-  async findAll(query: VendorQueryDto): Promise<{
-    data: Vendor[];
-    meta: { page: number; limit: number; total: number; totalPages: number };
-  }> {
+  findAll(query: VendorQueryDto): Promise<VendorListResult> {
+    return this.cache.getOrSetNamespaced(
+      CacheKeys.vendorListNs,
+      hashQuery({ ...query }),
+      CacheTtl.VENDOR_LIST,
+      () => this.queryVendors(query),
+    );
+  }
+
+  private async queryVendors(query: VendorQueryDto): Promise<VendorListResult> {
     const { page = 1, limit = 20, search, isBlacklisted, categoryId } = query;
 
     const qb = this.vendorRepository
@@ -116,22 +145,19 @@ export class VendorsService {
     return vendor;
   }
 
-  async findRatings(
+  findRatings(id: number, query: VendorRatingQueryDto): Promise<VendorRatingsResult> {
+    return this.cache.getOrSetNamespaced(
+      CacheKeys.vendorRatingsNs(id),
+      hashQuery({ ...query }),
+      CacheTtl.VENDOR_RATINGS,
+      () => this.queryRatings(id, query),
+    );
+  }
+
+  private async queryRatings(
     id: number,
     query: VendorRatingQueryDto,
-  ): Promise<{
-    data: Array<{
-      id: number;
-      vendorId: number;
-      poId: number;
-      purchaseOrder: { id: number; poNumber: string };
-      score: number;
-      comment: string | null;
-      ratedBy: { id: number; fullName: string };
-      createdAt: Date;
-    }>;
-    meta: { page: number; limit: number; total: number; totalPages: number };
-  }> {
+  ): Promise<VendorRatingsResult> {
     await this.findOne(id); // 404 if vendor missing
 
     const { page = 1, limit = 20 } = query;
@@ -205,7 +231,9 @@ export class VendorsService {
         : [];
     }
 
-    return this.vendorRepository.save(vendor);
+    const saved = await this.vendorRepository.save(vendor);
+    await this.cache.invalidateNamespace(CacheKeys.vendorListNs);
+    return saved;
   }
 
   async blacklist(id: number, dto: BlacklistVendorDto): Promise<Vendor> {
@@ -214,7 +242,9 @@ export class VendorsService {
 
     vendor.isBlacklisted = true;
     vendor.blacklistReason = dto.reason;
-    return this.vendorRepository.save(vendor);
+    const saved = await this.vendorRepository.save(vendor);
+    await this.cache.invalidateNamespace(CacheKeys.vendorListNs);
+    return saved;
   }
 
   async unblacklist(id: number): Promise<Vendor> {
@@ -223,6 +253,8 @@ export class VendorsService {
 
     vendor.isBlacklisted = false;
     vendor.blacklistReason = null;
-    return this.vendorRepository.save(vendor);
+    const saved = await this.vendorRepository.save(vendor);
+    await this.cache.invalidateNamespace(CacheKeys.vendorListNs);
+    return saved;
   }
 }
