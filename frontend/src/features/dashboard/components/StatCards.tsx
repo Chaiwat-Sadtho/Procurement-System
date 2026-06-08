@@ -7,22 +7,22 @@ type StatKey = keyof PrStatsResponse
 
 const CARDS_BY_ROLE: Record<Role, { key: StatKey; label: string }[]> = {
   employee: [
-    { key: 'draft', label: 'Draft' },
-    { key: 'submitted', label: 'Submitted' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
+    { key: 'draft', label: 'ฉบับร่าง' },
+    { key: 'submitted', label: 'รออนุมัติ' },
+    { key: 'approved', label: 'อนุมัติแล้ว' },
+    { key: 'rejected', label: 'ไม่อนุมัติ' },
   ],
   manager: [
-    { key: 'total', label: 'Total' },
-    { key: 'submitted', label: 'Pending' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
+    { key: 'total', label: 'ทั้งหมด' },
+    { key: 'submitted', label: 'รออนุมัติ' },
+    { key: 'approved', label: 'อนุมัติแล้ว' },
+    { key: 'rejected', label: 'ไม่อนุมัติ' },
   ],
   procurement_officer: [
-    { key: 'total', label: 'Total' },
-    { key: 'submitted', label: 'Pending' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
+    { key: 'total', label: 'ทั้งหมด' },
+    { key: 'submitted', label: 'รออนุมัติ' },
+    { key: 'approved', label: 'อนุมัติแล้ว' },
+    { key: 'rejected', label: 'ไม่อนุมัติ' },
   ],
 }
 

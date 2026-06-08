@@ -58,12 +58,12 @@ describe('AttentionList', () => {
   it('lists individual draft PRs, each linking to its detail page', () => {
     mockAttention([mkPR({ id: 3, prNumber: 'PR-2026-0003', title: 'Laptop', status: 'draft' })], [])
     renderList()
-    expect(screen.getByText(/Draft รอส่ง/)).toBeInTheDocument()
+    expect(screen.getByText(/ฉบับร่าง รอส่ง/)).toBeInTheDocument()
     const row = screen.getByRole('link', { name: /PR-2026-0003/ })
     expect(row).toHaveAttribute('href', '/purchase-requests/3')
     expect(screen.getByText('Laptop')).toBeInTheDocument()
     // ไม่มี section rejected
-    expect(screen.queryByText(/Rejected รอแก้/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/ไม่อนุมัติ รอแก้/)).not.toBeInTheDocument()
   })
 
   it('lists rejected PRs linking to detail, with ดูทั้งหมด to the filtered list', () => {
@@ -72,7 +72,7 @@ describe('AttentionList', () => {
       [mkPR({ id: 9, prNumber: 'PR-2026-0009', title: 'Chair', status: 'rejected' })],
     )
     renderList()
-    expect(screen.getByText(/Rejected รอแก้/)).toBeInTheDocument()
+    expect(screen.getByText(/ไม่อนุมัติ รอแก้/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /PR-2026-0009/ })).toHaveAttribute(
       'href',
       '/purchase-requests/9',
@@ -89,7 +89,7 @@ describe('AttentionList', () => {
       [mkPR({ id: 9, prNumber: 'PR-2026-0009', status: 'rejected' })],
     )
     renderList()
-    expect(screen.getByText(/Draft รอส่ง/)).toBeInTheDocument()
-    expect(screen.getByText(/Rejected รอแก้/)).toBeInTheDocument()
+    expect(screen.getByText(/ฉบับร่าง รอส่ง/)).toBeInTheDocument()
+    expect(screen.getByText(/ไม่อนุมัติ รอแก้/)).toBeInTheDocument()
   })
 })

@@ -20,8 +20,8 @@ function renderAt(path: string) {
 describe('SettingsLayout', () => {
   it('renders Profile and Security tab links', () => {
     renderAt('/settings/profile')
-    expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /security/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /โปรไฟล์/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /ความปลอดภัย/ })).toBeInTheDocument()
   })
 
   it('renders the active child route via Outlet', () => {

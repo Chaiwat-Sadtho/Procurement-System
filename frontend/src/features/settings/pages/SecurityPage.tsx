@@ -19,16 +19,16 @@ import { Input } from '@/shared/components/ui/input'
 
 const schema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+    currentPassword: z.string().min(1, 'กรุณากรอกรหัสผ่านปัจจุบัน'),
+    newPassword: z.string().min(8, 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร'),
     confirmNewPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: 'Passwords do not match',
+    message: 'รหัสผ่านยืนยันไม่ตรงกัน',
     path: ['confirmNewPassword'],
   })
   .refine((data) => data.newPassword !== data.currentPassword, {
-    message: 'New password must be different from current password',
+    message: 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านปัจจุบัน',
     path: ['newPassword'],
   })
 
@@ -82,7 +82,7 @@ export function SecurityPage() {
               name="currentPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Current Password</FormLabel>
+                  <FormLabel>รหัสผ่านปัจจุบัน</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="current-password" {...field} />
                   </FormControl>
@@ -95,7 +95,7 @@ export function SecurityPage() {
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>รหัสผ่านใหม่</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
@@ -108,7 +108,7 @@ export function SecurityPage() {
               name="confirmNewPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
+                  <FormLabel>ยืนยันรหัสผ่านใหม่</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
@@ -117,7 +117,7 @@ export function SecurityPage() {
               )}
             />
             <Button type="submit" disabled={mutation.isPending || !isDirty || !isValid}>
-              Change Password
+              เปลี่ยนรหัสผ่าน
             </Button>
           </form>
         </Form>

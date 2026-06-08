@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import { Users } from 'lucide-react'
 import { Sidebar, NavGroupSection } from './Sidebar'
 import type { User } from '@/shared/types'
 
@@ -53,27 +54,27 @@ describe('Sidebar nav — flat top-level items (regression)', () => {
 
   it('still renders Dashboard, Vendors, Budgets, Users and Settings for procurement_officer', () => {
     renderSidebar('procurement_officer')
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard')
-    expect(screen.getByRole('link', { name: 'Vendors' })).toHaveAttribute('href', '/vendors')
-    expect(screen.getByRole('link', { name: 'Budgets' })).toHaveAttribute('href', '/budgets')
-    expect(screen.getByRole('link', { name: 'Users' })).toHaveAttribute('href', '/users')
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings')
+    expect(screen.getByRole('link', { name: 'แดชบอร์ด' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('link', { name: 'ผู้ขาย' })).toHaveAttribute('href', '/vendors')
+    expect(screen.getByRole('link', { name: 'งบประมาณ' })).toHaveAttribute('href', '/budgets')
+    expect(screen.getByRole('link', { name: 'ผู้ใช้งาน' })).toHaveAttribute('href', '/users')
+    expect(screen.getByRole('link', { name: 'ตั้งค่า' })).toHaveAttribute('href', '/settings')
   })
 
   it('hides procurement-only and manager-only items from an employee', () => {
     renderSidebar('employee')
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Vendors' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Budgets' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'แดชบอร์ด' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'ตั้งค่า' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ผู้ขาย' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'งบประมาณ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ผู้ใช้งาน' })).not.toBeInTheDocument()
   })
 
   it('hides Users from a manager but keeps Vendors and Budgets', () => {
     renderSidebar('manager')
-    expect(screen.getByRole('link', { name: 'Vendors' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Budgets' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'ผู้ขาย' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'งบประมาณ' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ผู้ใช้งาน' })).not.toBeInTheDocument()
   })
 })
 
@@ -93,15 +94,15 @@ describe('Sidebar nav — group renders children', () => {
     const list = document.getElementById(header.getAttribute('aria-controls') as string)
     expect(list).not.toBeNull()
     const group = within(list as HTMLElement)
-    expect(group.getByRole('link', { name: 'Purchase Requests' })).toHaveAttribute(
+    expect(group.getByRole('link', { name: 'ใบขอซื้อ' })).toHaveAttribute(
       'href',
       '/purchase-requests',
     )
-    expect(group.getByRole('link', { name: 'Purchase Orders' })).toHaveAttribute(
+    expect(group.getByRole('link', { name: 'ใบสั่งซื้อ' })).toHaveAttribute(
       'href',
       '/purchase-orders',
     )
-    expect(group.getByRole('link', { name: 'Goods Receipts' })).toHaveAttribute(
+    expect(group.getByRole('link', { name: 'รับของ' })).toHaveAttribute(
       'href',
       '/goods-receipts',
     )
@@ -112,10 +113,10 @@ describe('Sidebar nav — group renders children', () => {
     const nav = screen.getByRole('navigation')
     // getAllByRole takes a SINGLE role string — query each role separately,
     // then order by DOM position (compareDocumentPosition) instead of a mixed query.
-    const dashboard = within(nav).getByRole('link', { name: 'Dashboard' })
+    const dashboard = within(nav).getByRole('link', { name: 'แดชบอร์ด' })
     const groupHeader = within(nav).getByRole('button', { name: 'จัดซื้อ' })
-    const vendors = within(nav).getByRole('link', { name: 'Vendors' })
-    const budgets = within(nav).getByRole('link', { name: 'Budgets' })
+    const vendors = within(nav).getByRole('link', { name: 'ผู้ขาย' })
+    const budgets = within(nav).getByRole('link', { name: 'งบประมาณ' })
 
     // a.compareDocumentPosition(b) & FOLLOWING (4) === b comes after a in document order.
     const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING
@@ -140,7 +141,7 @@ describe('Sidebar nav — group toggle, a11y and persistence', () => {
     const list = document.getElementById(controls as string)
     expect(list).not.toBeNull()
     expect(
-      within(list as HTMLElement).getByRole('link', { name: 'Purchase Orders' }),
+      within(list as HTMLElement).getByRole('link', { name: 'ใบสั่งซื้อ' }),
     ).toBeInTheDocument()
   })
 
@@ -148,12 +149,12 @@ describe('Sidebar nav — group toggle, a11y and persistence', () => {
     const user = userEvent.setup()
     renderSidebar('procurement_officer')
     const header = screen.getByRole('button', { name: 'จัดซื้อ' })
-    expect(screen.getByRole('link', { name: 'Purchase Orders' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'ใบสั่งซื้อ' })).toBeInTheDocument()
 
     await user.click(header)
 
     expect(header).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('link', { name: 'Purchase Orders' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ใบสั่งซื้อ' })).not.toBeInTheDocument()
   })
 
   it('persists the collapsed state to localStorage and restores it on remount', async () => {
@@ -169,7 +170,7 @@ describe('Sidebar nav — group toggle, a11y and persistence', () => {
       'aria-expanded',
       'false',
     )
-    expect(screen.queryByRole('link', { name: 'Purchase Orders' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ใบสั่งซื้อ' })).not.toBeInTheDocument()
   })
 })
 
@@ -183,7 +184,7 @@ describe('Sidebar nav — auto-expand active child and role-filtered group', () 
     renderSidebar('procurement_officer', '/purchase-orders')
     const header = screen.getByRole('button', { name: 'จัดซื้อ' })
     expect(header).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Purchase Orders' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'ใบสั่งซื้อ' })).toBeInTheDocument()
   })
 
   it('auto-expands on a nested child route (e.g. /purchase-orders/5)', () => {
@@ -195,7 +196,7 @@ describe('Sidebar nav — auto-expand active child and role-filtered group', () 
     localStorage.setItem('sidebar-group:จัดซื้อ', 'collapsed')
     renderSidebar('procurement_officer', '/goods-receipts')
     expect(screen.getByRole('button', { name: 'จัดซื้อ' })).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Goods Receipts' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'รับของ' })).toBeInTheDocument()
   })
 
   it('still lets the user collapse the group with an explicit click while on an active child route', async () => {
@@ -208,15 +209,15 @@ describe('Sidebar nav — auto-expand active child and role-filtered group', () 
     // an explicit toggle MUST take effect — the header is never a dead control
     await user.click(header)
     expect(header).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('link', { name: 'Purchase Orders' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ใบสั่งซื้อ' })).not.toBeInTheDocument()
   })
 
   it('still shows the group for an employee because Purchase Requests remains allowed', () => {
     renderSidebar('employee', '/dashboard')
     expect(screen.getByRole('button', { name: 'จัดซื้อ' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Purchase Requests' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Purchase Orders' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Goods Receipts' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'ใบขอซื้อ' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ใบสั่งซื้อ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'รับของ' })).not.toBeInTheDocument()
   })
 
   it('hides the entire group header when role filtering empties all children', () => {
@@ -236,12 +237,14 @@ describe('Sidebar nav — auto-expand active child and role-filtered group', () 
             group={{
               kind: 'group',
               label: 'เฉพาะจัดซื้อ',
+              icon: Users,
               children: [
                 {
                   kind: 'link',
                   label: 'Users',
                   path: '/users',
                   allowedRoles: ['procurement_officer'],
+                  icon: Users,
                 },
               ],
             }}

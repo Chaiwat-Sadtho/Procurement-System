@@ -54,8 +54,8 @@ export function AttentionList() {
     <Card data-testid="attention-list" className="border-l-4 border-l-amber-500">
       <CardContent className="py-4 space-y-4">
         <p className="text-sm font-semibold">ต้องจัดการ</p>
-        <Section title="Draft รอส่ง" status="draft" prs={drafts} />
-        <Section title="Rejected รอแก้" status="rejected" prs={rejected} />
+        <Section title="ฉบับร่าง รอส่ง" status="draft" prs={drafts} />
+        <Section title="ไม่อนุมัติ รอแก้" status="rejected" prs={rejected} />
       </CardContent>
     </Card>
   )

@@ -50,7 +50,7 @@ describe('MobileSidebar', () => {
   it('keeps nav hidden until the menu button is clicked', () => {
     renderMobileSidebar()
     expect(screen.getByRole('button', { name: /open menu/i })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'แดชบอร์ด' })).not.toBeInTheDocument()
   })
 
   it('opens the drawer with nav and closes when a nav link is clicked', async () => {
@@ -58,11 +58,11 @@ describe('MobileSidebar', () => {
     renderMobileSidebar()
 
     await user.click(screen.getByRole('button', { name: /open menu/i }))
-    expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'แดชบอร์ด' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('link', { name: 'Dashboard' }))
+    await user.click(screen.getByRole('link', { name: 'แดชบอร์ด' }))
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'แดชบอร์ด' })).not.toBeInTheDocument()
     })
   })
 
@@ -77,7 +77,7 @@ describe('MobileSidebar', () => {
     const list = document.getElementById(header.getAttribute('aria-controls') as string)
     expect(list).not.toBeNull()
     expect(
-      within(list as HTMLElement).getByRole('link', { name: 'Purchase Orders' }),
+      within(list as HTMLElement).getByRole('link', { name: 'ใบสั่งซื้อ' }),
     ).toHaveAttribute('href', '/purchase-orders')
   })
 })

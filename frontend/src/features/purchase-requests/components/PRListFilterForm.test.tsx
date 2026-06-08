@@ -45,7 +45,7 @@ describe('PRListFilterForm', () => {
   it('calls onSubmit with ISO values when valid', async () => {
     const { onSubmit } = renderForm()
 
-    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-2026')
+    await userEvent.type(screen.getByLabelText('เลขที่ PR'), 'PR-2026')
     await setRange('01012569', '31122569')
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
 
@@ -57,8 +57,8 @@ describe('PRListFilterForm', () => {
   it('reflects the chosen status in the trigger (watch status)', async () => {
     renderForm()
     await userEvent.click(screen.getByLabelText('สถานะ'))
-    await userEvent.click(await screen.findByRole('option', { name: 'Approved' }))
-    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+    await userEvent.click(await screen.findByRole('option', { name: 'อนุมัติแล้ว' }))
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('อนุมัติแล้ว')
   })
 
   it('hides Requester field when showRequester=false', () => {
@@ -79,11 +79,11 @@ describe('PRListFilterForm', () => {
   it('ล้าง resets fields and calls onClear', async () => {
     const { onClear } = renderForm()
 
-    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-XYZ')
+    await userEvent.type(screen.getByLabelText('เลขที่ PR'), 'PR-XYZ')
     await userEvent.type(screen.getByLabelText(/วันที่เริ่มต้น/i), '01012569')
     await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
 
-    expect(screen.getByLabelText(/PR Number/i)).toHaveValue('')
+    expect(screen.getByLabelText('เลขที่ PR')).toHaveValue('')
     expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('')
     expect(onClear).toHaveBeenCalled()
   })
@@ -91,7 +91,7 @@ describe('PRListFilterForm', () => {
   it('ล้าง รีเซ็ตวันที่สิ้นสุด (default วันนี้) ให้เป็นค่าว่าง ไม่ใช่กลับไปเป็นวันนี้', async () => {
     renderForm()
     // ทำให้ form dirty เพื่อเปิดปุ่มล้าง แล้วกดล้าง — to ต้องว่าง ไม่ใช่ default วันนี้
-    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-1')
+    await userEvent.type(screen.getByLabelText('เลขที่ PR'), 'PR-1')
     await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
     expect(screen.getByLabelText(/วันที่สิ้นสุด/i)).toHaveValue('')
   })
@@ -104,7 +104,7 @@ describe('PRListFilterForm', () => {
   it('ล้าง button enables after the user changes a field', async () => {
     renderForm()
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeDisabled()
-    await userEvent.type(screen.getByLabelText(/PR Number/i), 'PR-2026')
+    await userEvent.type(screen.getByLabelText('เลขที่ PR'), 'PR-2026')
     expect(screen.getByRole('button', { name: /ล้าง/i })).toBeEnabled()
   })
 
@@ -120,12 +120,12 @@ describe('PRListFilterForm', () => {
         status: 'approved',
       },
     })
-    expect(screen.getByLabelText(/PR Number/i)).toHaveValue('PR-2026-0009')
-    expect(screen.getByLabelText('Title')).toHaveValue('office')
+    expect(screen.getByLabelText('เลขที่ PR')).toHaveValue('PR-2026-0009')
+    expect(screen.getByLabelText('ชื่อรายการ')).toHaveValue('office')
     expect(screen.getByLabelText(/ผู้ขอ/i)).toHaveValue('สมชาย')
     expect(screen.getByLabelText(/วันที่เริ่มต้น/i)).toHaveValue('01/01/2569')
     expect(screen.getByLabelText(/วันที่สิ้นสุด/i)).toHaveValue('31/12/2569')
-    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('Approved')
+    expect(screen.getByLabelText('สถานะ')).toHaveTextContent('อนุมัติแล้ว')
   })
 
   it('ล้าง button is enabled when canClear even if the form is pristine', () => {

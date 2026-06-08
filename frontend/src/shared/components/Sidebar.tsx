@@ -17,10 +17,12 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 function NavLeaf({ item, onNavigate }: { item: NavLinkItem; onNavigate?: () => void }) {
+  const Icon = item.icon
   return (
     <li>
       <NavLink to={item.path} onClick={onNavigate} className={navLinkClass}>
-        {item.label}
+        <Icon className="mr-3 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>{item.label}</span>
       </NavLink>
     </li>
   )
@@ -70,11 +72,12 @@ export function NavGroupSection({
         onClick={toggle}
         aria-expanded={expanded}
         aria-controls={expanded ? contentId : undefined}
-        className="flex w-full items-center justify-between px-3 py-2 text-sm rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+        className="flex w-full items-center px-3 py-2 text-sm rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
       >
+        <group.icon className="mr-3 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>{group.label}</span>
         <ChevronDown
-          className={cn('h-4 w-4 transition-transform', expanded ? '' : '-rotate-90')}
+          className={cn('ml-auto h-4 w-4 transition-transform', expanded ? '' : '-rotate-90')}
           aria-hidden="true"
         />
       </button>
@@ -127,7 +130,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           onClick={handleLogout}
           className="text-xs text-slate-400 hover:text-white transition-colors"
         >
-          Sign out
+          ออกจากระบบ
         </button>
       </div>
     </>

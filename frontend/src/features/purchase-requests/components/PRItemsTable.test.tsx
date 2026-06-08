@@ -76,7 +76,7 @@ describe('PRItemsTable', () => {
   it('displays totalEstimatedAmount as currency in the footer', () => {
     render(<PRItemsTable items={mockItems} totalEstimatedAmount={1800} />)
 
-    expect(screen.getByText(`Total: ${formatCurrency(1800)}`)).toBeInTheDocument()
+    expect(screen.getByText(`รวม: ${formatCurrency(1800)}`)).toBeInTheDocument()
   })
 
   it('styles the table header with the shared table-header theme (matches PR list)', () => {

@@ -36,9 +36,9 @@ async function fillPasswords(
   next: string,
   confirm: string,
 ) {
-  await user.type(screen.getByLabelText(/current password/i), current)
-  await user.type(screen.getByLabelText(/^new password/i), next)
-  await user.type(screen.getByLabelText(/confirm new password/i), confirm)
+  await user.type(screen.getByLabelText('รหัสผ่านปัจจุบัน'), current)
+  await user.type(screen.getByLabelText('รหัสผ่านใหม่'), next)
+  await user.type(screen.getByLabelText('ยืนยันรหัสผ่านใหม่'), confirm)
 }
 
 describe('SecurityPage', () => {
@@ -48,9 +48,9 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'oldpass12', 'short', 'short')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
     await waitFor(() => {
-      expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument()
+      expect(screen.getByText(/อย่างน้อย 8 ตัวอักษร/)).toBeInTheDocument()
     })
     expect(settingsApi.changePassword).not.toHaveBeenCalled()
   })
@@ -59,9 +59,9 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'oldpass12', 'newpass123', 'different123')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
     await waitFor(() => {
-      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument()
+      expect(screen.getByText(/รหัสผ่านยืนยันไม่ตรงกัน/)).toBeInTheDocument()
     })
     expect(settingsApi.changePassword).not.toHaveBeenCalled()
   })
@@ -70,9 +70,9 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'samepass12', 'samepass12', 'samepass12')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
     await waitFor(() => {
-      expect(screen.getByText(/new password must be different/i)).toBeInTheDocument()
+      expect(screen.getByText(/ต้องไม่ซ้ำกับรหัสผ่านปัจจุบัน/)).toBeInTheDocument()
     })
     expect(settingsApi.changePassword).not.toHaveBeenCalled()
   })
@@ -84,7 +84,7 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
 
     await waitFor(() => {
       expect(settingsApi.changePassword).toHaveBeenCalledWith({
@@ -94,7 +94,7 @@ describe('SecurityPage', () => {
     })
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalled()
-      expect(screen.getByLabelText(/current password/i)).toHaveValue('')
+      expect(screen.getByLabelText('รหัสผ่านปัจจุบัน')).toHaveValue('')
     })
   })
 
@@ -111,7 +111,7 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'wrongpass12', 'newpass123', 'newpass123')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('รหัสผ่านปัจจุบันไม่ถูกต้อง')
@@ -120,12 +120,12 @@ describe('SecurityPage', () => {
 
   it('sets autocomplete tokens on password inputs for password managers (finding G)', () => {
     renderSecurityPage()
-    expect(screen.getByLabelText(/current password/i)).toHaveAttribute(
+    expect(screen.getByLabelText('รหัสผ่านปัจจุบัน')).toHaveAttribute(
       'autocomplete',
       'current-password',
     )
-    expect(screen.getByLabelText(/^new password/i)).toHaveAttribute('autocomplete', 'new-password')
-    expect(screen.getByLabelText(/confirm new password/i)).toHaveAttribute(
+    expect(screen.getByLabelText('รหัสผ่านใหม่')).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByLabelText('ยืนยันรหัสผ่านใหม่')).toHaveAttribute(
       'autocomplete',
       'new-password',
     )
@@ -144,7 +144,7 @@ describe('SecurityPage', () => {
     const user = userEvent.setup()
     renderSecurityPage()
     await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
-    await user.click(screen.getByRole('button', { name: /change password/i }))
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }))
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('เปลี่ยนรหัสผ่านไม่สำเร็จ')
@@ -154,7 +154,7 @@ describe('SecurityPage', () => {
   it('keeps Change Password disabled until every field is valid (round 2 UX)', async () => {
     const user = userEvent.setup()
     renderSecurityPage()
-    const button = screen.getByRole('button', { name: /change password/i })
+    const button = screen.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' })
     expect(button).toBeDisabled()
 
     await fillPasswords(user, 'oldpass12', 'newpass123', 'newpass123')
