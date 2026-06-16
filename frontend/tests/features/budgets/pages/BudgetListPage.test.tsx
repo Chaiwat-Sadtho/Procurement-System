@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import type { Budget } from '../types'
+import type { Budget } from '@/features/budgets/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -12,7 +12,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@/features/budgets/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
 // the filter form owns its own department source + year input; stub it to two buttons
@@ -22,7 +22,7 @@ vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi
 const mockFilter = vi.hoisted(() => ({
   values: { fiscalYear: 2026, departmentId: 999 } as { fiscalYear: number; departmentId?: number },
 }))
-vi.mock('../components/BudgetListFilterForm', () => ({
+vi.mock('@/features/budgets/components/BudgetListFilterForm', () => ({
   BudgetListFilterForm: ({
     onSubmit,
     onClear,
@@ -41,10 +41,10 @@ vi.mock('../components/BudgetListFilterForm', () => ({
   ),
 }))
 
-import { useBudgets } from '../hooks/useBudgets'
+import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { useDepartments } from '@/features/dashboard/hooks/useDepartments'
-import { BudgetListPage } from './BudgetListPage'
+import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
 
 function budget(over: Partial<Budget>): Budget {
   return {

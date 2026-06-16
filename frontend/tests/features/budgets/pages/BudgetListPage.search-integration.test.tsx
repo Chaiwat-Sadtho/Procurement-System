@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import type { User } from '@/shared/types'
-import { BudgetListPage } from './BudgetListPage'
+import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
 
 // Mock data hooks only — BudgetListFilterForm is the REAL component, so a submit runs the
 // real form's handler + the hook's setState→effect write. This guards that a real-form submit
@@ -13,11 +13,11 @@ import { BudgetListPage } from './BudgetListPage'
 //
 // NOTE (#47, TESTING.md): the real-browser navigate no-op is browser-only; jsdom+RTL flushes
 // the write either way. The direct-write vs effect distinction is verified live (tools/eyeball).
-vi.mock('../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@/features/budgets/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
 
-import { useBudgets } from '../hooks/useBudgets'
+import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { useDepartments } from '@/features/dashboard/hooks/useDepartments'
 

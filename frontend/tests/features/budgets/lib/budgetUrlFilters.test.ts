@@ -4,7 +4,7 @@ import {
   serializeBudgetFilters,
   budgetUrlFilterConfig,
   DEFAULT_BUDGET_FILTERS,
-} from './budgetUrlFilters'
+} from '@/features/budgets/lib/budgetUrlFilters'
 
 const CURRENT_YEAR = new Date().getFullYear()
 

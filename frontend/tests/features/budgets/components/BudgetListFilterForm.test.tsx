@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { BudgetListFilterForm } from './BudgetListFilterForm'
+import { BudgetListFilterForm } from '@/features/budgets/components/BudgetListFilterForm'
 
 const departments = [
   { id: 1, name: 'Engineering' },

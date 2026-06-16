@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { BudgetBreakdownBar } from './BudgetBreakdownBar'
+import { BudgetBreakdownBar } from '@/features/budgets/components/BudgetBreakdownBar'
 
 describe('BudgetBreakdownBar', () => {
   it('renders the usage caption and a legend with computed remaining', () => {

@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { BudgetSummary } from '../types'
+import type { BudgetSummary } from '@/features/budgets/types'
 
-vi.mock('../hooks/useBudgetSummary', () => ({ useBudgetSummary: vi.fn() }))
+vi.mock('@/features/budgets/hooks/useBudgetSummary', () => ({ useBudgetSummary: vi.fn() }))
 vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
 // Stub BudgetForm to echo the props the page wires: mode, the edit-only committed floor,
 // and the seeded defaultValues. A wrong default (e.g. createDefaultValues on the edit path)
 // would render dept=0|amount=, and a wrong committed would surface here.
-vi.mock('../components/BudgetForm', () => ({
+vi.mock('@/features/budgets/components/BudgetForm', () => ({
   BudgetForm: (props: {
     mode: 'create' | 'edit'
     committed?: number
@@ -21,9 +21,9 @@ vi.mock('../components/BudgetForm', () => ({
   ),
 }))
 
-import { useBudgetSummary } from '../hooks/useBudgetSummary'
+import { useBudgetSummary } from '@/features/budgets/hooks/useBudgetSummary'
 import { useDepartments } from '@/features/dashboard/hooks/useDepartments'
-import { BudgetFormPage } from './BudgetFormPage'
+import { BudgetFormPage } from '@/features/budgets/pages/BudgetFormPage'
 
 const budget: BudgetSummary = {
   id: 5,

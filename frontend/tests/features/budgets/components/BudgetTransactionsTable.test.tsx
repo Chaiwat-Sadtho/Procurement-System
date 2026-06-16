@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { BudgetTransactionsTable } from './BudgetTransactionsTable'
-import type { BudgetTransaction } from '../types'
+import { BudgetTransactionsTable } from '@/features/budgets/components/BudgetTransactionsTable'
+import type { BudgetTransaction } from '@/features/budgets/types'
 
 const baseTxn: BudgetTransaction = {
   prId: 1,

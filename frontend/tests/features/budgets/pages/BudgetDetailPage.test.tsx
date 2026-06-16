@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { BudgetDetailPage } from './BudgetDetailPage'
-import type { BudgetSummary, BudgetTransaction } from '../types'
+import { BudgetDetailPage } from '@/features/budgets/pages/BudgetDetailPage'
+import type { BudgetSummary, BudgetTransaction } from '@/features/budgets/types'
 
 const summary = vi.fn()
 const transactions = vi.fn()
 const currentUser = vi.fn()
 
-vi.mock('../hooks/useBudgetSummary', () => ({ useBudgetSummary: () => summary() }))
-vi.mock('../hooks/useBudgetTransactions', () => ({ useBudgetTransactions: () => transactions() }))
+vi.mock('@/features/budgets/hooks/useBudgetSummary', () => ({ useBudgetSummary: () => summary() }))
+vi.mock('@/features/budgets/hooks/useBudgetTransactions', () => ({ useBudgetTransactions: () => transactions() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: () => currentUser() }))
 
 const budget: BudgetSummary = {

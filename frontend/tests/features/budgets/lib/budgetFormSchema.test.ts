@@ -7,8 +7,8 @@ import {
   budgetToFormValues,
   createDefaultValues,
   QUARTER_ANNUAL,
-} from './budgetFormSchema'
-import type { BudgetSummary } from '../types'
+} from '@/features/budgets/lib/budgetFormSchema'
+import type { BudgetSummary } from '@/features/budgets/types'
 
 describe('budgetFormSchema', () => {
   const validCreate = {

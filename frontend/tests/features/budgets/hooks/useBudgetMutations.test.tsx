@@ -2,17 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { Budget, CreateBudgetRequest, UpdateBudgetRequest } from '../types'
+import type { Budget, CreateBudgetRequest, UpdateBudgetRequest } from '@/features/budgets/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/budgets/api', () => ({
   budgetsApi: {
     create: vi.fn(),
     update: vi.fn(),
   },
 }))
 
-import { budgetsApi } from '../api'
-import { useBudgetMutations } from './useBudgetMutations'
+import { budgetsApi } from '@/features/budgets/api'
+import { useBudgetMutations } from '@/features/budgets/hooks/useBudgetMutations'
 
 const fakeBudget = { id: 7 } as Budget
 
