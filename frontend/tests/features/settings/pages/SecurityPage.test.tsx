@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { SecurityPage } from './SecurityPage'
+import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
 vi.mock('@/features/settings/api', () => ({
   settingsApi: {

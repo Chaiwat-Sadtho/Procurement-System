@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { SettingsLayout } from './SettingsLayout'
+import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 
 function renderAt(path: string) {
   return render(
