@@ -7,13 +7,13 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { BudgetsService } from './budgets.service';
-import { Budget } from './entities/budget.entity';
-import { User, UserRole } from '../users/entities/user.entity';
-import { Department } from '../departments/entities/department.entity';
-import { NotificationsService } from '../notifications/notifications.service';
-import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
-import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
+import { BudgetsService } from '@app/budgets/budgets.service';
+import { Budget } from '@app/budgets/entities/budget.entity';
+import { User, UserRole } from '@app/users/entities/user.entity';
+import { Department } from '@app/departments/entities/department.entity';
+import { NotificationsService } from '@app/notifications/notifications.service';
+import { PurchaseRequest, PrStatus } from '@app/purchase-requests/entities/purchase-request.entity';
+import { PurchaseOrder, PoStatus } from '@app/purchase-orders/entities/purchase-order.entity';
 
 const mockBudget = {
   id: 1,

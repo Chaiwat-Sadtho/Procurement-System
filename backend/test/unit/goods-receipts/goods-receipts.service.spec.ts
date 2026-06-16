@@ -2,16 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { GoodsReceiptsService } from './goods-receipts.service';
-import { GoodsReceiptNote, GrnStatus } from './entities/goods-receipt-note.entity';
-import { GoodsReceiptItem } from './entities/goods-receipt-item.entity';
-import { PurchaseOrder, PoStatus } from '../purchase-orders/entities/purchase-order.entity';
-import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
-import { ItemCondition } from './entities/goods-receipt-item.entity';
-import { PurchaseRequest } from '../purchase-requests/entities/purchase-request.entity';
-import { BudgetsService } from '../budgets/budgets.service';
-import { AuditLogsService } from '../audit-logs/audit-logs.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { GoodsReceiptsService } from '@app/goods-receipts/goods-receipts.service';
+import {
+  GoodsReceiptNote,
+  GrnStatus,
+} from '@app/goods-receipts/entities/goods-receipt-note.entity';
+import { GoodsReceiptItem } from '@app/goods-receipts/entities/goods-receipt-item.entity';
+import { PurchaseOrder, PoStatus } from '@app/purchase-orders/entities/purchase-order.entity';
+import { PurchaseOrderItem } from '@app/purchase-orders/entities/purchase-order-item.entity';
+import { ItemCondition } from '@app/goods-receipts/entities/goods-receipt-item.entity';
+import { PurchaseRequest } from '@app/purchase-requests/entities/purchase-request.entity';
+import { BudgetsService } from '@app/budgets/budgets.service';
+import { AuditLogsService } from '@app/audit-logs/audit-logs.service';
+import { NotificationsService } from '@app/notifications/notifications.service';
 
 const mockPoItem: Partial<PurchaseOrderItem> = {
   id: 1,

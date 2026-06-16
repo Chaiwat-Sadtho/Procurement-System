@@ -2,16 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken, getDataSourceToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PurchaseOrdersService } from './purchase-orders.service';
-import { PurchaseOrder, PoStatus } from './entities/purchase-order.entity';
-import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
-import { PurchaseRequest, PrStatus } from '../purchase-requests/entities/purchase-request.entity';
-import { Vendor } from '../vendors/entities/vendor.entity';
-import { VendorRating } from '../vendors/entities/vendor-rating.entity';
-import { BudgetsService } from '../budgets/budgets.service';
-import { AuditLogsService } from '../audit-logs/audit-logs.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CacheService } from '../cache/cache.service';
+import { PurchaseOrdersService } from '@app/purchase-orders/purchase-orders.service';
+import { PurchaseOrder, PoStatus } from '@app/purchase-orders/entities/purchase-order.entity';
+import { PurchaseOrderItem } from '@app/purchase-orders/entities/purchase-order-item.entity';
+import { PurchaseRequest, PrStatus } from '@app/purchase-requests/entities/purchase-request.entity';
+import { Vendor } from '@app/vendors/entities/vendor.entity';
+import { VendorRating } from '@app/vendors/entities/vendor-rating.entity';
+import { BudgetsService } from '@app/budgets/budgets.service';
+import { AuditLogsService } from '@app/audit-logs/audit-logs.service';
+import { NotificationsService } from '@app/notifications/notifications.service';
+import { CacheService } from '@app/cache/cache.service';
 
 const mockApprovedPr: Partial<PurchaseRequest> = {
   id: 1,

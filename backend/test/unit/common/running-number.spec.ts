@@ -1,4 +1,4 @@
-import { formatRunningNumber } from './running-number';
+import { formatRunningNumber } from '@app/common/running-number';
 
 describe('formatRunningNumber', () => {
   it('pads the sequence to 4 digits', () => {

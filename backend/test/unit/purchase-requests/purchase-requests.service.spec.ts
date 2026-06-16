@@ -2,13 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PurchaseRequestsService } from './purchase-requests.service';
-import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
-import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
-import { User, UserRole } from '../users/entities/user.entity';
-import { BudgetsService } from '../budgets/budgets.service';
-import { AuditLogsService } from '../audit-logs/audit-logs.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { PurchaseRequestsService } from '@app/purchase-requests/purchase-requests.service';
+import { PurchaseRequest, PrStatus } from '@app/purchase-requests/entities/purchase-request.entity';
+import { PurchaseRequestItem } from '@app/purchase-requests/entities/purchase-request-item.entity';
+import { User, UserRole } from '@app/users/entities/user.entity';
+import { BudgetsService } from '@app/budgets/budgets.service';
+import { AuditLogsService } from '@app/audit-logs/audit-logs.service';
+import { NotificationsService } from '@app/notifications/notifications.service';
 
 const mockUser: Partial<User> = {
   id: 1,

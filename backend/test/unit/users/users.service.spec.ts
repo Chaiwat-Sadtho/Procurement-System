@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { User, UserRole } from './entities/user.entity';
-import { CacheService } from '../cache/cache.service';
+import { UsersService } from '@app/users/users.service';
+import { User, UserRole } from '@app/users/entities/user.entity';
+import { CacheService } from '@app/cache/cache.service';
 
 const mockUser: Partial<User> = {
   id: 1,

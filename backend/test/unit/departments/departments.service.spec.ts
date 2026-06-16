@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException } from '@nestjs/common';
-import { DepartmentsService } from './departments.service';
-import { Department } from './entities/department.entity';
-import { CacheService } from '../cache/cache.service';
+import { DepartmentsService } from '@app/departments/departments.service';
+import { Department } from '@app/departments/entities/department.entity';
+import { CacheService } from '@app/cache/cache.service';
 
 const mockDepartment = { id: 1, name: 'Finance' };
 

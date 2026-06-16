@@ -1,5 +1,5 @@
-import { PrStatus } from './entities/purchase-request.entity';
-import { mapStatsRows } from './pr-stats.util';
+import { PrStatus } from '@app/purchase-requests/entities/purchase-request.entity';
+import { mapStatsRows } from '@app/purchase-requests/pr-stats.util';
 
 describe('mapStatsRows', () => {
   it('maps raw rows to counts and derives total', () => {

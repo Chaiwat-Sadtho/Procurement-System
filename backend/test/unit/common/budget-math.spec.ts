@@ -1,4 +1,10 @@
-import { round2, applyReserve, applyRelease, applyAdjust, applyConsume } from './budget-math';
+import {
+  round2,
+  applyReserve,
+  applyRelease,
+  applyAdjust,
+  applyConsume,
+} from '@app/common/budget-math';
 
 describe('budget-math', () => {
   describe('round2', () => {

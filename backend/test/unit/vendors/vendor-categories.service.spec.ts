@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException } from '@nestjs/common';
-import { VendorCategoriesService } from './vendor-categories.service';
-import { VendorCategory } from './entities/vendor-category.entity';
-import { CacheService } from '../cache/cache.service';
+import { VendorCategoriesService } from '@app/vendors/vendor-categories.service';
+import { VendorCategory } from '@app/vendors/entities/vendor-category.entity';
+import { CacheService } from '@app/cache/cache.service';
 
 const mockCategory = { id: 1, name: 'IT Equipment' };
 

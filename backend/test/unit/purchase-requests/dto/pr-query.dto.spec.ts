@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { PrQueryDto } from './pr-query.dto';
+import { PrQueryDto } from '@app/purchase-requests/dto/pr-query.dto';
 
 describe('PrQueryDto.eligibleForPo', () => {
   it("transforms the query string 'true' into boolean true", async () => {

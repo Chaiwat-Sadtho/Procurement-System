@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { VendorsService } from './vendors.service';
-import { Vendor } from './entities/vendor.entity';
-import { VendorCategory } from './entities/vendor-category.entity';
-import { VendorRating } from './entities/vendor-rating.entity';
-import { CacheService } from '../cache/cache.service';
+import { VendorsService } from '@app/vendors/vendors.service';
+import { Vendor } from '@app/vendors/entities/vendor.entity';
+import { VendorCategory } from '@app/vendors/entities/vendor-category.entity';
+import { VendorRating } from '@app/vendors/entities/vendor-rating.entity';
+import { CacheService } from '@app/cache/cache.service';
 
 const mockVendor: Partial<Vendor> = {
   id: 1,

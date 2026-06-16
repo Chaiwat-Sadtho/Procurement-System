@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { User, UserRole } from '../users/entities/user.entity';
-import { CacheService } from '../cache/cache.service';
+import { AuthService } from '@app/auth/auth.service';
+import { User, UserRole } from '@app/users/entities/user.entity';
+import { CacheService } from '@app/cache/cache.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser: User = {
