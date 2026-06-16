@@ -5,9 +5,9 @@ import { ApiProperty } from '@nestjs/swagger';
 export class VendorCategory {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'IT Equipment' })
   @Column({ length: 100, unique: true })
-  name: string;
+  name!: string;
 }

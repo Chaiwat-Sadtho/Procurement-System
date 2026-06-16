@@ -33,36 +33,36 @@ export enum PoStatus {
 export class PurchaseOrder {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'PO-2025-0001' })
   @Column({ name: 'po_number', unique: true, length: 20 })
-  poNumber: string;
+  poNumber!: string;
 
   @ManyToOne(() => PurchaseRequest, { eager: false })
   @JoinColumn({ name: 'pr_id' })
-  purchaseRequest: PurchaseRequest;
+  purchaseRequest!: PurchaseRequest;
 
   @Column({ name: 'pr_id' })
-  prId: number;
+  prId!: number;
 
   @ManyToOne(() => Vendor, { eager: false })
   @JoinColumn({ name: 'vendor_id' })
-  vendor: Vendor;
+  vendor!: Vendor;
 
   @Column({ name: 'vendor_id' })
-  vendorId: number;
+  vendorId!: number;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'created_by' })
-  createdByUser: User;
+  createdByUser!: User;
 
   @Column({ name: 'created_by' })
-  createdBy: number;
+  createdBy!: number;
 
   @ApiProperty({ enum: PoStatus })
   @Column({ type: 'enum', enum: PoStatus, default: PoStatus.DRAFT })
-  status: PoStatus;
+  status!: PoStatus;
 
   @ApiProperty()
   @Column({
@@ -72,30 +72,30 @@ export class PurchaseOrder {
     scale: 2,
     default: 0,
   })
-  totalAmount: number;
+  totalAmount!: number;
 
   @ApiProperty()
   @Column({ name: 'expected_delivery_date', type: 'date' })
-  expectedDeliveryDate: string;
+  expectedDeliveryDate!: string;
 
   @ApiPropertyOptional({ nullable: true, example: '2025-06-15' })
   @Column({ name: 'actual_delivery_date', type: 'date', nullable: true })
-  actualDeliveryDate: string | null;
+  actualDeliveryDate!: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  notes: string | null;
+  notes!: string | null;
 
   @OneToMany(() => PurchaseOrderItem, (item) => item.purchaseOrder, {
     cascade: true,
   })
-  items: PurchaseOrderItem[];
+  items!: PurchaseOrderItem[];
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

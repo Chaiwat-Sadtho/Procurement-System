@@ -25,41 +25,41 @@ export enum PrStatus {
 export class PurchaseRequest {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'PR-2025-0001' })
   @Column({ name: 'pr_number', unique: true, length: 20 })
-  prNumber: string;
+  prNumber!: string;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'requester_id' })
-  requester: User;
+  requester!: User;
 
   @Column({ name: 'requester_id' })
-  requesterId: number;
+  requesterId!: number;
 
   @ManyToOne(() => Department, { eager: false, nullable: true })
   @JoinColumn({ name: 'department_id' })
-  department: Department | null;
+  department!: Department | null;
 
   @Column({ name: 'department_id', nullable: true })
-  departmentId: number | null;
+  departmentId!: number | null;
 
   @ApiProperty()
   @Column({ length: 255 })
-  title: string;
+  title!: string;
 
   @ApiProperty({ enum: PrStatus })
   @Column({ type: 'enum', enum: PrStatus, default: PrStatus.DRAFT })
-  status: PrStatus;
+  status!: PrStatus;
 
   @ApiProperty()
   @Column({ name: 'required_date', type: 'date' })
-  requiredDate: string;
+  requiredDate!: string;
 
   @ApiProperty({ nullable: true })
   @Column({ name: 'quarter', type: 'integer', nullable: true })
-  quarter: number | null;
+  quarter!: number | null;
 
   @ApiProperty()
   @Column({
@@ -69,36 +69,36 @@ export class PurchaseRequest {
     scale: 2,
     default: 0,
   })
-  totalEstimatedAmount: number;
+  totalEstimatedAmount!: number;
 
   @ManyToOne(() => User, { eager: false, nullable: true })
   @JoinColumn({ name: 'approved_by' })
-  approver: User | null;
+  approver!: User | null;
 
   @Column({ name: 'approved_by', nullable: true })
-  approvedBy: number | null;
+  approvedBy!: number | null;
 
   @Column({ name: 'approved_at', type: 'timestamp', nullable: true })
-  approvedAt: Date | null;
+  approvedAt!: Date | null;
 
   @ApiProperty({ nullable: true })
   @Column({ name: 'fiscal_year', type: 'integer', nullable: true })
-  fiscalYear: number | null;
+  fiscalYear!: number | null;
 
   @ApiProperty()
   @Column({ name: 'reject_reason', type: 'text', nullable: true })
-  rejectReason: string | null;
+  rejectReason!: string | null;
 
   @OneToMany(() => PurchaseRequestItem, (item) => item.purchaseRequest, {
     cascade: true,
   })
-  items: PurchaseRequestItem[];
+  items!: PurchaseRequestItem[];
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
