@@ -9,7 +9,7 @@ const { useUsersMock, useCurrentUserMock } = vi.hoisted(() => ({
   useUsersMock: vi.fn(),
   useCurrentUserMock: vi.fn(),
 }))
-vi.mock('../hooks/useUsers', () => ({ useUsers: useUsersMock }))
+vi.mock('@/features/users/hooks/useUsers', () => ({ useUsers: useUsersMock }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: useCurrentUserMock }))
 
 const mockFilter = vi.hoisted(() => ({
@@ -19,7 +19,7 @@ const mockFilter = vi.hoisted(() => ({
     status: string
   },
 }))
-vi.mock('../components/UserListFilterForm', () => ({
+vi.mock('@/features/users/components/UserListFilterForm', () => ({
   UserListFilterForm: ({
     onSubmit,
     onClear,
@@ -43,7 +43,7 @@ vi.mock('../components/UserListFilterForm', () => ({
 }))
 
 // isolate the page's guard computation from the inline controls
-vi.mock('../components/UserRoleSelect', () => ({
+vi.mock('@/features/users/components/UserRoleSelect', () => ({
   UserRoleSelect: ({
     user,
     disabled,
@@ -62,7 +62,7 @@ vi.mock('../components/UserRoleSelect', () => ({
     </div>
   ),
 }))
-vi.mock('../components/UserStatusToggle', () => ({
+vi.mock('@/features/users/components/UserStatusToggle', () => ({
   UserStatusToggle: ({
     user,
     disabled,
@@ -82,7 +82,7 @@ vi.mock('../components/UserStatusToggle', () => ({
   ),
 }))
 
-import { UsersPage } from './UsersPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
 
 function makeUser(over: Partial<User>): User {
   return {

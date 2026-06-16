@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ROLE_LABELS, ROLE_OPTIONS } from './roleLabels'
+import { ROLE_LABELS, ROLE_OPTIONS } from '@/features/users/lib/roleLabels'
 import type { Role } from '@/shared/types'
 
 describe('roleLabels', () => {

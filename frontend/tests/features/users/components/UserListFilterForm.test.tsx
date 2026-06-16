@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { UserListFilterForm } from './UserListFilterForm'
+import { UserListFilterForm } from '@/features/users/components/UserListFilterForm'
 
 function renderForm(props: Partial<React.ComponentProps<typeof UserListFilterForm>> = {}) {
   const onSubmit = vi.fn()

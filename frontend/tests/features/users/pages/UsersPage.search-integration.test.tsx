@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { UsersPage } from './UsersPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
 
 // Mock data hooks only — UserListFilterForm is the REAL component, so the submit
 // runs through RHF's async handleSubmit microtask and the hook's setState→effect write.
@@ -15,10 +15,10 @@ import { UsersPage } from './UsersPage'
 // navigate still commits here (RTL flushes the microtask inside React's batching). So this
 // test does NOT distinguish the direct-write regression from the effect fix; that
 // distinction is browser-only (verify-live, tools/eyeball).
-vi.mock('../hooks/useUsers', () => ({ useUsers: vi.fn() }))
+vi.mock('@/features/users/hooks/useUsers', () => ({ useUsers: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 
-import { useUsers } from '../hooks/useUsers'
+import { useUsers } from '@/features/users/hooks/useUsers'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 
 function setup() {

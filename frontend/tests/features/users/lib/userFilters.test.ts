@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterUsers, DEFAULT_USER_FILTERS } from './userFilters'
+import { filterUsers, DEFAULT_USER_FILTERS } from '@/features/users/lib/userFilters'
 import type { User } from '@/shared/types'
 
 function makeUser(over: Partial<User>): User {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AxiosError } from 'axios'
-import { usersErrorMessage } from './usersErrorMessage'
+import { usersErrorMessage } from '@/features/users/lib/usersErrorMessage'
 
 function axiosErr(message: string): AxiosError {
   return new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {

@@ -7,7 +7,7 @@ const { mutateRole, hookState } = vi.hoisted(() => ({
   mutateRole: vi.fn(),
   hookState: { rolePending: false },
 }))
-vi.mock('../hooks/useUserMutations', () => ({
+vi.mock('@/features/users/hooks/useUserMutations', () => ({
   useUserMutations: () => ({
     updateRoleMutation: { mutate: mutateRole, isPending: hookState.rolePending },
     updateStatusMutation: { mutate: vi.fn(), isPending: false },
@@ -19,7 +19,7 @@ const { toastSuccess, toastError } = vi.hoisted(() => ({
 }))
 vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError } }))
 
-import { UserRoleSelect } from './UserRoleSelect'
+import { UserRoleSelect } from '@/features/users/components/UserRoleSelect'
 
 const user: User = {
   id: 5,

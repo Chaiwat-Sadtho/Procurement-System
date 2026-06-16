@@ -4,12 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import type { User } from '@/shared/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/users/api', () => ({
   usersApi: { updateRole: vi.fn(), updateStatus: vi.fn() },
 }))
 
-import { usersApi } from '../api'
-import { useUserMutations } from './useUserMutations'
+import { usersApi } from '@/features/users/api'
+import { useUserMutations } from '@/features/users/hooks/useUserMutations'
 
 const updated = { id: 7, role: 'manager', isActive: true } as User
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseUserFilters, serializeUserFilters, usersUrlFilterConfig } from './usersUrlFilters'
-import { DEFAULT_USER_FILTERS } from './userFilters'
+import { parseUserFilters, serializeUserFilters, usersUrlFilterConfig } from '@/features/users/lib/usersUrlFilters'
+import { DEFAULT_USER_FILTERS } from '@/features/users/lib/userFilters'
 
 describe('parseUserFilters', () => {
   it('returns defaults when no params are present', () => {

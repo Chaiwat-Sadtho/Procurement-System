@@ -7,7 +7,7 @@ const { mutateStatus, hookState } = vi.hoisted(() => ({
   mutateStatus: vi.fn(),
   hookState: { statusPending: false },
 }))
-vi.mock('../hooks/useUserMutations', () => ({
+vi.mock('@/features/users/hooks/useUserMutations', () => ({
   useUserMutations: () => ({
     updateRoleMutation: { mutate: vi.fn(), isPending: false },
     updateStatusMutation: { mutate: mutateStatus, isPending: hookState.statusPending },
@@ -19,7 +19,7 @@ const { toastSuccess, toastError } = vi.hoisted(() => ({
 }))
 vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError } }))
 
-import { UserStatusToggle } from './UserStatusToggle'
+import { UserStatusToggle } from '@/features/users/components/UserStatusToggle'
 
 function makeUser(over: Partial<User>): User {
   return {
