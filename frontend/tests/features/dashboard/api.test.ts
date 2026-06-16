@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/shared/lib/axios', () => ({ default: { get: vi.fn() } }))
 import api from '@/shared/lib/axios'
-import { dashboardApi } from './api'
+import { dashboardApi } from '@/features/dashboard/api'
 
 describe('dashboardApi.getBudgets', () => {
   beforeEach(() => vi.clearAllMocks())

@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-vi.mock('../hooks/useApprovalQueue', () => ({ useApprovalQueue: vi.fn() }))
-import { useApprovalQueue } from '../hooks/useApprovalQueue'
-import { ApprovalQueue } from './ApprovalQueue'
+vi.mock('@/features/dashboard/hooks/useApprovalQueue', () => ({ useApprovalQueue: vi.fn() }))
+import { useApprovalQueue } from '@/features/dashboard/hooks/useApprovalQueue'
+import { ApprovalQueue } from '@/features/dashboard/components/ApprovalQueue'
 import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
 const makePr = (id: number): PurchaseRequest => ({

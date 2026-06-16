@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-vi.mock('../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
-vi.mock('../hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
-import { useBudgets } from '../hooks/useBudgets'
-import { useDepartments } from '../hooks/useDepartments'
-import { BudgetSummary } from './BudgetSummary'
-import type { DashboardBudget, DashboardDepartment } from '../api'
+vi.mock('@/features/dashboard/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
+import { useBudgets } from '@/features/dashboard/hooks/useBudgets'
+import { useDepartments } from '@/features/dashboard/hooks/useDepartments'
+import { BudgetSummary } from '@/features/dashboard/components/BudgetSummary'
+import type { DashboardBudget, DashboardDepartment } from '@/features/dashboard/api'
 
 const budget = (over: Partial<DashboardBudget>): DashboardBudget => ({
   id: 1,

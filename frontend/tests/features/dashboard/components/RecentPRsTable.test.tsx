@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-vi.mock('../hooks/useRecentPRs', () => ({ useRecentPRs: vi.fn() }))
-import { useRecentPRs } from '../hooks/useRecentPRs'
-import { RecentPRsTable } from './RecentPRsTable'
+vi.mock('@/features/dashboard/hooks/useRecentPRs', () => ({ useRecentPRs: vi.fn() }))
+import { useRecentPRs } from '@/features/dashboard/hooks/useRecentPRs'
+import { RecentPRsTable } from '@/features/dashboard/components/RecentPRsTable'
 import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
 const pr: PurchaseRequest = {

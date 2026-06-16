@@ -3,23 +3,23 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
-vi.mock('../hooks/useStats', () => ({ useStats: vi.fn() }))
-vi.mock('../hooks/useRecentPRs', () => ({ useRecentPRs: vi.fn() }))
-vi.mock('../hooks/useApprovalQueue', () => ({ useApprovalQueue: vi.fn() }))
-vi.mock('../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
-vi.mock('../hooks/useAttentionPRs', () => ({ useAttentionPRs: vi.fn() }))
-vi.mock('../hooks/useDepartments', () => ({ useDepartments: vi.fn(() => ({ data: [] })) }))
+vi.mock('@/features/dashboard/hooks/useStats', () => ({ useStats: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useRecentPRs', () => ({ useRecentPRs: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useApprovalQueue', () => ({ useApprovalQueue: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useAttentionPRs', () => ({ useAttentionPRs: vi.fn() }))
+vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn(() => ({ data: [] })) }))
 
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { useStats } from '../hooks/useStats'
-import { useRecentPRs } from '../hooks/useRecentPRs'
-import { useApprovalQueue } from '../hooks/useApprovalQueue'
-import { useBudgets } from '../hooks/useBudgets'
-import { useAttentionPRs } from '../hooks/useAttentionPRs'
-import { DashboardPage } from './DashboardPage'
+import { useStats } from '@/features/dashboard/hooks/useStats'
+import { useRecentPRs } from '@/features/dashboard/hooks/useRecentPRs'
+import { useApprovalQueue } from '@/features/dashboard/hooks/useApprovalQueue'
+import { useBudgets } from '@/features/dashboard/hooks/useBudgets'
+import { useAttentionPRs } from '@/features/dashboard/hooks/useAttentionPRs'
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import type { User } from '@/shared/types'
 import type { PurchaseRequest } from '@/features/purchase-requests/types'
-import type { DashboardBudget } from '../api'
+import type { DashboardBudget } from '@/features/dashboard/api'
 
 const baseUser: User = {
   id: 1,

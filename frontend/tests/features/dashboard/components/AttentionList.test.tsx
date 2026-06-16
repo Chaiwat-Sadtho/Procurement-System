@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-vi.mock('../hooks/useAttentionPRs', () => ({ useAttentionPRs: vi.fn() }))
-import { useAttentionPRs } from '../hooks/useAttentionPRs'
-import { AttentionList } from './AttentionList'
+vi.mock('@/features/dashboard/hooks/useAttentionPRs', () => ({ useAttentionPRs: vi.fn() }))
+import { useAttentionPRs } from '@/features/dashboard/hooks/useAttentionPRs'
+import { AttentionList } from '@/features/dashboard/components/AttentionList'
 import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
 function mkPR(over: Partial<PurchaseRequest>): PurchaseRequest {

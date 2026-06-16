@@ -12,7 +12,7 @@ vi.mock('recharts', () => {
   }
 })
 
-import { StatusChart } from './StatusChart'
+import { StatusChart } from '@/features/dashboard/components/StatusChart'
 import type { PrStatsResponse } from '@/features/purchase-requests/types'
 
 const stats: PrStatsResponse = { total: 10, draft: 2, submitted: 3, approved: 4, rejected: 1 }
