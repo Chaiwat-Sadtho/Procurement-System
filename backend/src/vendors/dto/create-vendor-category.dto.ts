@@ -6,5 +6,5 @@ export class CreateVendorCategoryDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  name: string;
+  name!: string;
 }

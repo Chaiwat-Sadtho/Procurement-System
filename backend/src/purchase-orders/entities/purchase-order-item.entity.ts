@@ -7,41 +7,41 @@ import { PurchaseRequestItem } from '../../purchase-requests/entities/purchase-r
 export class PurchaseOrderItem {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => PurchaseOrder, (po) => po.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'po_id' })
-  purchaseOrder: PurchaseOrder;
+  purchaseOrder!: PurchaseOrder;
 
   @Column({ name: 'po_id' })
-  poId: number;
+  poId!: number;
 
   @ManyToOne(() => PurchaseRequestItem, { nullable: true, eager: false })
   @JoinColumn({ name: 'pr_item_id' })
-  prItem: PurchaseRequestItem | null;
+  prItem!: PurchaseRequestItem | null;
 
   @Column({ name: 'pr_item_id', nullable: true })
-  prItemId: number | null;
+  prItemId!: number | null;
 
   @ApiProperty()
   @Column({ name: 'item_name', length: 255 })
-  itemName: string;
+  itemName!: string;
 
   @ApiProperty()
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty()
   @Column({ length: 50 })
-  unit: string;
+  unit!: string;
 
   @ApiProperty()
   @Column({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2 })
-  unitPrice: number;
+  unitPrice!: number;
 
   @ApiProperty()
   @Column({ name: 'total_price', type: 'decimal', precision: 15, scale: 2 })
-  totalPrice: number;
+  totalPrice!: number;
 
   @ApiProperty()
   @Column({
@@ -51,5 +51,5 @@ export class PurchaseOrderItem {
     scale: 2,
     default: 0,
   })
-  receivedQuantity: number;
+  receivedQuantity!: number;
 }

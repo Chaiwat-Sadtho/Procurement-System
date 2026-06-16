@@ -14,11 +14,11 @@ import { VendorCategory } from './vendor-category.entity';
 export class Vendor {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'บริษัท ไอทีซัพพลาย จำกัด' })
   @Column({ length: 255 })
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: '0105563123456', nullable: true })
   @Column({
@@ -28,27 +28,27 @@ export class Vendor {
     nullable: true,
     unique: true,
   })
-  taxId: string | null;
+  taxId!: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'varchar', nullable: true, length: 255 })
-  email: string | null;
+  email!: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'varchar', nullable: true, length: 20 })
-  phone: string | null;
+  phone!: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  address: string | null;
+  address!: string | null;
 
   @ApiProperty()
   @Column({ name: 'is_blacklisted', default: false })
-  isBlacklisted: boolean;
+  isBlacklisted!: boolean;
 
   @ApiProperty({ nullable: true })
   @Column({ name: 'blacklist_reason', type: 'text', nullable: true })
-  blacklistReason: string | null;
+  blacklistReason!: string | null;
 
   @ApiProperty({ nullable: true })
   @Column({
@@ -58,7 +58,7 @@ export class Vendor {
     scale: 2,
     nullable: true,
   })
-  ratingAvg: number | null;
+  ratingAvg!: number | null;
 
   @ApiProperty({ type: () => [VendorCategory] })
   @ManyToMany(() => VendorCategory, { eager: false })
@@ -67,13 +67,13 @@ export class Vendor {
     joinColumn: { name: 'vendor_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
   })
-  categories: VendorCategory[];
+  categories!: VendorCategory[];
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

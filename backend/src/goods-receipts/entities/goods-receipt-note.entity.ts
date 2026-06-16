@@ -21,44 +21,44 @@ export enum GrnStatus {
 export class GoodsReceiptNote {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'GRN-2025-0001' })
   @Column({ name: 'grn_number', unique: true, length: 20 })
-  grnNumber: string;
+  grnNumber!: string;
 
   @ManyToOne(() => PurchaseOrder, { eager: false })
   @JoinColumn({ name: 'po_id' })
-  purchaseOrder: PurchaseOrder;
+  purchaseOrder!: PurchaseOrder;
 
   @Column({ name: 'po_id' })
-  poId: number;
+  poId!: number;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'received_by' })
-  receivedByUser: User;
+  receivedByUser!: User;
 
   @Column({ name: 'received_by' })
-  receivedBy: number;
+  receivedBy!: number;
 
   @ApiProperty()
   @Column({ name: 'received_date', type: 'date' })
-  receivedDate: string;
+  receivedDate!: string;
 
   @ApiProperty({ enum: GrnStatus })
   @Column({ type: 'enum', enum: GrnStatus })
-  status: GrnStatus;
+  status!: GrnStatus;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  notes: string | null;
+  notes!: string | null;
 
   @OneToMany(() => GoodsReceiptItem, (item) => item.goodsReceiptNote, {
     cascade: true,
   })
-  items: GoodsReceiptItem[];
+  items!: GoodsReceiptItem[];
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 }

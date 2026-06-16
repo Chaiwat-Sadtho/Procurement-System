@@ -23,26 +23,26 @@ import { Department } from '../../departments/entities/department.entity';
 export class Budget {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Department, { eager: false })
   @JoinColumn({ name: 'department_id' })
-  department: Department;
+  department!: Department;
 
   @Column({ name: 'department_id' })
-  departmentId: number;
+  departmentId!: number;
 
   @ApiProperty({ example: 2026 })
   @Column({ name: 'fiscal_year' })
-  fiscalYear: number;
+  fiscalYear!: number;
 
   @ApiProperty({ nullable: true, description: '1-4 หรือ null สำหรับงบรายปี' })
   @Column({ type: 'integer', nullable: true, default: null })
-  quarter: number | null;
+  quarter!: number | null;
 
   @ApiProperty({ example: 1000000 })
   @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
-  totalAmount: number;
+  totalAmount!: number;
 
   @ApiProperty({ example: 0 })
   @Column({
@@ -52,7 +52,7 @@ export class Budget {
     scale: 2,
     default: 0,
   })
-  reservedAmount: number;
+  reservedAmount!: number;
 
   @ApiProperty({ example: 0 })
   @Column({
@@ -62,13 +62,13 @@ export class Budget {
     scale: 2,
     default: 0,
   })
-  usedAmount: number;
+  usedAmount!: number;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

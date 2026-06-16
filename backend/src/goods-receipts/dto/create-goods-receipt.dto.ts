@@ -16,11 +16,11 @@ export class CreateGoodsReceiptDto {
   @ApiProperty({ description: 'ID ของ PO' })
   @IsInt()
   @IsPositive()
-  poId: number;
+  poId!: number;
 
   @ApiProperty({ example: '2025-11-15' })
   @IsDateString()
-  receivedDate: string;
+  receivedDate!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -32,5 +32,5 @@ export class CreateGoodsReceiptDto {
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateGrnItemDto)
-  items: CreateGrnItemDto[];
+  items!: CreateGrnItemDto[];
 }

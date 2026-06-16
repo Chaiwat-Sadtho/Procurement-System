@@ -6,5 +6,5 @@ export class CreateDepartmentDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  name: string;
+  name!: string;
 }
