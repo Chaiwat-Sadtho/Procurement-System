@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { isValidElement, type ReactElement } from 'react'
-import { router } from './router'
+import { router } from '@/app/router'
 import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
 import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
