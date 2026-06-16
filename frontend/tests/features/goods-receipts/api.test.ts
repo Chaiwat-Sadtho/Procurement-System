@@ -9,7 +9,7 @@ vi.mock('@/shared/lib/axios', () => ({
 }))
 
 import api from '@/shared/lib/axios'
-import { goodsReceiptsApi } from './api'
+import { goodsReceiptsApi } from '@/features/goods-receipts/api'
 
 const mockApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> }
 

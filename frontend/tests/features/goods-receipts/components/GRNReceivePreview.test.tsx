@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { GRNReceivePreview } from './GRNReceivePreview'
+import { GRNReceivePreview } from '@/features/goods-receipts/components/GRNReceivePreview'
 
 describe('GRNReceivePreview', () => {
   it('shows รับครบถ้วน in green and announces it as a status when every line good >= remaining', () => {

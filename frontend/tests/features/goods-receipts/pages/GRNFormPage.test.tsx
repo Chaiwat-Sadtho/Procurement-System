@@ -3,17 +3,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { PurchaseOrder } from '@/features/purchase-orders/types'
-import type { ReceivablePO } from '../types'
-import { createDefaultValues } from '../lib/grnFormSchema'
+import type { ReceivablePO } from '@/features/goods-receipts/types'
+import { createDefaultValues } from '@/features/goods-receipts/lib/grnFormSchema'
 
-vi.mock('../hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
 vi.mock('@/features/purchase-orders/hooks/usePurchaseOrder', () => ({
   usePurchaseOrder: vi.fn(),
 }))
 // stub GRNForm so the host test stays focused on the picker + load seam. Expose the wired
 // props (po + the computed defaultValues) so the test can prove the host threads
 // createDefaultValues(pickedPO) through — not a stale or empty default.
-vi.mock('./GRNForm', () => ({
+vi.mock('@/features/goods-receipts/pages/GRNForm', () => ({
   GRNForm: (props: {
     po: { id: number; poNumber: string }
     defaultValues: { poId: number; items: unknown[] }
@@ -28,9 +28,9 @@ vi.mock('./GRNForm', () => ({
   ),
 }))
 
-import { useReceivablePOs } from '../hooks/useReceivablePOs'
+import { useReceivablePOs } from '@/features/goods-receipts/hooks/useReceivablePOs'
 import { usePurchaseOrder } from '@/features/purchase-orders/hooks/usePurchaseOrder'
-import { GRNFormPage } from './GRNFormPage'
+import { GRNFormPage } from '@/features/goods-receipts/pages/GRNFormPage'
 
 const receivable: ReceivablePO[] = [
   { id: 5, poNumber: 'PO-2026-0005', vendor: { id: 2, name: 'ACME Corp' }, status: 'acknowledged' },

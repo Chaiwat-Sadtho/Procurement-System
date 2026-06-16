@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { GoodsReceipt } from '../types'
+import type { GoodsReceipt } from '@/features/goods-receipts/types'
 
-vi.mock('../hooks/useGoodsReceipt', () => ({ useGoodsReceipt: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useGoodsReceipt', () => ({ useGoodsReceipt: vi.fn() }))
 
-import { useGoodsReceipt } from '../hooks/useGoodsReceipt'
-import { GRNDetailPage } from './GRNDetailPage'
+import { useGoodsReceipt } from '@/features/goods-receipts/hooks/useGoodsReceipt'
+import { GRNDetailPage } from '@/features/goods-receipts/pages/GRNDetailPage'
 
 const mockGrn: GoodsReceipt = {
   id: 1,

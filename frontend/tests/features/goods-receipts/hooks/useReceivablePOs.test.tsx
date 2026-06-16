@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { ReceivablePO } from '../types'
+import type { ReceivablePO } from '@/features/goods-receipts/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/goods-receipts/api', () => ({
   goodsReceiptsApi: { listReceivablePOs: vi.fn() },
 }))
 
-import { goodsReceiptsApi } from '../api'
-import { useReceivablePOs } from './useReceivablePOs'
+import { goodsReceiptsApi } from '@/features/goods-receipts/api'
+import { useReceivablePOs } from '@/features/goods-receipts/hooks/useReceivablePOs'
 
 // api.ts already maps {data,meta} -> ReceivablePO[]; the hook returns that array.
 const fake: ReceivablePO[] = [

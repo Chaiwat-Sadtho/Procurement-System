@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import type { GoodsReceiptListItem, GRNListResponse } from '../types'
+import type { GoodsReceiptListItem, GRNListResponse } from '@/features/goods-receipts/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -12,16 +12,16 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/useGoodsReceipts', () => ({ useGoodsReceipts: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useGoodsReceipts', () => ({ useGoodsReceipts: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
-vi.mock('../hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
 // keep this page test focused on the page, not filter internals (mirror POListPage test).
 // mockFilter.values lets a test drive a specific (non-'all') submission so the page's
 // value->queryParam mapping (string id -> Number, 'all' -> undefined) is actually exercised.
 const mockFilter = vi.hoisted(() => ({
   values: { status: 'all', poId: 'all' } as { status: string; poId: string },
 }))
-vi.mock('../components/GRNListFilterForm', () => ({
+vi.mock('@/features/goods-receipts/components/GRNListFilterForm', () => ({
   GRNListFilterForm: ({
     onSubmit,
     onClear,
@@ -40,10 +40,10 @@ vi.mock('../components/GRNListFilterForm', () => ({
   ),
 }))
 
-import { useGoodsReceipts } from '../hooks/useGoodsReceipts'
+import { useGoodsReceipts } from '@/features/goods-receipts/hooks/useGoodsReceipts'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { useReceivablePOs } from '../hooks/useReceivablePOs'
-import { GRNListPage } from './GRNListPage'
+import { useReceivablePOs } from '@/features/goods-receipts/hooks/useReceivablePOs'
+import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 
 const mockGrn: GoodsReceiptListItem = {
   id: 1,

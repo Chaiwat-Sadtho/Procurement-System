@@ -5,7 +5,7 @@ import {
   createDefaultValues,
   safeNum,
   type GrnFormValues,
-} from './grnFormSchema'
+} from '@/features/goods-receipts/lib/grnFormSchema'
 import type { PurchaseOrder } from '@/features/purchase-orders/types'
 
 // one fully-receivable line: ordered 10, none received yet → remaining 10

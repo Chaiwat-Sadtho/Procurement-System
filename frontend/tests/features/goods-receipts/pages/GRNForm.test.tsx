@@ -3,8 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { PurchaseOrder } from '@/features/purchase-orders/types'
-import { GRNForm } from './GRNForm'
-import { createDefaultValues } from '../lib/grnFormSchema'
+import { GRNForm } from '@/features/goods-receipts/pages/GRNForm'
+import { createDefaultValues } from '@/features/goods-receipts/lib/grnFormSchema'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -12,10 +12,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/useGRNMutations', () => ({ useGRNMutations: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useGRNMutations', () => ({ useGRNMutations: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-import { useGRNMutations } from '../hooks/useGRNMutations'
+import { useGRNMutations } from '@/features/goods-receipts/hooks/useGRNMutations'
 import { toast } from 'sonner'
 
 const po = {

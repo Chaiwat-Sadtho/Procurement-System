@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { formatDate } from '@/shared/lib/utils'
-import type { GoodsReceipt } from '../types'
-import { GRNDetailHeader } from './GRNDetailHeader'
+import type { GoodsReceipt } from '@/features/goods-receipts/types'
+import { GRNDetailHeader } from '@/features/goods-receipts/components/GRNDetailHeader'
 
 const baseGrn: GoodsReceipt = {
   id: 1,

@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { GRNListResponse } from '../types'
+import type { GRNListResponse } from '@/features/goods-receipts/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/goods-receipts/api', () => ({
   goodsReceiptsApi: { list: vi.fn() },
 }))
 
-import { goodsReceiptsApi } from '../api'
-import { useGoodsReceipts } from './useGoodsReceipts'
+import { goodsReceiptsApi } from '@/features/goods-receipts/api'
+import { useGoodsReceipts } from '@/features/goods-receipts/hooks/useGoodsReceipts'
 
 function makeQc() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } })

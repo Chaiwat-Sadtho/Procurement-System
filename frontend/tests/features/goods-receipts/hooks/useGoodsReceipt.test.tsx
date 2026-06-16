@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { GoodsReceipt } from '../types'
+import type { GoodsReceipt } from '@/features/goods-receipts/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/goods-receipts/api', () => ({
   goodsReceiptsApi: { get: vi.fn() },
 }))
 
-import { goodsReceiptsApi } from '../api'
-import { useGoodsReceipt } from './useGoodsReceipt'
+import { goodsReceiptsApi } from '@/features/goods-receipts/api'
+import { useGoodsReceipt } from '@/features/goods-receipts/hooks/useGoodsReceipt'
 
 const fakeGrn = { id: 7, status: 'partial' } as GoodsReceipt
 

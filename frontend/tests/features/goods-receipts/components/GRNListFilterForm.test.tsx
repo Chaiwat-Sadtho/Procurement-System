@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReceivablePO } from '../types'
-import { GRNListFilterForm } from './GRNListFilterForm'
+import type { ReceivablePO } from '@/features/goods-receipts/types'
+import { GRNListFilterForm } from '@/features/goods-receipts/components/GRNListFilterForm'
 
 const pos: ReceivablePO[] = [
   { id: 7, poNumber: 'PO-2026-0007', vendor: { id: 1, name: 'Acme Co' }, status: 'acknowledged' },

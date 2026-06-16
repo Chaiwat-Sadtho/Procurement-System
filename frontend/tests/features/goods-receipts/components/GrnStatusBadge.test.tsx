@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { GrnStatusBadge } from './GrnStatusBadge'
+import { GrnStatusBadge } from '@/features/goods-receipts/components/GrnStatusBadge'
 
 describe('GrnStatusBadge', () => {
   it('renders partial as รับไม่ครบ with the warning variant', () => {

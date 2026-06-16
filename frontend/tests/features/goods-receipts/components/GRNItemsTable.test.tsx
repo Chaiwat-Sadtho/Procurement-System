@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import type { GoodsReceiptItem } from '../types'
-import { GRNItemsTable } from './GRNItemsTable'
+import type { GoodsReceiptItem } from '@/features/goods-receipts/types'
+import { GRNItemsTable } from '@/features/goods-receipts/components/GRNItemsTable'
 
 const items: GoodsReceiptItem[] = [
   {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { GrnConditionBadge } from './GrnConditionBadge'
+import { GrnConditionBadge } from '@/features/goods-receipts/components/GrnConditionBadge'
 
 describe('GrnConditionBadge', () => {
   it('renders good as สภาพดี with the success variant', () => {

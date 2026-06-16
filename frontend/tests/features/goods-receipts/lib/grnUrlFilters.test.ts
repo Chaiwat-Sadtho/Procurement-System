@@ -4,7 +4,7 @@ import {
   serializeGrnFilters,
   grnUrlFilterConfig,
   DEFAULT_GRN_FILTERS,
-} from './grnUrlFilters'
+} from '@/features/goods-receipts/lib/grnUrlFilters'
 
 describe('parseGrnFilters', () => {
   it('returns defaults when no params are present', () => {

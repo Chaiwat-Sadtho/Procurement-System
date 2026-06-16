@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { GoodsReceipt, CreateGoodsReceiptPayload } from '../types'
+import type { GoodsReceipt, CreateGoodsReceiptPayload } from '@/features/goods-receipts/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/goods-receipts/api', () => ({
   goodsReceiptsApi: { create: vi.fn() },
 }))
 
-import { goodsReceiptsApi } from '../api'
-import { useGRNMutations } from './useGRNMutations'
+import { goodsReceiptsApi } from '@/features/goods-receipts/api'
+import { useGRNMutations } from '@/features/goods-receipts/hooks/useGRNMutations'
 
 // created.poId (the resolved GoodsReceipt) drives the PO-detail/grn-history
 // invalidation prefix (contract §5). It is DELIBERATELY distinct from payload.poId

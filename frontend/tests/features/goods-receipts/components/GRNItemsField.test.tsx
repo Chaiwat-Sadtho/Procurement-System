@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '@/shared/components/ui/form'
-import { grnFormSchema, type GrnFormValues } from '../lib/grnFormSchema'
-import { GRNItemsField } from './GRNItemsField'
+import { grnFormSchema, type GrnFormValues } from '@/features/goods-receipts/lib/grnFormSchema'
+import { GRNItemsField } from '@/features/goods-receipts/components/GRNItemsField'
 
 const defaultValues: GrnFormValues = {
   poId: 1,
