@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import type { PurchaseRequest } from '../types'
-import { createDefaultValues, prToFormValues } from '../lib/prFormSchema'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
+import { createDefaultValues, prToFormValues } from '@/features/purchase-requests/lib/prFormSchema'
 
-vi.mock('../hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -13,9 +13,9 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-import { usePRMutations } from '../hooks/usePRMutations'
+import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
 import { toast } from 'sonner'
-import { PRForm } from './PRForm'
+import { PRForm } from '@/features/purchase-requests/components/PRForm'
 
 function makeMutations(over: Record<string, unknown> = {}) {
   const m = {

@@ -4,10 +4,10 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { PRListPage } from './PRListPage'
-import type { PurchaseRequest } from '../types'
+import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
-vi.mock('../hooks/usePurchaseRequests', () => ({
+vi.mock('@/features/purchase-requests/hooks/usePurchaseRequests', () => ({
   usePurchaseRequests: vi.fn(),
 }))
 
@@ -15,7 +15,7 @@ vi.mock('@/shared/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(),
 }))
 
-vi.mock('../hooks/usePRMutations', () => ({
+vi.mock('@/features/purchase-requests/hooks/usePRMutations', () => ({
   usePRMutations: vi.fn(),
 }))
 
@@ -23,9 +23,9 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
+import { usePurchaseRequests } from '@/features/purchase-requests/hooks/usePurchaseRequests'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { usePRMutations } from '../hooks/usePRMutations'
+import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
 import { toast } from 'sonner'
 import type { User } from '@/shared/types'
 

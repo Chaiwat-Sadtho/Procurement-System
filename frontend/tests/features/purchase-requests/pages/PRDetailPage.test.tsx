@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { PurchaseRequest } from '../types'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -11,16 +11,16 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
-vi.mock('../hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-import { usePurchaseRequest } from '../hooks/usePurchaseRequest'
-import { usePRMutations } from '../hooks/usePRMutations'
+import { usePurchaseRequest } from '@/features/purchase-requests/hooks/usePurchaseRequest'
+import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { toast } from 'sonner'
-import { PRDetailPage } from './PRDetailPage'
+import { PRDetailPage } from '@/features/purchase-requests/pages/PRDetailPage'
 
 const mockPR: PurchaseRequest = {
   id: 1,

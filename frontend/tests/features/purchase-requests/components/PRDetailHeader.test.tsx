@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { formatCurrency } from '@/shared/lib/utils'
-import type { PurchaseRequest } from '../types'
-import { PRDetailHeader } from './PRDetailHeader'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
+import { PRDetailHeader } from '@/features/purchase-requests/components/PRDetailHeader'
 
 const basePR: PurchaseRequest = {
   id: 1,

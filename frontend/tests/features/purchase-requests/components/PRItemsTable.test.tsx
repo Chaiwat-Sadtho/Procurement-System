@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { formatCurrency } from '@/shared/lib/utils'
-import type { PRItem } from '../types'
-import { PRItemsTable } from './PRItemsTable'
+import type { PRItem } from '@/features/purchase-requests/types'
+import { PRItemsTable } from '@/features/purchase-requests/components/PRItemsTable'
 
 const mockItems: PRItem[] = [
   {

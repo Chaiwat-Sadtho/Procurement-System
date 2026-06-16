@@ -4,7 +4,7 @@ import {
   serializePrFilters,
   prUrlFilterConfig,
   DEFAULT_PR_FILTERS,
-} from './prUrlFilters'
+} from '@/features/purchase-requests/lib/prUrlFilters'
 
 describe('parsePrFilters', () => {
   it('returns defaults when no params are present', () => {

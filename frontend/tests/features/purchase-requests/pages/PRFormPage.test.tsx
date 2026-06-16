@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { PurchaseRequest } from '../types'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
 import type { User } from '@/shared/types'
 
-vi.mock('../hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePurchaseRequest', () => ({ usePurchaseRequest: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
-vi.mock('../components/PRForm', () => ({
+vi.mock('@/features/purchase-requests/components/PRForm', () => ({
   PRForm: (props: { mode: string; defaultValues: { title: string } }) => (
     <div data-testid="prform">
       mode={props.mode}|title={props.defaultValues.title}
@@ -14,9 +14,9 @@ vi.mock('../components/PRForm', () => ({
   ),
 }))
 
-import { usePurchaseRequest } from '../hooks/usePurchaseRequest'
+import { usePurchaseRequest } from '@/features/purchase-requests/hooks/usePurchaseRequest'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { PRFormPage } from './PRFormPage'
+import { PRFormPage } from '@/features/purchase-requests/pages/PRFormPage'
 
 const owner = { id: 10, role: 'employee' } as User
 

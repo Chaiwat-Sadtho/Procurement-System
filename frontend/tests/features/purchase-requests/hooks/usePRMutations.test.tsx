@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { PurchaseRequest } from '../types'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/purchase-requests/api', () => ({
   purchaseRequestsApi: {
     create: vi.fn(),
     update: vi.fn(),
@@ -13,8 +13,8 @@ vi.mock('../api', () => ({
   },
 }))
 
-import { purchaseRequestsApi } from '../api'
-import { usePRMutations } from './usePRMutations'
+import { purchaseRequestsApi } from '@/features/purchase-requests/api'
+import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
 
 const fakePR = { id: 7 } as PurchaseRequest
 

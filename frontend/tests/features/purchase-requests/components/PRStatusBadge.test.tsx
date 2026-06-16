@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { PRStatusBadge } from './PRStatusBadge'
+import { PRStatusBadge } from '@/features/purchase-requests/components/PRStatusBadge'
 
 describe('PRStatusBadge', () => {
   it('renders draft status', () => {

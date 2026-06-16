@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { User } from '@/shared/types'
-import type { PurchaseRequest } from '../types'
-import { PRActions } from './PRActions'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
+import { PRActions } from '@/features/purchase-requests/components/PRActions'
 
 const basePR: PurchaseRequest = {
   id: 1,

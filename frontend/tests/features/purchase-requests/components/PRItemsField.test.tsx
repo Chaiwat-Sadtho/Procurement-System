@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '@/shared/components/ui/form'
-import { prFormSchema, createDefaultValues, type PRFormValues } from '../lib/prFormSchema'
-import { PRItemsField } from './PRItemsField'
+import { prFormSchema, createDefaultValues, type PRFormValues } from '@/features/purchase-requests/lib/prFormSchema'
+import { PRItemsField } from '@/features/purchase-requests/components/PRItemsField'
 
 function Harness() {
   const form = useForm<PRFormValues>({

@@ -7,8 +7,8 @@ import {
   createDefaultValues,
   safeNum,
   type PRFormValues,
-} from './prFormSchema'
-import type { PurchaseRequest } from '../types'
+} from '@/features/purchase-requests/lib/prFormSchema'
+import type { PurchaseRequest } from '@/features/purchase-requests/types'
 
 const validValues: PRFormValues = {
   title: 'กระดาษ A4',

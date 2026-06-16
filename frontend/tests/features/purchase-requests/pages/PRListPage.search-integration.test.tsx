@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { PRListPage } from './PRListPage'
+import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 
 // Mock data hooks only — PRListFilterForm is the REAL component, so the submit runs
 // through RHF's async handleSubmit microtask and the hook's setState→effect write.
@@ -16,12 +16,12 @@ import { PRListPage } from './PRListPage'
 // the navigate still commits here (RTL flushes the microtask inside React's batching —
 // deferred, never dropped). So this test does NOT distinguish the direct-write regression
 // from the effect fix; that distinction is browser-only (manual verify). See TESTING.md #47.
-vi.mock('../hooks/usePurchaseRequests', () => ({ usePurchaseRequests: vi.fn() }))
-vi.mock('../hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePurchaseRequests', () => ({ usePurchaseRequests: vi.fn() }))
+vi.mock('@/features/purchase-requests/hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 
-import { usePurchaseRequests } from '../hooks/usePurchaseRequests'
-import { usePRMutations } from '../hooks/usePRMutations'
+import { usePurchaseRequests } from '@/features/purchase-requests/hooks/usePurchaseRequests'
+import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import type { User } from '@/shared/types'
 
