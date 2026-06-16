@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { Vendor } from '../types'
+import type { Vendor } from '@/features/vendors/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -11,19 +11,19 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/useVendor', () => ({ useVendor: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendor', () => ({ useVendor: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
-vi.mock('../components/VendorRatingHistory', () => ({
+vi.mock('@/features/vendors/components/VendorRatingHistory', () => ({
   VendorRatingHistory: ({ vendorId }: { vendorId: number }) => (
     <div data-testid="vendor-rating-history">history:{vendorId}</div>
   ),
 }))
 
-import { useVendor } from '../hooks/useVendor'
+import { useVendor } from '@/features/vendors/hooks/useVendor'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { toast } from 'sonner'
-import { VendorDetailPage } from './VendorDetailPage'
+import { VendorDetailPage } from '@/features/vendors/pages/VendorDetailPage'
 
 const mockVendor: Vendor = {
   id: 1,

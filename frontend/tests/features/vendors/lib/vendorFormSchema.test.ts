@@ -5,8 +5,8 @@ import {
   vendorToFormValues,
   createDefaultValues,
   type VendorFormValues,
-} from './vendorFormSchema'
-import type { Vendor } from '../types'
+} from '@/features/vendors/lib/vendorFormSchema'
+import type { Vendor } from '@/features/vendors/types'
 
 const validValues: VendorFormValues = {
   name: 'บริษัท ไอทีซัพพลาย จำกัด',

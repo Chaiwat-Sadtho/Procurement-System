@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { VendorListPage } from './VendorListPage'
+import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
 
 // Mock data hooks only — VendorListFilterForm is the REAL component, so the submit
 // runs through RHF's async handleSubmit microtask and the hook's setState→effect write.
@@ -17,12 +17,12 @@ import { VendorListPage } from './VendorListPage'
 // deferred, never dropped). So this test does NOT distinguish the direct-write regression
 // from the effect fix; that distinction is browser-only (plan Task 6 manual verify).
 // See TESTING.md #47.
-vi.mock('../hooks/useVendors', () => ({ useVendors: vi.fn() }))
-vi.mock('../hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 
-import { useVendors } from '../hooks/useVendors'
-import { useVendorCategories } from '../hooks/useVendorCategories'
+import { useVendors } from '@/features/vendors/hooks/useVendors'
+import { useVendorCategories } from '@/features/vendors/hooks/useVendorCategories'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 
 function setup() {

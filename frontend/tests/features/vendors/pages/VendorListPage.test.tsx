@@ -4,11 +4,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { VendorListPage } from './VendorListPage'
-import type { Vendor, VendorListResponse } from '../types'
+import { VendorListPage } from '@/features/vendors/pages/VendorListPage'
+import type { Vendor, VendorListResponse } from '@/features/vendors/types'
 
-vi.mock('../hooks/useVendors', () => ({ useVendors: vi.fn() }))
-vi.mock('../hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 
 // vi.mock is hoisted above the module body, so the factory can't read a plain
@@ -26,7 +26,7 @@ const mockFilter = vi.hoisted(() => ({
     categoryId: string
   },
 }))
-vi.mock('../components/VendorListFilterForm', () => ({
+vi.mock('@/features/vendors/components/VendorListFilterForm', () => ({
   VendorListFilterForm: ({
     onSubmit,
     onClear,
@@ -45,8 +45,8 @@ vi.mock('../components/VendorListFilterForm', () => ({
   ),
 }))
 
-import { useVendors } from '../hooks/useVendors'
-import { useVendorCategories } from '../hooks/useVendorCategories'
+import { useVendors } from '@/features/vendors/hooks/useVendors'
+import { useVendorCategories } from '@/features/vendors/hooks/useVendorCategories'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import type { User } from '@/shared/types'
 

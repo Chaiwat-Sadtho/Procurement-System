@@ -3,7 +3,7 @@ import {
   parseVendorFilters,
   serializeVendorFilters,
   DEFAULT_VENDOR_FILTERS,
-} from './vendorUrlFilters'
+} from '@/features/vendors/lib/vendorUrlFilters'
 
 describe('parseVendorFilters', () => {
   it('returns defaults when no params are present', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toIsBlacklistedParam, toCategoryIdParam, formatRating } from './vendorFilters'
+import { toIsBlacklistedParam, toCategoryIdParam, formatRating } from '@/features/vendors/lib/vendorFilters'
 
 describe('toIsBlacklistedParam (tri-state)', () => {
   it("maps 'all' to undefined", () => {

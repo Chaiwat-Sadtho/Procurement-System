@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import type { Vendor } from '../types'
-import { createDefaultValues, vendorToFormValues } from '../lib/vendorFormSchema'
+import type { Vendor } from '@/features/vendors/types'
+import { createDefaultValues, vendorToFormValues } from '@/features/vendors/lib/vendorFormSchema'
 
-vi.mock('../hooks/useVendorMutations', () => ({ useVendorMutations: vi.fn() }))
-vi.mock('../hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendorMutations', () => ({ useVendorMutations: vi.fn() }))
+vi.mock('@/features/vendors/hooks/useVendorCategories', () => ({ useVendorCategories: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -14,10 +14,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-import { useVendorMutations } from '../hooks/useVendorMutations'
-import { useVendorCategories } from '../hooks/useVendorCategories'
+import { useVendorMutations } from '@/features/vendors/hooks/useVendorMutations'
+import { useVendorCategories } from '@/features/vendors/hooks/useVendorCategories'
 import { toast } from 'sonner'
-import { VendorForm } from './VendorForm'
+import { VendorForm } from '@/features/vendors/components/VendorForm'
 
 function makeMutations(over: Record<string, unknown> = {}) {
   const m = {

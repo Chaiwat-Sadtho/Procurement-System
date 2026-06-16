@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { Vendor } from '../types'
+import type { Vendor } from '@/features/vendors/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/vendors/api', () => ({
   vendorsApi: {
     get: vi.fn(),
     blacklist: vi.fn(),
@@ -12,8 +12,8 @@ vi.mock('../api', () => ({
   },
 }))
 
-import { vendorsApi } from '../api'
-import { useVendor } from './useVendor'
+import { vendorsApi } from '@/features/vendors/api'
+import { useVendor } from '@/features/vendors/hooks/useVendor'
 
 const fakeVendor = { id: 7 } as Vendor
 

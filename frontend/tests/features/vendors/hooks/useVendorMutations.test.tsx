@@ -2,17 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { Vendor, VendorPayload } from '../types'
+import type { Vendor, VendorPayload } from '@/features/vendors/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/vendors/api', () => ({
   vendorsApi: {
     create: vi.fn(),
     update: vi.fn(),
   },
 }))
 
-import { vendorsApi } from '../api'
-import { useVendorMutations } from './useVendorMutations'
+import { vendorsApi } from '@/features/vendors/api'
+import { useVendorMutations } from '@/features/vendors/hooks/useVendorMutations'
 
 const fakeVendor = { id: 9 } as Vendor
 const payload: VendorPayload = {

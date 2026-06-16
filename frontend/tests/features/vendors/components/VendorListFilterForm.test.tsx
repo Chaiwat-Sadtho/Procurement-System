@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { VendorListFilterForm } from './VendorListFilterForm'
-import type { VendorCategory } from '../types'
+import { VendorListFilterForm } from '@/features/vendors/components/VendorListFilterForm'
+import type { VendorCategory } from '@/features/vendors/types'
 
 const categories: VendorCategory[] = [
   { id: 1, name: 'Hardware' },

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { BlacklistReasonDialog } from './BlacklistReasonDialog'
+import { BlacklistReasonDialog } from '@/features/vendors/components/BlacklistReasonDialog'
 
 describe('BlacklistReasonDialog', () => {
   it('shows a validation error and does not call onConfirm when reason is empty', async () => {

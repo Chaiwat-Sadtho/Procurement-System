@@ -3,12 +3,12 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/vendors/api', () => ({
   vendorCategoriesApi: { list: vi.fn() },
 }))
 
-import { vendorCategoriesApi } from '../api'
-import { useVendorCategories } from './useVendorCategories'
+import { vendorCategoriesApi } from '@/features/vendors/api'
+import { useVendorCategories } from '@/features/vendors/hooks/useVendorCategories'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { VendorBlacklistBadge } from './VendorBlacklistBadge'
+import { VendorBlacklistBadge } from '@/features/vendors/components/VendorBlacklistBadge'
 
 describe('VendorBlacklistBadge', () => {
   it('renders blacklisted state: destructive variant + label + icon', () => {

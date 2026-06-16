@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { VendorListResponse } from '../types'
+import type { VendorListResponse } from '@/features/vendors/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/vendors/api', () => ({
   vendorsApi: { list: vi.fn() },
 }))
 
-import { vendorsApi } from '../api'
-import { useVendors } from './useVendors'
+import { vendorsApi } from '@/features/vendors/api'
+import { useVendors } from '@/features/vendors/hooks/useVendors'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

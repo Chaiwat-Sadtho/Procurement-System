@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { Vendor } from '../types'
+import type { Vendor } from '@/features/vendors/types'
 
-vi.mock('../hooks/useVendor', () => ({ useVendor: vi.fn() }))
-vi.mock('../components/VendorForm', () => ({
+vi.mock('@/features/vendors/hooks/useVendor', () => ({ useVendor: vi.fn() }))
+vi.mock('@/features/vendors/components/VendorForm', () => ({
   VendorForm: (props: { mode: string; defaultValues: { name: string } }) => (
     <div data-testid="vendorform">
       mode={props.mode}|name={props.defaultValues.name}
@@ -12,8 +12,8 @@ vi.mock('../components/VendorForm', () => ({
   ),
 }))
 
-import { useVendor } from '../hooks/useVendor'
-import { VendorFormPage } from './VendorFormPage'
+import { useVendor } from '@/features/vendors/hooks/useVendor'
+import { VendorFormPage } from '@/features/vendors/pages/VendorFormPage'
 
 function setVendor(over: Partial<{ data: unknown; isLoading: boolean; isError: boolean }>) {
   vi.mocked(useVendor).mockReturnValue({

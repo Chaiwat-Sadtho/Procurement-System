@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { User } from '@/shared/types'
-import type { Vendor } from '../types'
-import { VendorActions } from './VendorActions'
+import type { Vendor } from '@/features/vendors/types'
+import { VendorActions } from '@/features/vendors/components/VendorActions'
 
 const baseVendor: Vendor = {
   id: 1,

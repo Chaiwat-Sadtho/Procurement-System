@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import type { Vendor } from '../types'
-import { VendorDetailHeader } from './VendorDetailHeader'
+import type { Vendor } from '@/features/vendors/types'
+import { VendorDetailHeader } from '@/features/vendors/components/VendorDetailHeader'
 
 const vendor: Vendor = {
   id: 1,

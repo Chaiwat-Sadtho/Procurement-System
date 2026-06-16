@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import type { VendorRatingsResponse } from '../types'
+import type { VendorRatingsResponse } from '@/features/vendors/types'
 
 const mockUseVendorRatings = vi.fn()
-vi.mock('../hooks/useVendorRatings', () => ({
+vi.mock('@/features/vendors/hooks/useVendorRatings', () => ({
   useVendorRatings: (...a: unknown[]) => mockUseVendorRatings(...a),
 }))
 
-import { VendorRatingHistory } from './VendorRatingHistory'
+import { VendorRatingHistory } from '@/features/vendors/components/VendorRatingHistory'
 
 const row = {
   id: 1,
