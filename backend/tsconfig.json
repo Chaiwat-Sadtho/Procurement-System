@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
-    "paths": { "@app/*": ["src/*"] },
+    "paths": { "@app/*": ["./src/*"] },
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
