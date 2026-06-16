@@ -11,6 +11,7 @@ import { Repository, IsNull, DataSource, EntityManager, FindOptionsWhere, In, No
 import { Budget } from './entities/budget.entity';
 import { Department } from '../departments/entities/department.entity';
 import { User, UserRole } from '../users/entities/user.entity';
+import { requireManagerDepartmentId } from '../common/manager-scope';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -74,13 +75,16 @@ export class BudgetsService {
     }
   }
 
-  async findAll(query: BudgetQueryDto, user: { id: number; role: UserRole }): Promise<Budget[]> {
+  async findAll(
+    query: BudgetQueryDto,
+    user: { id: number; role: UserRole; departmentId?: number | null },
+  ): Promise<Budget[]> {
     const where: FindOptionsWhere<Budget> = {};
     if (query.fiscalYear) where.fiscalYear = query.fiscalYear;
 
     if (user.role === UserRole.MANAGER) {
-      // manager: บังคับแผนกตัวเอง (override query.departmentId)
-      where.departmentId = await this.resolveManagerDeptId(user);
+      // manager: บังคับแผนกตัวเอง (override query.departmentId) — dept จาก payload (สดทุก request)
+      where.departmentId = requireManagerDepartmentId(user);
     } else if (query.departmentId) {
       where.departmentId = query.departmentId;
     }
@@ -116,14 +120,14 @@ export class BudgetsService {
 
   async getSummary(
     id: number,
-    user: { id: number; role: UserRole },
+    user: { id: number; role: UserRole; departmentId?: number | null },
   ): Promise<Budget & { remaining: number; usagePercent: number }> {
     const budget = await this.budgetRepository.findOne({
       where: { id },
       relations: { department: true },
     });
     if (!budget) throw new NotFoundException(`Budget ${id} not found`);
-    await this.assertCanAccessDept(budget.departmentId, user);
+    this.assertCanAccessDept(budget.departmentId, user);
 
     const reserved = Number(budget.reservedAmount);
     const used = Number(budget.usedAmount);
@@ -138,11 +142,11 @@ export class BudgetsService {
   // 2-step ORM (ไม่ raw SQL → unit-testable): หา approved PR ตาม dept/year/quarter → join active PO
   async getTransactions(
     id: number,
-    user: { id: number; role: UserRole },
+    user: { id: number; role: UserRole; departmentId?: number | null },
   ): Promise<BudgetTransactionDto[]> {
     const budget = await this.budgetRepository.findOne({ where: { id } });
     if (!budget) throw new NotFoundException(`Budget ${id} not found`);
-    await this.assertCanAccessDept(budget.departmentId, user);
+    this.assertCanAccessDept(budget.departmentId, user);
 
     const prs = await this.prRepository.find({
       where: {
@@ -214,25 +218,14 @@ export class BudgetsService {
     return quarter == null ? 'รายปี (annual)' : `Q${quarter}`;
   }
 
-  // manager เห็นเฉพาะแผนกตัวเอง — โหลด full user จาก DB (JWT อาจ stale) แล้วคืน departmentId
-  // mirror purchase-requests.service.applyRoleScope (manager branch)
-  private async resolveManagerDeptId(user: { id: number; role: UserRole }): Promise<number> {
-    const fullUser = await this.userRepository.findOne({ where: { id: user.id } });
-    if (!fullUser) throw new NotFoundException('User not found');
-    if (fullUser.departmentId == null) {
-      throw new ForbiddenException('ผู้ใช้ระดับ manager ต้องสังกัดแผนก');
-    }
-    return fullUser.departmentId;
-  }
-
   // detail-scope: manager เข้าถึงงบของแผนกอื่นไม่ได้ (ใช้ร่วม getSummary + getTransactions)
-  private async assertCanAccessDept(
+  // dept มาจาก auth payload (requireManagerDepartmentId) — JwtStrategy rehydrate สดทุก request → ไม่ re-load DB
+  private assertCanAccessDept(
     departmentId: number,
-    user: { id: number; role: UserRole },
-  ): Promise<void> {
+    user: { role: UserRole; departmentId?: number | null },
+  ): void {
     if (user.role !== UserRole.MANAGER) return;
-    const deptId = await this.resolveManagerDeptId(user);
-    if (departmentId !== deptId) {
+    if (departmentId !== requireManagerDepartmentId(user)) {
       throw new ForbiddenException('ไม่สามารถเข้าถึงงบประมาณของแผนกอื่น');
     }
   }

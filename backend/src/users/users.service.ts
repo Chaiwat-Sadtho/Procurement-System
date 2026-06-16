@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
+import { requireManagerDepartmentId } from '../common/manager-scope';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CacheService } from '../cache/cache.service';
@@ -28,11 +29,10 @@ export class UsersService {
       });
     }
     if (currentUser.role === UserRole.MANAGER) {
-      if (typeof currentUser.departmentId !== 'number') {
-        throw new ForbiddenException('Manager without department cannot list users');
-      }
+      // dept จาก auth payload (requireManagerDepartmentId) — ใช้ helper ร่วมกับ budgets/PR (กัน logic ซ้ำ)
+      const departmentId = requireManagerDepartmentId(currentUser);
       return this.userRepository.find({
-        where: { departmentId: currentUser.departmentId },
+        where: { departmentId },
         relations: { department: true },
         order: { createdAt: 'DESC' },
       });

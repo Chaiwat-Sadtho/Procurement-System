@@ -381,13 +381,11 @@ describe('PurchaseRequestsService', () => {
 
     it('should throw ForbiddenException when manager accesses PR from different department', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, departmentId: 1 });
-      mockUserRepo.findOne.mockResolvedValue({
-        ...mockManager,
-        departmentId: 2,
-      });
-      await expect(service.findOne(1, { id: 2, role: UserRole.MANAGER })).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findOne(1, { id: 2, role: UserRole.MANAGER, departmentId: 2 }),
+      ).rejects.toThrow(ForbiddenException);
+      // dept จาก payload (สดทุก request) → ไม่ re-load user จาก DB
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
     });
 
     it('should load department relation so PR detail can show department name', async () => {
@@ -435,14 +433,11 @@ describe('PurchaseRequestsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
-      mockUserRepo.findOne.mockResolvedValue({
-        id: 2,
-        role: UserRole.MANAGER,
-        departmentId: null,
-      });
-      await expect(service.findAll({ id: 2, role: UserRole.MANAGER }, {})).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findAll({ id: 2, role: UserRole.MANAGER, departmentId: null }, {}),
+      ).rejects.toThrow(ForbiddenException);
+      // dept จาก payload (สดทุก request) → ไม่ re-load user จาก DB
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
     });
   });
 
@@ -501,10 +496,9 @@ describe('PurchaseRequestsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
       mockPrRepo.createQueryBuilder.mockReturnValue(qb);
-      mockUserRepo.findOne.mockResolvedValue({ id: 2, departmentId: 1 });
 
       await service.findAll(
-        { id: 2, role: UserRole.MANAGER },
+        { id: 2, role: UserRole.MANAGER, departmentId: 1 },
         {
           requesterId: 99,
         },
@@ -516,6 +510,8 @@ describe('PurchaseRequestsService', () => {
       expect(qb.andWhere).toHaveBeenCalledWith('pr.requesterId = :requesterId', {
         requesterId: 99,
       });
+      // dept มาจาก payload (สดทุก request) → ไม่ re-load user จาก DB ซ้ำ
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
     });
 
     it('filters by requesterName (CONCAT_WS of requester name ILIKE)', async () => {

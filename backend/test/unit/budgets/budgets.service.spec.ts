@@ -26,7 +26,7 @@ const mockBudget = {
 };
 
 const poUser = { id: 10, role: UserRole.PROCUREMENT_OFFICER };
-const managerUser = { id: 20, role: UserRole.MANAGER };
+const managerUser = { id: 20, role: UserRole.MANAGER, departmentId: 7 };
 
 const mockBudgetRepo = {
   findOne: jest.fn(),
@@ -404,27 +404,28 @@ describe('BudgetsService', () => {
     });
 
     it('manager is forced to own department (query departmentId ignored)', async () => {
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 7 });
       mockBudgetRepo.find.mockResolvedValue([]);
       await service.findAll({ fiscalYear: 2026, departmentId: 999 }, managerUser);
       expect(mockBudgetRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: { fiscalYear: 2026, departmentId: 7 } }),
       );
+      // dept มาจาก payload (JwtStrategy rehydrate user สดทุก request) → ห้าม re-load user จาก DB ซ้ำ
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
     });
 
     it('manager without a department is forbidden', async () => {
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: null });
-      await expect(service.findAll({ fiscalYear: 2026 }, managerUser)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findAll({ fiscalYear: 2026 }, { ...managerUser, departmentId: null }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('getSummary (role scoping)', () => {
     it('manager cannot read a summary from another department', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({ ...mockBudget, departmentId: 1 });
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
-      await expect(service.getSummary(1, managerUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.getSummary(1, { ...managerUser, departmentId: 2 })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('manager can read a summary from their own department', async () => {
@@ -435,8 +436,7 @@ describe('BudgetsService', () => {
         reservedAmount: 0,
         usedAmount: 0,
       });
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
-      const result = await service.getSummary(1, managerUser);
+      const result = await service.getSummary(1, { ...managerUser, departmentId: 2 });
       expect(result.remaining).toBe(1000000);
     });
   });
@@ -537,8 +537,9 @@ describe('BudgetsService', () => {
 
     it('forbids a manager from reading another department money trail', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, departmentId: 1 });
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
-      await expect(service.getTransactions(1, managerUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.getTransactions(1, { ...managerUser, departmentId: 2 })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     // review-hardening: pin the load-bearing Not(CANCELLED) filter — a mock returning []
@@ -627,10 +628,11 @@ describe('BudgetsService', () => {
     // Forbidden. Pin the allowed own-department path so an over-tightened guard would be caught.
     it('lets an own-department manager read the money trail', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({ ...annualBudget, departmentId: 2 });
-      mockUserRepo.findOne.mockResolvedValue({ id: 20, departmentId: 2 });
       mockPrRepo.find.mockResolvedValue([]);
 
-      await expect(service.getTransactions(1, managerUser)).resolves.toEqual([]);
+      await expect(
+        service.getTransactions(1, { ...managerUser, departmentId: 2 }),
+      ).resolves.toEqual([]);
     });
   });
 });
