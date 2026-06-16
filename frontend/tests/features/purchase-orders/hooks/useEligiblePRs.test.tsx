@@ -9,7 +9,7 @@ vi.mock('@/features/purchase-requests/api', () => ({
 }))
 
 import { purchaseRequestsApi } from '@/features/purchase-requests/api'
-import { useEligiblePRs } from './useEligiblePRs'
+import { useEligiblePRs } from '@/features/purchase-orders/hooks/useEligiblePRs'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

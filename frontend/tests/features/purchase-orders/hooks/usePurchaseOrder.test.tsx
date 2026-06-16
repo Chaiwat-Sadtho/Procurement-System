@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { PurchaseOrder, GoodsReceiptSummary } from '../types'
+import type { PurchaseOrder, GoodsReceiptSummary } from '@/features/purchase-orders/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/purchase-orders/api', () => ({
   purchaseOrdersApi: {
     get: vi.fn(),
     send: vi.fn(),
@@ -14,8 +14,8 @@ vi.mock('../api', () => ({
   },
 }))
 
-import { purchaseOrdersApi } from '../api'
-import { usePurchaseOrder } from './usePurchaseOrder'
+import { purchaseOrdersApi } from '@/features/purchase-orders/api'
+import { usePurchaseOrder } from '@/features/purchase-orders/hooks/usePurchaseOrder'
 
 const fakePO = { id: 7, status: 'draft' } as PurchaseOrder
 const fakeGrns: GoodsReceiptSummary[] = []

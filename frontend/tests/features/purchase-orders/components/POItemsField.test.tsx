@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '@/shared/components/ui/form'
-import { poFormSchema, createDefaultValues, type POFormValues } from '../lib/poFormSchema'
-import { POItemsField } from './POItemsField'
+import { poFormSchema, createDefaultValues, type POFormValues } from '@/features/purchase-orders/lib/poFormSchema'
+import { POItemsField } from '@/features/purchase-orders/components/POItemsField'
 
 function Harness() {
   const form = useForm<POFormValues>({

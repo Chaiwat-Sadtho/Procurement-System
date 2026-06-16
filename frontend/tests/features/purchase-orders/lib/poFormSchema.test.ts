@@ -8,8 +8,8 @@ import {
   createDefaultValues,
   safeNum,
   type POFormValues,
-} from './poFormSchema'
-import type { PurchaseOrder } from '../types'
+} from '@/features/purchase-orders/lib/poFormSchema'
+import type { PurchaseOrder } from '@/features/purchase-orders/types'
 
 const validValues: POFormValues = {
   prId: 7,

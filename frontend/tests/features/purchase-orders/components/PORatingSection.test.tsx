@@ -2,19 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
-import type { PurchaseOrder, VendorRating } from '../types'
+import type { PurchaseOrder, VendorRating } from '@/features/purchase-orders/types'
 import type { User } from '@/shared/types'
 
 const mockRatingForPo = vi.fn()
 const mockRate = { mutate: vi.fn(), isPending: false }
-vi.mock('../hooks/useVendorRatingForPo', () => ({
+vi.mock('@/features/purchase-orders/hooks/useVendorRatingForPo', () => ({
   useVendorRatingForPo: (...a: unknown[]) => mockRatingForPo(...a),
 }))
-vi.mock('../hooks/useRateVendor', () => ({ useRateVendor: () => mockRate }))
+vi.mock('@/features/purchase-orders/hooks/useRateVendor', () => ({ useRateVendor: () => mockRate }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { toast } from 'sonner'
-import { PORatingSection } from './PORatingSection'
+import { PORatingSection } from '@/features/purchase-orders/components/PORatingSection'
 
 function axiosErr(message: string) {
   const err = new AxiosError('req failed')

@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { User } from '@/shared/types'
-import type { PurchaseOrder } from '../types'
-import { POActions } from './POActions'
+import type { PurchaseOrder } from '@/features/purchase-orders/types'
+import { POActions } from '@/features/purchase-orders/components/POActions'
 
 const basePO: PurchaseOrder = {
   id: 1,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AxiosError } from 'axios'
-import { ratingErrorMessage } from './ratingErrorMessage'
+import { ratingErrorMessage } from '@/features/purchase-orders/lib/ratingErrorMessage'
 
 function axiosErr(message: string) {
   const err = new AxiosError('req failed')

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rateVendorSchema } from './rateVendorSchema'
+import { rateVendorSchema } from '@/features/purchase-orders/lib/rateVendorSchema'
 
 describe('rateVendorSchema', () => {
   it('accepts score 1-5 with optional comment', () => {

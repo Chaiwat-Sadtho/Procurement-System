@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { formatCurrency } from '@/shared/lib/utils'
-import type { POItem } from '../types'
-import { POItemsTable } from './POItemsTable'
+import type { POItem } from '@/features/purchase-orders/types'
+import { POItemsTable } from '@/features/purchase-orders/components/POItemsTable'
 
 const items: POItem[] = [
   {

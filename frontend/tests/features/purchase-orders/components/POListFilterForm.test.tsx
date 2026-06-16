@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Vendor } from '@/features/vendors/types'
-import { POListFilterForm } from './POListFilterForm'
+import { POListFilterForm } from '@/features/purchase-orders/components/POListFilterForm'
 
 const vendors: Vendor[] = [
   {

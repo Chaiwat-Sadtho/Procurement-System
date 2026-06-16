@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { PurchaseOrder } from '../types'
+import type { PurchaseOrder } from '@/features/purchase-orders/types'
 
-vi.mock('../hooks/usePurchaseOrder', () => ({ usePurchaseOrder: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/usePurchaseOrder', () => ({ usePurchaseOrder: vi.fn() }))
 // Mock mirrors POForm's real contract: prId/vendorId are numbers (poFormSchema =
 // z.number), and create/edit both carry an items array. Rendering more than prId lets
 // the prefill test prove the WHOLE poToFormValues transform, not just one field.
-vi.mock('../components/POForm', () => ({
+vi.mock('@/features/purchase-orders/components/POForm', () => ({
   POForm: (props: {
     mode: 'create' | 'edit'
     defaultValues: { prId: number; vendorId: number; items: unknown[] }
@@ -19,8 +19,8 @@ vi.mock('../components/POForm', () => ({
   ),
 }))
 
-import { usePurchaseOrder } from '../hooks/usePurchaseOrder'
-import { POFormPage } from './POFormPage'
+import { usePurchaseOrder } from '@/features/purchase-orders/hooks/usePurchaseOrder'
+import { POFormPage } from '@/features/purchase-orders/pages/POFormPage'
 
 function setPO(over: Partial<{ data: unknown; isLoading: boolean; isError: boolean }>) {
   vi.mocked(usePurchaseOrder).mockReturnValue({

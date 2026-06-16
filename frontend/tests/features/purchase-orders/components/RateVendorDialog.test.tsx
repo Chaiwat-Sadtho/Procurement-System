@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { RateVendorDialog } from './RateVendorDialog'
+import { RateVendorDialog } from '@/features/purchase-orders/components/RateVendorDialog'
 
 function setup(onConfirm = vi.fn()) {
   render(

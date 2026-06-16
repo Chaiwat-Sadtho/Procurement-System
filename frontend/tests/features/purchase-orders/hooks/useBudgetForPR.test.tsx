@@ -9,8 +9,8 @@ vi.mock('@/features/dashboard/api', () => ({
 }))
 
 import { dashboardApi } from '@/features/dashboard/api'
-import { useBudgetForPR, matchBudgetForPR } from './useBudgetForPR'
-import type { BudgetForPRPr } from './useBudgetForPR'
+import { useBudgetForPR, matchBudgetForPR } from '@/features/purchase-orders/hooks/useBudgetForPR'
+import type { BudgetForPRPr } from '@/features/purchase-orders/hooks/useBudgetForPR'
 
 function makeBudget(over: Partial<DashboardBudget>): DashboardBudget {
   return {

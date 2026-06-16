@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parsePoFilters, serializePoFilters, poUrlFilterConfig, DEFAULT_PO_FILTERS } from './poUrlFilters'
+import { parsePoFilters, serializePoFilters, poUrlFilterConfig, DEFAULT_PO_FILTERS } from '@/features/purchase-orders/lib/poUrlFilters'
 
 describe('parsePoFilters', () => {
   it('returns defaults when no params are present', () => {

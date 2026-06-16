@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { PurchaseOrder } from '../types'
+import type { PurchaseOrder } from '@/features/purchase-orders/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -11,21 +11,21 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/usePurchaseOrder', () => ({ usePurchaseOrder: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/usePurchaseOrder', () => ({ usePurchaseOrder: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // PORatingSection มี test ของตัวเอง (D2) + เรียก useQuery/useMutation จริง (harness ไม่มี QueryClientProvider)
 // → mock ทั้งตัว แยก concern; assert ว่าถูก render ด้วย po ที่ถูกต้อง
-vi.mock('../components/PORatingSection', () => ({
+vi.mock('@/features/purchase-orders/components/PORatingSection', () => ({
   PORatingSection: ({ po }: { po: { id: number } }) => (
     <div data-testid="po-rating-section">rating:{po.id}</div>
   ),
 }))
 
-import { usePurchaseOrder } from '../hooks/usePurchaseOrder'
+import { usePurchaseOrder } from '@/features/purchase-orders/hooks/usePurchaseOrder'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { toast } from 'sonner'
-import { PODetailPage } from './PODetailPage'
+import { PODetailPage } from '@/features/purchase-orders/pages/PODetailPage'
 
 const mockPO: PurchaseOrder = {
   id: 1,

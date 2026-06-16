@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { POStatusBadge } from './POStatusBadge'
+import { POStatusBadge } from '@/features/purchase-orders/components/POStatusBadge'
 
 describe('POStatusBadge', () => {
   it('renders draft as ฉบับร่าง', () => {

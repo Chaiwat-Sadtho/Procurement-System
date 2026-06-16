@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { VendorRating } from '../types'
+import type { VendorRating } from '@/features/purchase-orders/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/purchase-orders/api', () => ({
   purchaseOrdersApi: { getRating: vi.fn() },
 }))
 
-import { purchaseOrdersApi } from '../api'
-import { useVendorRatingForPo } from './useVendorRatingForPo'
+import { purchaseOrdersApi } from '@/features/purchase-orders/api'
+import { useVendorRatingForPo } from '@/features/purchase-orders/hooks/useVendorRatingForPo'
 
 const fakeRating = {
   id: 1,

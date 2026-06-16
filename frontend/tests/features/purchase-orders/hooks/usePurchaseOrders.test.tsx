@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { POListResponse } from '../types'
+import type { POListResponse } from '@/features/purchase-orders/types'
 
-vi.mock('../api', () => ({
+vi.mock('@/features/purchase-orders/api', () => ({
   purchaseOrdersApi: { list: vi.fn() },
 }))
 
-import { purchaseOrdersApi } from '../api'
-import { usePurchaseOrders } from './usePurchaseOrders'
+import { purchaseOrdersApi } from '@/features/purchase-orders/api'
+import { usePurchaseOrders } from '@/features/purchase-orders/hooks/usePurchaseOrders'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

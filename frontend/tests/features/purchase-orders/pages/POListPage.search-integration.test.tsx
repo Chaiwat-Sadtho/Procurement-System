@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { POListPage } from './POListPage'
+import { POListPage } from '@/features/purchase-orders/pages/POListPage'
 
 // Mock data hooks only — POListFilterForm is the REAL component, so the submit runs
 // through RHF's async handleSubmit microtask and the hook's setState→effect write. This
@@ -15,11 +15,11 @@ import { POListPage } from './POListPage'
 // navigate still commits here (RTL flushes the microtask inside React's batching). So this
 // test does NOT distinguish the direct-write regression from the effect fix; that
 // distinction is browser-only (verify-live, tools/eyeball).
-vi.mock('../hooks/usePurchaseOrders', () => ({ usePurchaseOrders: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/usePurchaseOrders', () => ({ usePurchaseOrders: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
 
-import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
+import { usePurchaseOrders } from '@/features/purchase-orders/hooks/usePurchaseOrders'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
 

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { POForm } from './POForm'
-import { createDefaultValues } from '../lib/poFormSchema'
+import { POForm } from '@/features/purchase-orders/components/POForm'
+import { createDefaultValues } from '@/features/purchase-orders/lib/poFormSchema'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -11,18 +11,18 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/usePOMutations', () => ({ usePOMutations: vi.fn() }))
-vi.mock('../hooks/useEligiblePRs', () => ({ useEligiblePRs: vi.fn() }))
-vi.mock('../hooks/useBudgetForPR', () => ({
+vi.mock('@/features/purchase-orders/hooks/usePOMutations', () => ({ usePOMutations: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/useEligiblePRs', () => ({ useEligiblePRs: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/useBudgetForPR', () => ({
   useBudgetForPR: vi.fn(),
   matchBudgetForPR: vi.fn(() => undefined),
 }))
 vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-import { usePOMutations } from '../hooks/usePOMutations'
-import { useEligiblePRs } from '../hooks/useEligiblePRs'
-import { useBudgetForPR, matchBudgetForPR } from '../hooks/useBudgetForPR'
+import { usePOMutations } from '@/features/purchase-orders/hooks/usePOMutations'
+import { useEligiblePRs } from '@/features/purchase-orders/hooks/useEligiblePRs'
+import { useBudgetForPR, matchBudgetForPR } from '@/features/purchase-orders/hooks/useBudgetForPR'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
 import { toast } from 'sonner'
 

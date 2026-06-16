@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { formatCurrency } from '@/shared/lib/utils'
 import type { DashboardBudget } from '@/features/dashboard/api'
-import { POBudgetPreview } from './POBudgetPreview'
+import { POBudgetPreview } from '@/features/purchase-orders/components/POBudgetPreview'
 
 const budget: DashboardBudget = {
   id: 1,

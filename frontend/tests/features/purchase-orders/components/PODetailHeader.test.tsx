@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { formatCurrency } from '@/shared/lib/utils'
-import type { PurchaseOrder } from '../types'
-import { PODetailHeader } from './PODetailHeader'
+import type { PurchaseOrder } from '@/features/purchase-orders/types'
+import { PODetailHeader } from '@/features/purchase-orders/components/PODetailHeader'
 
 const basePO: PurchaseOrder = {
   id: 1,

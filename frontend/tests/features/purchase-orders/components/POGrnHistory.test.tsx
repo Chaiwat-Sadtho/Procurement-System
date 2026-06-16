@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import type { GoodsReceiptSummary } from '../types'
-import { POGrnHistory } from './POGrnHistory'
+import type { GoodsReceiptSummary } from '@/features/purchase-orders/types'
+import { POGrnHistory } from '@/features/purchase-orders/components/POGrnHistory'
 
 const grns: GoodsReceiptSummary[] = [
   {

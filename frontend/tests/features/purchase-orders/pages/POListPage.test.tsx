@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import type { PurchaseOrder, POListResponse } from '../types'
+import type { PurchaseOrder, POListResponse } from '@/features/purchase-orders/types'
 import type { User } from '@/shared/types'
 
 const mockNavigate = vi.fn()
@@ -12,14 +12,14 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../hooks/usePurchaseOrders', () => ({ usePurchaseOrders: vi.fn() }))
+vi.mock('@/features/purchase-orders/hooks/usePurchaseOrders', () => ({ usePurchaseOrders: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
 const mockFilter = vi.hoisted(() => ({
   values: { status: 'all', vendorId: 'all' } as { status: string; vendorId: string },
 }))
 // POListFilterForm (slice D) owns its own vendor source; stub it to a minimal inert
 // form so this page test stays focused on the page, not the filter internals.
-vi.mock('../components/POListFilterForm', () => ({
+vi.mock('@/features/purchase-orders/components/POListFilterForm', () => ({
   POListFilterForm: ({
     onSubmit,
     onClear,
@@ -39,10 +39,10 @@ vi.mock('../components/POListFilterForm', () => ({
 }))
 vi.mock('@/features/vendors/hooks/useVendors', () => ({ useVendors: vi.fn() }))
 
-import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
+import { usePurchaseOrders } from '@/features/purchase-orders/hooks/usePurchaseOrders'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { useVendors } from '@/features/vendors/hooks/useVendors'
-import { POListPage } from './POListPage'
+import { POListPage } from '@/features/purchase-orders/pages/POListPage'
 
 const mockPO: PurchaseOrder = {
   id: 1,
