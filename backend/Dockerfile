@@ -26,5 +26,6 @@ COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
 
-# migration รันอัตโนมัติตอน start ผ่าน migrationsRun: true ใน app.module.ts
+# migration: app.module รัน migrationsRun ตอน boot ถ้า MIGRATIONS_RUN != 'false' (default true)
+# compose stack ตั้ง MIGRATIONS_RUN=false แล้ว delegate ให้ migrate service แยก (กัน race หลาย instance)
 CMD ["node", "dist/main.js"]
