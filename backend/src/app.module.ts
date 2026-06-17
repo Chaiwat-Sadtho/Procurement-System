@@ -47,7 +47,8 @@ import { ThrottlingModule } from './throttling/throttling.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,
         migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-        migrationsRun: true,
+        // รัน migration ตอน boot โดย default; docker ตั้ง MIGRATIONS_RUN=false ให้ migrate service รับหน้าที่แทน (กัน race หลาย instance)
+        migrationsRun: process.env.MIGRATIONS_RUN !== 'false',
       }),
       inject: [ConfigService],
     }),
