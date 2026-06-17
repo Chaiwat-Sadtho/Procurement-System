@@ -13,6 +13,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { HealthModule } from './health/health.module';
 import { CacheModule } from './cache/cache.module';
+import { ThrottlingModule } from './throttling/throttling.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { CacheModule } from './cache/cache.module';
       inject: [ConfigService],
     }),
     CacheModule,
+    ThrottlingModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,
