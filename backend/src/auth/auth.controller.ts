@@ -7,18 +7,22 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser, type CurrentUserPayload } from './decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { AUTH_THROTTLE, PW_THROTTLE } from '../throttling/throttler-config';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle(AUTH_THROTTLE)
   @ApiOperation({ summary: 'สมัครสมาชิก' })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  @Throttle(AUTH_THROTTLE)
   @ApiOperation({ summary: 'เข้าสู่ระบบ รับ JWT token' })
   @Post('login')
   login(@Body() dto: LoginDto) {
@@ -41,6 +45,7 @@ export class AuthController {
     return this.authService.updateProfile(user.id, dto);
   }
 
+  @Throttle(PW_THROTTLE)
   @ApiOperation({ summary: 'เปลี่ยนรหัสผ่าน' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
