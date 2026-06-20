@@ -128,4 +128,13 @@ describe('BudgetSummary', () => {
     expect(screen.queryByTestId('budget-row')).not.toBeInTheDocument()
     expect(screen.queryByText(/ยังไม่มีงบ/)).not.toBeInTheDocument()
   })
+
+  it('renders each budget as a table row with mono used/total figures', () => {
+    mockBudgets([budget({ reservedAmount: 300, usedAmount: 200, totalAmount: 1000 })])
+    render(<BudgetSummary scope={{ departmentId: 1 }} />)
+    const row = screen.getByTestId('budget-row')
+    expect(row.tagName).toBe('TR')
+    // used = reserved+used = 500; total = 1000 — both rendered
+    expect(screen.getByText(/฿500\.00/)).toBeInTheDocument()
+  })
 })

@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { Progress } from '@/shared/components/ui/progress'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Select,
@@ -10,6 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/components/ui/table'
 import { formatCurrency } from '@/shared/lib/utils'
 import { useBudgets } from '../hooks/useBudgets'
 import { useDepartments } from '../hooks/useDepartments'
@@ -81,48 +87,63 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
       </div>
 
       {isLoading ? (
-        <div data-testid="budget-summary-loading" className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
+        <div data-testid="budget-summary-loading" className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-full" />
           ))}
         </div>
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground">ยังไม่มีงบสำหรับปีนี้</p>
       ) : (
         <div className="space-y-3">
-          {visible.map((b) => {
-            const used = b.reservedAmount + b.usedAmount
-            const percent = b.totalAmount > 0 ? Math.min(100, (used / b.totalAmount) * 100) : 0
-            const warn = percent > 80
-            return (
-              <Card key={b.id} data-testid="budget-row">
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {b.department?.name ?? `แผนก #${b.departmentId}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {b.quarter ? `Q${b.quarter}` : 'รายปี'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        {formatCurrency(used)} / {formatCurrency(b.totalAmount)}
-                      </p>
-                      <p
-                        data-testid={warn ? `budget-warn-${b.id}` : undefined}
-                        className={`text-xs ${warn ? 'text-destructive font-medium' : 'text-muted-foreground'}`}
-                      >
-                        {percent.toFixed(0)}% ใช้แล้ว{warn ? ' — เกิน 80%!' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <Progress value={percent} className={warn ? '[&>div]:bg-destructive' : ''} />
-                </CardContent>
-              </Card>
-            )
-          })}
+          <Table className="min-w-[420px]">
+            <TableHeader className="bg-table-header text-table-header-foreground">
+              <TableRow>
+                <TableHead>หน่วยงาน</TableHead>
+                <TableHead>รอบ</TableHead>
+                <TableHead className="text-right">ใช้ / งบ</TableHead>
+                <TableHead className="w-[160px]">% ใช้แล้ว</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map((b) => {
+                const used = b.reservedAmount + b.usedAmount
+                const percent = b.totalAmount > 0 ? Math.min(100, (used / b.totalAmount) * 100) : 0
+                const warn = percent > 80
+                return (
+                  <TableRow key={b.id} data-testid="budget-row">
+                    <TableCell className="font-medium">
+                      {b.department?.name ?? `แผนก #${b.departmentId}`}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {b.quarter ? `Q${b.quarter}` : 'รายปี'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-sm">
+                      {formatCurrency(used)} / {formatCurrency(b.totalAmount)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 flex-1 overflow-hidden rounded bg-muted">
+                          <div
+                            className={`h-full rounded ${warn ? 'bg-destructive' : 'bg-primary'}`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <span
+                          data-testid={warn ? `budget-warn-${b.id}` : undefined}
+                          className={`w-12 text-right font-mono tabular-nums text-xs ${
+                            warn ? 'text-destructive font-medium' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {percent.toFixed(0)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
           {canCollapse && (
             <Button
               variant="outline"
