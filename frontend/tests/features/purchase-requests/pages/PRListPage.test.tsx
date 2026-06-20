@@ -23,6 +23,13 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
+// mock useNavigate to assert whole-row navigation; spread actual so MemoryRouter/useLocation/Link stay real
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 import { usePurchaseRequests } from '@/features/purchase-requests/hooks/usePurchaseRequests'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePRMutations } from '@/features/purchase-requests/hooks/usePRMutations'
@@ -485,5 +492,63 @@ describe('PRListPage', () => {
     await searchDateRange()
     await userEvent.click(screen.getByRole('button', { name: /ล้าง/i }))
     expect(screen.getByTestId('loc-search')).not.toHaveTextContent('status=')
+  })
+
+  it('navigates to the PR detail when a non-link cell of the row is clicked', async () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } },
+    })
+    renderPage()
+    await searchDateRange()
+    // click a NON-link cell (title); the เลขที่ PR cell is the link, which stops propagation
+    await userEvent.click(screen.getByText('Office Supplies'))
+    expect(mockNavigate).toHaveBeenCalledWith('/purchase-requests/1')
+  })
+
+  it('exposes เลขที่ PR as a real link that does not double-fire the row onClick', async () => {
+    setupMocks({
+      prData: { data: [mockPR], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } },
+    })
+    renderPage()
+    await searchDateRange()
+    const link = screen.getByRole('link', { name: 'PR-2025-0001' })
+    expect(link).toHaveAttribute('href', '/purchase-requests/1')
+    await userEvent.click(link)
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('clicking ลบ on an owned draft row opens the dialog without navigating (stopPropagation)', async () => {
+    setupMocks({ user: employeeUser, prData: draftListData })
+    renderPage()
+    await searchDateRange()
+    await userEvent.click(screen.getByRole('button', { name: 'ลบ' }))
+    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'ยืนยันลบ' })).toBeInTheDocument()
+  })
+
+  it('clicking แก้ไข on an owned draft row does not fire the row navigation (stopPropagation)', async () => {
+    setupMocks({ user: employeeUser, prData: draftListData })
+    renderPage()
+    await searchDateRange()
+    await userEvent.click(screen.getByRole('link', { name: 'แก้ไข' }))
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('hides the action column for a non-employee (no empty trailing column)', async () => {
+    setupMocks({
+      user: { ...baseUser, role: 'procurement_officer' },
+      prData: { data: [mockPR], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } },
+    })
+    renderPage()
+    await searchDateRange()
+    // 7 columns: ลำดับ, เลขที่ PR, ชื่อรายการ, ผู้ขอ, สถานะ, มูลค่า, วันที่ (no action column)
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7)
+  })
+
+  it('shows the action column for an employee (can edit/delete own draft)', async () => {
+    setupMocks({ user: employeeUser, prData: draftListData })
+    renderPage()
+    await searchDateRange()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 })

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
@@ -9,12 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
+import { RowLink } from '@/shared/components/RowLink'
 import { formatDate } from '@/shared/lib/utils'
 import { PRStatusBadge } from '@/features/purchase-requests/components/PRStatusBadge'
 import { useRecentPRs } from '../hooks/useRecentPRs'
 
 export function RecentPRsTable() {
   const { data, isLoading } = useRecentPRs()
+  const navigate = useNavigate()
 
   return (
     <div data-testid="recent-prs">
@@ -39,31 +41,31 @@ export function RecentPRsTable() {
                 <TableHead>ชื่อรายการ</TableHead>
                 <TableHead>สถานะ</TableHead>
                 <TableHead>วันที่</TableHead>
-                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {!data || data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     ยังไม่มีข้อมูล
                   </TableCell>
                 </TableRow>
               ) : (
                 data.map((pr) => (
-                  <TableRow key={pr.id}>
-                    <TableCell className="font-mono text-sm">{pr.prNumber}</TableCell>
+                  <TableRow
+                    key={pr.id}
+                    onClick={() => navigate(`/purchase-requests/${pr.id}`)}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
+                    <TableCell className="font-mono text-sm">
+                      <RowLink to={`/purchase-requests/${pr.id}`}>{pr.prNumber}</RowLink>
+                    </TableCell>
                     <TableCell className="font-medium">{pr.title}</TableCell>
                     <TableCell>
                       <PRStatusBadge status={pr.status} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(pr.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to={`/purchase-requests/${pr.id}`}>ดู</Link>
-                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
