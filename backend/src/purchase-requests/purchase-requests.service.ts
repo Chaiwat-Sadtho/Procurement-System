@@ -23,7 +23,13 @@ import { NotificationType } from '../notifications/entities/notification.entity'
 import { itemTotal, sumMoney } from '../common/money';
 import { formatRunningNumber } from '../common/running-number';
 import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
-import { buildMonthWindow, fillTrend, TrendPoint } from './pr-analytics.util';
+import {
+  buildMonthWindow,
+  fillTrend,
+  mapSpendRows,
+  SpendPoint,
+  TrendPoint,
+} from './pr-analytics.util';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -229,6 +235,27 @@ export class PurchaseRequestsService {
     this.applyRoleScope(qb, user);
     const rows = await qb.getRawMany<{ month: string; count: string }>();
     return fillTrend(months, rows);
+  }
+
+  async spendByDepartment(): Promise<SpendPoint[]> {
+    const fiscalYear = new Date().getFullYear();
+    const qb = this.prRepository
+      .createQueryBuilder('pr')
+      .innerJoin('pr.department', 'dept')
+      .select('pr.departmentId', 'departmentId')
+      .addSelect('dept.name', 'departmentName')
+      .addSelect('SUM(pr.total_estimated_amount)', 'total')
+      .where('pr.status = :status', { status: PrStatus.APPROVED })
+      .andWhere('pr.fiscalYear = :fiscalYear', { fiscalYear })
+      .groupBy('pr.departmentId')
+      .addGroupBy('dept.name')
+      .orderBy('total', 'DESC');
+    const rows = await qb.getRawMany<{
+      departmentId: string;
+      departmentName: string;
+      total: string;
+    }>();
+    return mapSpendRows(rows);
   }
 
   async findOne(

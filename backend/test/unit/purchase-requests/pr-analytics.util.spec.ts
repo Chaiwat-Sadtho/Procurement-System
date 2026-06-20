@@ -23,11 +23,7 @@ describe('buildMonthWindow', () => {
   });
 
   it('crosses year boundary correctly', () => {
-    expect(buildMonthWindow(new Date(2026, 0, 1), 3)).toEqual([
-      '2025-11',
-      '2025-12',
-      '2026-01',
-    ]);
+    expect(buildMonthWindow(new Date(2026, 0, 1), 3)).toEqual(['2025-11', '2025-12', '2026-01']);
   });
 });
 

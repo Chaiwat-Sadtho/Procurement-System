@@ -58,6 +58,14 @@ export class PurchaseRequestsController {
     return this.service.trend(user);
   }
 
+  @ApiOperation({ summary: 'ยอดใช้จ่าย (approved) ตามแผนก ปีงบปัจจุบัน (Procurement only)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.PROCUREMENT_OFFICER)
+  @Get('spend-by-department')
+  spendByDepartment() {
+    return this.service.spendByDepartment();
+  }
+
   @ApiOperation({ summary: 'ดู PR รายละเอียด (All)' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
