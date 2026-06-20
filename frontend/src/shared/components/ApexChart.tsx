@@ -1,5 +1,5 @@
 import Chart from 'react-apexcharts'
-import type { ApexOptions } from 'apexcharts'
+import type { ApexOptions, ApexAxisChartSeries, ApexNonAxisChartSeries } from 'apexcharts'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 
