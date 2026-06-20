@@ -52,6 +52,12 @@ export class PurchaseRequestsController {
     return this.service.stats(user);
   }
 
+  @ApiOperation({ summary: 'PR รายเดือน 12 เดือนล่าสุด — กรองตาม role (All)' })
+  @Get('trend')
+  trend(@CurrentUser() user: CurrentUserPayload) {
+    return this.service.trend(user);
+  }
+
   @ApiOperation({ summary: 'ดู PR รายละเอียด (All)' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
