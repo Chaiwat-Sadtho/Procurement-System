@@ -10,11 +10,12 @@
 |---|---|
 | Backend | NestJS 11 (TypeScript) + TypeORM |
 | Database | PostgreSQL 16 |
+| Cache / Rate-limit | Redis 7 (cache-aside + throttler storage) |
 | Auth | JWT + bcrypt + Role Guard |
 | API Docs | Swagger (OpenAPI) |
 | Frontend | React 19 + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod |
 | Testing | Jest + Supertest (backend), Vitest (frontend) |
-| Infra | Docker + Docker Compose, nginx, GitHub Actions CI |
+| Infra | Docker + Docker Compose, nginx (load balancer), GitHub Actions CI |
 
 ## Features
 
@@ -24,6 +25,9 @@
 - **Purchase Order (PO) + GRN** — สร้าง PO จาก PR, บันทึกรับของ (GRN), auto-complete PO เมื่อรับครบ (DB transaction), ให้คะแนนผู้ขาย
 - **Budget Control** — reserve/release/consume งบประมาณแบบ atomic (pessimistic lock)
 - **Audit Log + Notification** — บันทึกการกระทำ + แจ้งเตือนอัตโนมัติ
+- **Caching (Redis)** — cache-aside บน reference data + รายการ vendor/rating, invalidate-on-write ผ่าน namespace gen-counter, graceful-degrade เมื่อ Redis ดับ
+- **Rate Limiting** — throttle ระดับ global + override เฉพาะ auth (login/register/change-password), เก็บ counter บน Redis (รองรับหลาย instance), fail-open เมื่อ Redis ดับ
+- **Load Balancing** — nginx round-robin หน้า backend 2 instance (stateless + transparent failover), รัน DB migration ครั้งเดียวด้วย one-off service
 
 ## Quick Start (Docker — แนะนำ)
 
@@ -31,23 +35,23 @@
 
 ```bash
 # 1. clone + เข้าโฟลเดอร์
-git clone https://github.com/Chaiwat-Setho/Procurement-System.git
+git clone https://github.com/Chaiwat-Sadtho/Procurement-System.git
 cd Procurement-System
 
 # 2. สร้างไฟล์ env
 cp .env.example .env
 
-# 3. รันทั้ง stack (prod-like: postgres + backend + frontend)
+# 3. รันทั้ง stack (prod-like: postgres + redis + migrate + backend1/backend2 + frontend)
 docker compose -f docker-compose.yml up --build -d
 
 # 4. seed ข้อมูลตัวอย่าง (รันครั้งเดียวหลัง up ครั้งแรก)
-docker compose -f docker-compose.yml exec backend npm run seed:prod
+docker compose -f docker-compose.yml exec backend1 npm run seed:prod
 ```
 
-เปิดใช้งาน:
+เปิดใช้งาน (ทุกอย่างผ่าน nginx ที่ `:8080` — backend ไม่ publish port ออกนอก network):
 - Frontend: http://localhost:8080
-- Swagger API docs: http://localhost:3000/api/docs
-- Health check: http://localhost:3000/api/v1/health
+- Swagger API docs: http://localhost:8080/api/docs (nginx proxy → backend pool)
+- Health check: http://localhost:8080/api/v1/health
 
 ### บัญชีทดสอบ (รหัสผ่าน: `Password123`)
 
@@ -63,7 +67,7 @@ docker compose -f docker-compose.yml exec backend npm run seed:prod
 
 ## รันแบบไม่ใช้ Docker (local dev)
 
-**Database:** ต้องมี PostgreSQL รันอยู่ (หรือ `docker compose up -d postgres`)
+**Database + Cache:** ต้องมี PostgreSQL รันอยู่ (หรือ `docker compose up -d postgres redis`) — Redis เป็น optional ใน dev (cache + rate-limit graceful-degrade ถ้าไม่มี)
 
 **Backend:**
 ```bash
@@ -101,7 +105,7 @@ GitHub Actions (`.github/workflows/ci.yml`) รัน lint + test + build ทั
 ## Demo Flow
 
 1. `docker compose -f docker-compose.yml up --build -d` + seed
-2. เปิด Swagger http://localhost:3000/api/docs ดู API ทั้งหมด
+2. เปิด Swagger http://localhost:8080/api/docs ดู API ทั้งหมด
 3. Login เป็น employee → สร้าง PR → submit
 4. Login เป็น manager → approve PR (งบถูก reserve)
 5. Login เป็น procurement → สร้าง PO จาก PR → บันทึก GRN → PO auto-complete + งบถูก consume
@@ -110,9 +114,13 @@ GitHub Actions (`.github/workflows/ci.yml`) รัน lint + test + build ทั
 ## Architecture
 
 ```
-Browser ──http://localhost:8080──> [nginx (frontend container)]
-                                         │ static SPA
-                                         │ proxy /api/* ──> [backend container :3000]
-                                                                  │ TypeORM
-                                                                  └──> [postgres container :5432]
+Browser ──http://localhost:8080──> [nginx + React SPA]   (frontend container)
+                                          │
+                                          │ proxy /api/*  (round-robin + transparent failover)
+                                          ├──> [backend1 :3000] ─┐
+                                          └──> [backend2 :3000] ─┤
+                                                                 ├── TypeORM ──────────> [postgres :5432]
+                                                                 └── cache / throttle ──> [redis :6379]
+
+[migrate]  one-off service: รัน DB migration ครั้งเดียวก่อน backend ขึ้น (กัน migration race)
 ```
