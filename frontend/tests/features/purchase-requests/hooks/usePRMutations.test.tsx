@@ -71,3 +71,44 @@ describe('usePRMutations', () => {
     await waitFor(() => expect(qc.getQueryData(['purchase-request', 4])).toBeUndefined())
   })
 })
+
+describe('usePRMutations dashboard invalidation', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  function clientWrapper(qc: QueryClient) {
+    return ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+  }
+
+  it('invalidates dashboard queries after create (invalidateList path)', async () => {
+    vi.mocked(purchaseRequestsApi.create).mockResolvedValue(fakePR)
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => usePRMutations(), { wrapper: clientWrapper(qc) })
+
+    await result.current.createMutation.mutateAsync({
+      title: 'x',
+      requiredDate: '2026-07-01',
+      quarter: null,
+      items: [],
+    })
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard'] }))
+  })
+
+  it('invalidates dashboard queries after update (invalidateOne path)', async () => {
+    vi.mocked(purchaseRequestsApi.update).mockResolvedValue(fakePR)
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => usePRMutations(), { wrapper: clientWrapper(qc) })
+
+    await result.current.updateMutation.mutateAsync({ id: 3, data: { title: 'y' } })
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard'] }))
+  })
+})

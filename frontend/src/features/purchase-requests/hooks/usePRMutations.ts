@@ -7,10 +7,12 @@ export function usePRMutations() {
 
   function invalidateList() {
     void queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
   function invalidateOne(id: number) {
     void queryClient.invalidateQueries({ queryKey: ['purchase-request', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 
   const createMutation = useMutation({

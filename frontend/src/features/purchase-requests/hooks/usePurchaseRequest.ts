@@ -13,6 +13,7 @@ export function usePurchaseRequest(id: number) {
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ['purchase-request', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 
   const submitMutation = useMutation({
