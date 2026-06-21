@@ -4,9 +4,16 @@ import {
   createDefaultValues,
   announcementToFormValues,
   toPayload,
+  type AnnouncementFormValues,
 } from '@/features/announcements/lib/announcementFormSchema'
 
-const valid = { title: 'หัวข้อ', detail: 'รายละเอียด', icon: 'megaphone', isActive: true, isPinned: false }
+const valid: AnnouncementFormValues = {
+  title: 'หัวข้อ',
+  detail: 'รายละเอียด',
+  icon: 'megaphone',
+  isActive: true,
+  isPinned: false,
+}
 
 describe('announcementFormSchema', () => {
   it('accepts a valid form value', () => {

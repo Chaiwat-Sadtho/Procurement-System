@@ -8,6 +8,7 @@ import {
   Building2,
   Wallet,
   Users,
+  Megaphone,
   Settings,
 } from 'lucide-react'
 import type { Role } from '@/shared/types'
@@ -67,5 +68,6 @@ export const navItems: NavEntry[] = [
   { kind: 'link', label: 'ผู้ขาย', path: '/vendors', allowedRoles: STAFF_ROLES, icon: Building2 },
   { kind: 'link', label: 'งบประมาณ', path: '/budgets', allowedRoles: STAFF_ROLES, icon: Wallet },
   { kind: 'link', label: 'ผู้ใช้งาน', path: '/users', allowedRoles: ['procurement_officer'], icon: Users },
+  { kind: 'link', label: 'ประกาศ', path: '/announcements', allowedRoles: ['procurement_officer'], icon: Megaphone },
   { kind: 'link', label: 'ตั้งค่า', path: '/settings', allowedRoles: ALL_ROLES, icon: Settings },
 ]
