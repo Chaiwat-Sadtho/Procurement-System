@@ -18,6 +18,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+vi.mock('@/features/announcements/hooks/usePublicAnnouncements', () => ({
+  usePublicAnnouncements: () => ({ data: [], isLoading: false }),
+}))
+
 function renderLoginPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
