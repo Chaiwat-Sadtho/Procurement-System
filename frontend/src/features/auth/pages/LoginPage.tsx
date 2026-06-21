@@ -3,8 +3,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { Calendar, FileText, Megaphone, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import { authApi } from '@/features/auth/api'
+import { usePublicAnnouncements } from '@/features/announcements/hooks/usePublicAnnouncements'
+import { getAnnouncementIcon } from '@/features/announcements/lib/announcementIcons'
 import { Button } from '@/shared/components/ui/button'
 import {
   Form,
@@ -24,49 +26,12 @@ const schema = z.object({
 
 type LoginFormValues = z.infer<typeof schema>
 
-const announcements = [
-  {
-    icon: Megaphone,
-    title: 'ปิดปรับปรุงระบบ',
-    detail: 'เสาร์ที่ 30 พ.ค. 22:00–24:00 น.',
-  },
-  {
-    icon: FileText,
-    title: 'นโยบายจัดซื้อใหม่ ปีงบประมาณ 2569',
-    detail: 'มีผล 1 มิ.ย. — โปรดศึกษาก่อนสร้างคำขอซื้อ',
-  },
-  {
-    icon: Calendar,
-    title: 'อบรมการใช้งานระบบ e-GP1',
-    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
-  },
-  {
-    icon: Calendar,
-    title: 'อบรมการใช้งานระบบ e-GP2',
-    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
-  },
-  {
-    icon: Calendar,
-    title: 'อบรมการใช้งานระบบ e-GP3',
-    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
-  },
-]
-
 const MAX_ROWS_PER_COL = 5
-
-const visibleAnnouncements = announcements.slice(0, MAX_ROWS_PER_COL * 2)
-
-const announcementColumns =
-  visibleAnnouncements.length > MAX_ROWS_PER_COL
-    ? [
-        visibleAnnouncements.slice(0, MAX_ROWS_PER_COL),
-        visibleAnnouncements.slice(MAX_ROWS_PER_COL),
-      ]
-    : [visibleAnnouncements]
 
 export function LoginPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { data: announcements } = usePublicAnnouncements()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(schema),
@@ -82,6 +47,12 @@ export function LoginPage() {
     },
   })
 
+  const visible = (announcements ?? []).slice(0, MAX_ROWS_PER_COL * 2)
+  const columns =
+    visible.length > MAX_ROWS_PER_COL
+      ? [visible.slice(0, MAX_ROWS_PER_COL), visible.slice(MAX_ROWS_PER_COL)]
+      : [visible]
+
   return (
     <div className="grid min-h-screen lg:grid-cols-12">
       <aside
@@ -95,29 +66,33 @@ export function LoginPage() {
 
         <div className="mt-16">
           <h2 className="text-2xl font-semibold text-white">ประกาศ / ข่าวสาร</h2>
-          <div
-            className={cn(
-              'mt-6 grid gap-4',
-              announcementColumns.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-            )}
-          >
-            {announcementColumns.map((column, columnIndex) => (
-              <ul key={columnIndex} className="space-y-4">
-                {column.map((item) => (
-                  <li
-                    key={item.title}
-                    className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
-                  >
-                    <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <div>
-                      <p className="font-medium text-white">{item.title}</p>
-                      <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
+          {visible.length === 0 ? (
+            <p className="mt-6 text-sm text-slate-400">ยังไม่มีประกาศ</p>
+          ) : (
+            <div
+              className={cn('mt-6 grid gap-4', columns.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}
+            >
+              {columns.map((column, columnIndex) => (
+                <ul key={columnIndex} className="space-y-4">
+                  {column.map((item) => {
+                    const Icon = getAnnouncementIcon(item.icon)
+                    return (
+                      <li
+                        key={item.id}
+                        className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
+                      >
+                        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                        <div>
+                          <p className="font-medium text-white">{item.title}</p>
+                          <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ))}
+            </div>
+          )}
         </div>
 
         <p className="mt-auto pt-8 text-xs text-slate-400">© 2026 Procurement System</p>

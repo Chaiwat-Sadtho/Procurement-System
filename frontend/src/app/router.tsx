@@ -20,6 +20,7 @@ import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
 import { BudgetDetailPage } from '@/features/budgets/pages/BudgetDetailPage'
 import { BudgetFormPage } from '@/features/budgets/pages/BudgetFormPage'
 import { UsersPage } from '@/features/users/pages/UsersPage'
+import { AnnouncementsPage } from '@/features/announcements/pages/AnnouncementsPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
@@ -183,6 +184,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={['procurement_officer']}>
             <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'announcements',
+        element: (
+          <ProtectedRoute allowedRoles={['procurement_officer']}>
+            <AnnouncementsPage />
           </ProtectedRoute>
         ),
       },
