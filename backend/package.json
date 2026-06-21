@@ -5,6 +5,10 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -17,13 +21,14 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "cross-env NODE_ENV=test DB_NAME=procurement_test_db REDIS_DB=1 jest --config ./test/jest-e2e.json",
+    "test:e2e": "cross-env NODE_ENV=test DB_NAME=procurement_test_db REDIS_DB=1 THROTTLE_ENABLED=false jest --config ./test/jest-e2e.json",
     "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" src/database/seed.ts",
     "seed:demo": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" src/database/seed-demo.ts",
     "seed:prod": "node dist/database/seed.js"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.6",
+    "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/cache-manager": "^3.1.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -32,12 +37,14 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.4",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.1",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "decimal.js": "^10.6.0",
+    "ioredis": "^5.11.1",
     "keyv": "^5.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -81,15 +88,21 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
+    "roots": [
+      "<rootDir>/test/unit"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@app/(.*)$": "<rootDir>/src/$1"
+    },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node"
   }
 }

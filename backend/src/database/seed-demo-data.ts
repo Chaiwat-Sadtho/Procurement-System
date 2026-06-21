@@ -1,6 +1,7 @@
 import { UserRole } from '../users/entities/user.entity';
 import { PrStatus } from '../purchase-requests/entities/purchase-request.entity';
 import { PoStatus } from '../purchase-orders/entities/purchase-order.entity';
+import { AnnouncementIcon } from '../announcements/entities/announcement.entity';
 
 // ====== Departments ======
 // baseline (seedBaseline) สร้าง 3 ตัวแล้ว: Engineering(1) / Finance(2) / Operations(3)
@@ -688,5 +689,50 @@ export const PR_SCENARIOS: PrScenario[] = [
     quarter: 2,
     status: PrStatus.DRAFT,
     lines: [{ item: 2, qty: 4 }],
+  },
+];
+
+// announcements หน้า login — 5 รายการ (1 ปักหมุด). icon ใช้ enum member (type-safe, ตรง EXTRA_USERS)
+export const ANNOUNCEMENTS: Array<{
+  title: string;
+  detail: string;
+  icon: AnnouncementIcon;
+  isActive: boolean;
+  isPinned: boolean;
+}> = [
+  {
+    title: 'ปิดปรับปรุงระบบ',
+    detail: 'เสาร์ที่ 30 พ.ค. 22:00-24:00 น.',
+    icon: AnnouncementIcon.MEGAPHONE,
+    isActive: true,
+    isPinned: true,
+  },
+  {
+    title: 'นโยบายจัดซื้อใหม่ ปีงบประมาณ 2569',
+    detail: 'มีผล 1 มิ.ย. - โปรดศึกษาก่อนสร้างคำขอซื้อ',
+    icon: AnnouncementIcon.FILE,
+    isActive: true,
+    isPinned: false,
+  },
+  {
+    title: 'อบรมการใช้งานระบบ e-GP รุ่นที่ 1',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+    icon: AnnouncementIcon.CALENDAR,
+    isActive: true,
+    isPinned: false,
+  },
+  {
+    title: 'อบรมการใช้งานระบบ e-GP รุ่นที่ 2',
+    detail: 'รับสมัครถึง 28 พ.ค. ที่ฝ่ายพัสดุ',
+    icon: AnnouncementIcon.CALENDAR,
+    isActive: true,
+    isPinned: false,
+  },
+  {
+    title: 'รับพัสดุครุภัณฑ์สำนักงานรอบใหม่',
+    detail: 'ติดต่อรับที่คลังพัสดุ ชั้น 1',
+    icon: AnnouncementIcon.PACKAGE,
+    isActive: true,
+    isPinned: false,
   },
 ];

@@ -1,98 +1,100 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend — Procurement & Vendor Management API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS REST API สำหรับระบบจัดซื้อ-จัดจ้าง (Purchase Request → Approval → Purchase Order → Goods Receipt) พร้อม Budget Control, Audit Log และ Notification
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> ส่วนนี้คือ **API server** ของโปรเจกต์ — สำหรับการรันทั้ง stack ด้วย Docker คำสั่งเดียว ดู [`../README.md`](../README.md)
 
-## Description
+## Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| ด้าน | เครื่องมือ |
+|---|---|
+| Framework | NestJS 11 (TypeScript 5.7) |
+| Database | PostgreSQL + TypeORM (migrations, `synchronize: false`) |
+| Auth | JWT (`@nestjs/jwt` + `passport-jwt`) + bcrypt + Role Guard |
+| Cache | Redis ผ่าน `@nestjs/cache-manager` + `@keyv/redis` (cache-aside, graceful-degrade) |
+| Money math | `decimal.js` (กันปัญหา float ในงบประมาณ) |
+| Validation | `class-validator` + `class-transformer` (`ValidationPipe` whitelist/transform) |
+| API Docs | Swagger / OpenAPI (`@nestjs/swagger`) |
+| Testing | Jest + Supertest |
 
-## Project setup
+ID = SERIAL (INT auto-increment)
 
-```bash
-$ npm install
-```
+## โครงสร้าง module (`src/`)
 
-## Compile and run the project
+| กลุ่ม | module | หน้าที่ |
+|---|---|---|
+| Core | `auth` | login/register, `/auth/me`, เปลี่ยนรหัสผ่าน |
+| | `users` | user CRUD, role/status (findAll scoped ตาม role) |
+| | `departments` | department master data |
+| Procurement flow | `purchase-requests` | PR lifecycle (create → submit → approve/reject) |
+| | `purchase-orders` | PO lifecycle + endpoint ให้คะแนนผู้ขาย |
+| | `goods-receipts` | GRN (บันทึกรับของ → ปิด PO) |
+| | `vendors` | vendor + category + rating + blacklist |
+| | `budgets` | budget CRUD + reserve/consume (DB transaction) |
+| Cross-cutting | `audit-logs` | audit trail (export service ให้ module อื่น inject) |
+| | `notifications` | แจ้งเตือนผู้ใช้ (export service, fire-and-forget) |
+| | `cache` | Redis cache-aside + namespace invalidation (graceful-degrade) |
+| | `health` | `/health` liveness สำหรับ Docker / CI |
 
-```bash
-# development
-$ npm run start
+## API conventions
 
-# watch mode
-$ npm run start:dev
+- Base URL: `http://localhost:3000`
+- Global prefix: **`/api/v1`** (เช่น `POST /api/v1/auth/login`)
+- Swagger UI: **`/api/docs`** (กดปุ่ม Authorize ใส่ Bearer token)
+- Health check: `/api/v1/health`
+- Auth: ส่ง `Authorization: Bearer <access_token>` (ได้จาก `/auth/login`)
+- Role: `employee` / `manager` / `procurement_officer`
 
-# production mode
-$ npm run start:prod
-```
+## Local development (รัน backend แยก ไม่ผ่าน Docker)
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+ต้องมี PostgreSQL รันอยู่ก่อน (เปิดเร็วสุดด้วย `docker compose up -d postgres` จาก root); Redis เป็น optional (ถ้าไม่มี แอป graceful-degrade ยิง DB ตรง)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cd backend
+cp ../.env.example .env     # ตั้ง DB_HOST=localhost
+npm install
+npm run start:dev          # watch mode → http://localhost:3000
+npm run seed               # seed ข้อมูลตัวอย่าง (ts-node)
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## npm scripts
 
-## Resources
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `npm run start:dev` | dev server (watch) ที่ `:3000` |
+| `npm run build` / `npm run start:prod` | build → รัน `dist/main` |
+| `npm run lint` | ESLint (`--fix`) |
+| `npm run test` | unit tests (Jest) |
+| `npm run test:e2e` | e2e tests (แยก DB `procurement_test_db` + `REDIS_DB=1`) |
+| `npm run test:cov` | unit test + coverage |
+| `npm run seed` | seed baseline (ts-node) |
+| `npm run seed:demo` | reset + seed ข้อมูล demo ที่สมจริง |
+| `npm run seed:prod` | seed จาก build (`node dist`, ใช้ใน Docker) |
 
-Check out a few resources that may come in handy when working with NestJS:
+## Environment variables (`.env`)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| ตัวแปร | ค่าเริ่มต้น | หมายเหตุ |
+|---|---|---|
+| `DB_HOST` / `DB_PORT` | `localhost` / `5432` | ผ่าน Docker จะ override `DB_HOST=postgres` อัตโนมัติ |
+| `DB_USERNAME` / `DB_PASSWORD` / `DB_NAME` | `procurement_user` / `procurement_pass` / `procurement_db` | |
+| `JWT_SECRET` | — | ต้องตั้งเอง (อย่างน้อย 32 ตัวอักษร) |
+| `JWT_EXPIRES_IN` | `7d` | อายุ access token |
+| `PORT` / `NODE_ENV` | `3000` / `development` | |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost` / `6379` / — | optional; ผ่าน Docker override `REDIS_HOST=redis` |
 
-## Support
+## Key patterns
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- **Auth & roles** — `JwtAuthGuard` + `RolesGuard` + `@Roles(...)`; `@Expose()` + `ClassSerializerInterceptor` เปิดเผยเฉพาะ field ที่ตั้งใจ (`passwordHash` ใช้ `select: false`)
+- **Budget atomicity** — reserve/consume งบทำใน `EntityManager` transaction; คำนวณด้วย helper บริสุทธิ์ใน `common/budget-math.ts` (validate ด้วยค่า unrounded, เก็บด้วย round2)
+- **PO auto-complete** — เมื่อ GRN รับของครบ ระบบปิด PO + consume งบ ภายใน DB transaction เดียว
+- **Cache-aside + invalidate** — read ผ่าน Redis ก่อน, write ทำให้ namespace เก่าใช้ไม่ได้ด้วย generation counter; Redis ดับ = fail-fast กลับไปยิง DB (ไม่ crash)
+- **Fire-and-forget** — audit log + notification เรียกแบบ `void svc.method().catch(...)` ไม่บล็อก flow หลัก
 
-## Stay in touch
+## Testing
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+npm run test          # unit
+npm run test:e2e      # e2e — ต้องมี PostgreSQL (auto ใช้ procurement_test_db)
+```
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+หมายเหตุ: unit test (ts-jest) เป็น transpile-only จึง **ไม่จับ type error** — ตรวจ type แยกด้วย `npx tsc --noEmit` และ `npm run lint` ก่อน merge. e2e แยก state ออกจาก dev ทั้ง PostgreSQL (`procurement_test_db`) และ Redis (`REDIS_DB=1`)

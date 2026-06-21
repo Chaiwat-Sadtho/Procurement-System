@@ -23,34 +23,34 @@ export enum NotificationType {
 export class Notification {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 
   @Column({ name: 'user_id' })
-  userId: number;
+  userId!: number;
 
   @ApiProperty()
   @Column({ length: 255 })
-  title: string;
+  title!: string;
 
   @ApiProperty()
   @Column({ type: 'text' })
-  message: string;
+  message!: string;
 
   @ApiProperty({ enum: NotificationType })
   @Column({ type: 'enum', enum: NotificationType })
-  type: NotificationType;
+  type!: NotificationType;
 
   @ApiProperty({ default: false })
   @Column({ name: 'is_read', default: false })
-  isRead: boolean;
+  isRead!: boolean;
 
   @ApiProperty({ nullable: true })
   @Column({ name: 'reference_id', type: 'integer', nullable: true })
-  referenceId: number | null;
+  referenceId!: number | null;
 
   @ApiProperty({ nullable: true })
   @Column({
@@ -59,9 +59,9 @@ export class Notification {
     length: 50,
     nullable: true,
   })
-  referenceType: string | null;
+  referenceType!: string | null;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 }

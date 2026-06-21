@@ -22,11 +22,11 @@ export function PRItemsTable({ items, totalEstimatedAmount }: PRItemsTableProps)
           <TableHeader className="bg-table-header text-table-header-foreground">
             <TableRow>
               <TableHead>#</TableHead>
-              <TableHead>Item</TableHead>
-              <TableHead className="text-right">Qty</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead className="text-right">Unit Price</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>รายการ</TableHead>
+              <TableHead className="text-right">จำนวน</TableHead>
+              <TableHead>หน่วย</TableHead>
+              <TableHead className="text-right">ราคา/หน่วย</TableHead>
+              <TableHead className="text-right">รวม</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -53,7 +53,7 @@ export function PRItemsTable({ items, totalEstimatedAmount }: PRItemsTableProps)
         </Table>
       </div>
       <div className="flex justify-end mt-2 pr-4">
-        <span className="text-sm font-semibold">Total: {formatCurrency(totalEstimatedAmount)}</span>
+        <span className="text-sm font-semibold">รวม: {formatCurrency(totalEstimatedAmount)}</span>
       </div>
     </div>
   )

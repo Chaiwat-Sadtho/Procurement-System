@@ -11,8 +11,10 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { BudgetsModule } from './budgets/budgets.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 import { HealthModule } from './health/health.module';
 import { CacheModule } from './cache/cache.module';
+import { ThrottlingModule } from './throttling/throttling.module';
 
 @Module({
   imports: [
@@ -46,11 +48,13 @@ import { CacheModule } from './cache/cache.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,
         migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-        migrationsRun: true,
+        // รัน migration ตอน boot โดย default; docker ตั้ง MIGRATIONS_RUN=false ให้ migrate service รับหน้าที่แทน (กัน race หลาย instance)
+        migrationsRun: process.env.MIGRATIONS_RUN !== 'false',
       }),
       inject: [ConfigService],
     }),
     CacheModule,
+    ThrottlingModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,
@@ -61,6 +65,7 @@ import { CacheModule } from './cache/cache.module';
     NotificationsModule,
     AuditLogsModule,
     BudgetsModule,
+    AnnouncementsModule,
     HealthModule,
   ],
 })

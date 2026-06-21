@@ -7,15 +7,15 @@ export class CreateGrnItemDto {
   @ApiProperty({ description: 'ID ของ PO item' })
   @IsInt()
   @IsPositive()
-  poItemId: number;
+  poItemId!: number;
 
   @ApiProperty({ example: 1 })
   @IsNumber()
   @Min(0.01)
   @Type(() => Number)
-  receivedQuantity: number;
+  receivedQuantity!: number;
 
   @ApiProperty({ enum: ItemCondition })
   @IsEnum(ItemCondition)
-  condition: ItemCondition;
+  condition!: ItemCondition;
 }

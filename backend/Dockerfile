@@ -1,7 +1,7 @@
 # backend/Dockerfile
 
 # ---- Build stage ----
-FROM node:20-alpine AS build
+FROM node:24.16.0-alpine AS build
 WORKDIR /app
 
 # build deps สำหรับ native module (bcrypt) บน alpine/musl
@@ -15,7 +15,7 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # ---- Runtime stage ----
-FROM node:20-alpine AS runtime
+FROM node:24.16.0-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -26,5 +26,6 @@ COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
 
-# migration รันอัตโนมัติตอน start ผ่าน migrationsRun: true ใน app.module.ts
+# migration: app.module รัน migrationsRun ตอน boot ถ้า MIGRATIONS_RUN != 'false' (default true)
+# compose stack ตั้ง MIGRATIONS_RUN=false แล้ว delegate ให้ migrate service แยก (กัน race หลาย instance)
 CMD ["node", "dist/main.js"]

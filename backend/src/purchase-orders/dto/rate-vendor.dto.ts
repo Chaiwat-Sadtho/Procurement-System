@@ -8,7 +8,7 @@ export class RateVendorDto {
   @Min(1)
   @Max(5)
   @Type(() => Number)
-  score: number;
+  score!: number;
 
   @ApiPropertyOptional({ example: 'ส่งของตรงเวลา คุณภาพดี' })
   @IsOptional()

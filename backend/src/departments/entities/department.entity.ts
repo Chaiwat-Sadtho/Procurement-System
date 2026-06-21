@@ -5,13 +5,13 @@ import { ApiProperty } from '@nestjs/swagger';
 export class Department {
   @ApiProperty({ example: 1 })
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({ example: 'IT Department' })
   @Column({ length: 100 })
-  name: string;
+  name!: string;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 }

@@ -6,30 +6,30 @@ import { PurchaseRequest } from './purchase-request.entity';
 export class PurchaseRequestItem {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => PurchaseRequest, (pr) => pr.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'pr_id' })
-  purchaseRequest: PurchaseRequest;
+  purchaseRequest!: PurchaseRequest;
 
   @Column({ name: 'pr_id' })
-  prId: number;
+  prId!: number;
 
   @ApiProperty()
   @Column({ name: 'item_name', length: 255 })
-  itemName: string;
+  itemName!: string;
 
   @ApiProperty()
   @Column({ type: 'text', nullable: true })
-  description: string | null;
+  description!: string | null;
 
   @ApiProperty()
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty()
   @Column({ length: 50 })
-  unit: string;
+  unit!: string;
 
   @ApiProperty()
   @Column({
@@ -38,7 +38,7 @@ export class PurchaseRequestItem {
     precision: 15,
     scale: 2,
   })
-  estimatedUnitPrice: number;
+  estimatedUnitPrice!: number;
 
   @ApiProperty()
   @Column({
@@ -47,5 +47,5 @@ export class PurchaseRequestItem {
     precision: 15,
     scale: 2,
   })
-  estimatedTotalPrice: number;
+  estimatedTotalPrice!: number;
 }

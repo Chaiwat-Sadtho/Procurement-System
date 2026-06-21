@@ -1,55 +1,59 @@
 # Procurement & Vendor Management System
 
-ระบบจัดซื้อ-จัดจ้างและบริหารผู้ขาย (Purchase Request → Approval → Purchase Order → Goods Receipt) พร้อม Budget Control, Audit Log และ Notification
+A procurement and vendor management system (Purchase Request → Approval → Purchase Order → Goods Receipt) with budget control, audit logging, and notifications.
 
-> NestJS + React + PostgreSQL — รันได้ด้วย Docker คำสั่งเดียว
+> NestJS + React + PostgreSQL — runs with a single Docker command
 
 ## Tech Stack
 
-| Layer | เครื่องมือ |
+| Layer | Tools |
 |---|---|
 | Backend | NestJS 11 (TypeScript) + TypeORM |
 | Database | PostgreSQL 16 |
+| Cache / Rate-limit | Redis 7 (cache-aside + throttler storage) |
 | Auth | JWT + bcrypt + Role Guard |
 | API Docs | Swagger (OpenAPI) |
 | Frontend | React 19 + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod |
 | Testing | Jest + Supertest (backend), Vitest (frontend) |
-| Infra | Docker + Docker Compose, nginx, GitHub Actions CI |
+| Infra | Docker + Docker Compose, nginx (load balancer), GitHub Actions CI |
 
 ## Features
 
-- **Auth & Users** — JWT login, role-based access (employee / manager / procurement_officer), แก้โปรไฟล์ + เปลี่ยนรหัสผ่าน
-- **Purchase Request (PR)** — สร้าง/แก้/ส่งอนุมัติ, state machine (draft → submitted → approved/rejected), เลือกงบรายปี/รายไตรมาส
-- **Vendor Management** — CRUD ผู้ขาย, หมวดหมู่, blacklist, ประวัติคะแนน
-- **Purchase Order (PO) + GRN** — สร้าง PO จาก PR, บันทึกรับของ (GRN), auto-complete PO เมื่อรับครบ (DB transaction), ให้คะแนนผู้ขาย
-- **Budget Control** — reserve/release/consume งบประมาณแบบ atomic (pessimistic lock)
-- **Audit Log + Notification** — บันทึกการกระทำ + แจ้งเตือนอัตโนมัติ
+- **Auth & Users** — JWT login, role-based access (employee / manager / procurement_officer), profile editing + password change
+- **Purchase Request (PR)** — create/edit/submit for approval, state machine (draft → submitted → approved/rejected), select annual/quarterly budget
+- **Vendor Management** — vendor CRUD, categories, blacklist, rating history
+- **Purchase Order (PO) + GRN** — create a PO from a PR, record goods receipts (GRN), auto-complete the PO when fully received (DB transaction), rate vendors
+- **Budget Control** — atomic reserve/release/consume of budgets (pessimistic lock)
+- **Audit Log + Notification** — action logging + automatic notifications
+- **Caching (Redis)** — cache-aside on reference data + vendor/rating lists, invalidate-on-write via a namespace generation counter, graceful degradation when Redis is down
+- **Rate Limiting** — global throttle + auth-specific overrides (login/register/change-password), counters stored in Redis (multi-instance ready), fail-open when Redis is down
+- **Load Balancing** — nginx round-robin across 2 backend instances (stateless + transparent failover), database migrations run once via a one-off service
 
-## Quick Start (Docker — แนะนำ)
+## Quick Start (Docker — recommended)
 
-ต้องมี Docker + Docker Compose
+Requires Docker + Docker Compose
 
 ```bash
-# 1. clone + เข้าโฟลเดอร์
-git clone https://github.com/Chaiwat-Setho/Procurement-System.git
+# 1. clone + enter the folder
+git clone https://github.com/Chaiwat-Sadtho/Procurement-System.git
 cd Procurement-System
 
-# 2. สร้างไฟล์ env
+# 2. create the env file
 cp .env.example .env
 
-# 3. รันทั้ง stack (prod-like: postgres + backend + frontend)
+# 3. run the full stack (prod-like: postgres + redis + migrate + backend1/backend2 + frontend)
 docker compose -f docker-compose.yml up --build -d
 
-# 4. seed ข้อมูลตัวอย่าง (รันครั้งเดียวหลัง up ครั้งแรก)
-docker compose -f docker-compose.yml exec backend npm run seed:prod
+# 4. seed sample data (run once after the first up)
+docker compose -f docker-compose.yml exec backend1 npm run seed:prod
 ```
 
-เปิดใช้งาน:
+Access (everything goes through nginx on `:8080` — the backend does not publish a port outside the network):
 - Frontend: http://localhost:8080
-- Swagger API docs: http://localhost:3000/api/docs
-- Health check: http://localhost:3000/api/v1/health
+- Swagger API docs: http://localhost:8080/api/docs (nginx proxy → backend pool)
+- Health check: http://localhost:8080/api/v1/health
 
-### บัญชีทดสอบ (รหัสผ่าน: `Password123`)
+### Test accounts (password: `Password123`)
 
 | Email | Role |
 |---|---|
@@ -57,13 +61,13 @@ docker compose -f docker-compose.yml exec backend npm run seed:prod
 | manager@company.com | manager |
 | procurement@company.com | procurement_officer |
 
-### โหมด dev (มี pgAdmin)
+### Dev mode (with pgAdmin)
 
-`docker compose up -d` (ไม่ใส่ `-f`) จะ merge `docker-compose.override.yml` เพิ่ม pgAdmin ที่ http://localhost:5050 (admin@admin.com / admin)
+`docker compose up -d` (without `-f`) merges `docker-compose.override.yml`, adding pgAdmin at http://localhost:5050 (admin@admin.com / admin)
 
-## รันแบบไม่ใช้ Docker (local dev)
+## Running without Docker (local dev)
 
-**Database:** ต้องมี PostgreSQL รันอยู่ (หรือ `docker compose up -d postgres`)
+**Database + Cache:** a running PostgreSQL is required (or `docker compose up -d postgres redis`) — Redis is optional in dev (cache + rate-limit degrade gracefully without it)
 
 **Backend:**
 ```bash
@@ -71,14 +75,14 @@ cd backend
 cp ../.env.example .env   # DB_HOST=localhost
 npm install
 npm run start:dev         # http://localhost:3000
-npm run seed              # seed ข้อมูล (ts-node)
+npm run seed              # seed data (ts-node)
 ```
 
 **Frontend:**
 ```bash
 cd frontend
 npm install
-npm run dev               # http://localhost:5173 (proxy /api → :3000)
+npm run dev               # http://localhost:5173 (proxies /api → :3000)
 ```
 
 ## Testing
@@ -87,7 +91,7 @@ npm run dev               # http://localhost:5173 (proxy /api → :3000)
 # Backend
 cd backend
 npm run test              # unit
-npm run test:e2e          # e2e (ต้องมี DB)
+npm run test:e2e          # e2e (requires a DB)
 
 # Frontend
 cd frontend
@@ -96,23 +100,27 @@ npm run test:run          # vitest
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) รัน lint + test + build ทั้ง backend (พร้อม PostgreSQL service container สำหรับ e2e) และ frontend บนทุก push เข้า `master` / `dev` และทุก Pull Request
+GitHub Actions (`.github/workflows/ci.yml`) runs lint + test + build for both the backend (with a PostgreSQL service container for e2e) and the frontend on every push to `master` / `dev` and every Pull Request.
 
 ## Demo Flow
 
 1. `docker compose -f docker-compose.yml up --build -d` + seed
-2. เปิด Swagger http://localhost:3000/api/docs ดู API ทั้งหมด
-3. Login เป็น employee → สร้าง PR → submit
-4. Login เป็น manager → approve PR (งบถูก reserve)
-5. Login เป็น procurement → สร้าง PO จาก PR → บันทึก GRN → PO auto-complete + งบถูก consume
-6. ให้คะแนนผู้ขาย → ดูใน vendor detail
+2. Open Swagger at http://localhost:8080/api/docs to browse all APIs
+3. Log in as employee → create a PR → submit
+4. Log in as manager → approve the PR (budget is reserved)
+5. Log in as procurement → create a PO from the PR → record a GRN → PO auto-completes + budget is consumed
+6. Rate the vendor → view it on the vendor detail page
 
 ## Architecture
 
 ```
-Browser ──http://localhost:8080──> [nginx (frontend container)]
-                                         │ static SPA
-                                         │ proxy /api/* ──> [backend container :3000]
-                                                                  │ TypeORM
-                                                                  └──> [postgres container :5432]
+Browser ──http://localhost:8080──> [nginx + React SPA]   (frontend container)
+                                          │
+                                          │ proxy /api/*  (round-robin + transparent failover)
+                                          ├──> [backend1 :3000] ─┐
+                                          └──> [backend2 :3000] ─┤
+                                                                 ├── TypeORM ──────────> [postgres :5432]
+                                                                 └── cache / throttle ──> [redis :6379]
+
+[migrate]  one-off service: runs DB migrations once before the backends start (prevents migration races)
 ```

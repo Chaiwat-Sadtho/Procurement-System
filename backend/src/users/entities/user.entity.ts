@@ -21,49 +21,49 @@ export enum UserRole {
 export class User {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Department, { nullable: true, eager: false })
   @JoinColumn({ name: 'department_id' })
-  department: Department | null;
+  department!: Department | null;
 
   @Column({ name: 'department_id', nullable: true })
-  departmentId: number | null;
+  departmentId!: number | null;
 
   @ApiProperty()
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column({ name: 'password_hash', select: false })
-  passwordHash: string;
+  passwordHash!: string;
 
   @ApiPropertyOptional()
   @Column({ name: 'first_name', type: 'varchar', nullable: true })
-  firstName: string | null;
+  firstName!: string | null;
 
   @ApiPropertyOptional()
   @Column({ name: 'middle_name', type: 'varchar', nullable: true })
-  middleName: string | null;
+  middleName!: string | null;
 
   @ApiPropertyOptional()
   @Column({ name: 'last_name', type: 'varchar', nullable: true })
-  lastName: string | null;
+  lastName!: string | null;
 
   @ApiProperty({ enum: UserRole })
   @Column({ type: 'enum', enum: UserRole, default: UserRole.EMPLOYEE })
-  role: UserRole;
+  role!: UserRole;
 
   @ApiProperty()
   @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ApiProperty({ example: 'John Michael Doe' })
   @Expose()

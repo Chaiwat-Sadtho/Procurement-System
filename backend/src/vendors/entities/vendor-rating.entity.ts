@@ -15,30 +15,30 @@ import { Vendor } from './vendor.entity';
 export class VendorRating {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Vendor, { eager: false })
   @JoinColumn({ name: 'vendor_id' })
-  vendor: Vendor;
+  vendor!: Vendor;
 
   @Column({ name: 'vendor_id' })
-  vendorId: number;
+  vendorId!: number;
 
   @Column({ name: 'po_id' })
-  poId: number;
+  poId!: number;
 
   @ApiProperty({ minimum: 1, maximum: 5 })
   @Column({ type: 'integer' })
-  score: number;
+  score!: number;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
-  comment: string | null;
+  comment!: string | null;
 
   @Column({ name: 'rated_by' })
-  ratedBy: number;
+  ratedBy!: number;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 }

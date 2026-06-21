@@ -7,5 +7,5 @@ export class UpdateBudgetDto {
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  totalAmount: number;
+  totalAmount!: number;
 }

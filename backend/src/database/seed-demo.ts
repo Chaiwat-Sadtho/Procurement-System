@@ -7,6 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { VendorCategory } from '../vendors/entities/vendor-category.entity';
 import { Vendor } from '../vendors/entities/vendor.entity';
 import { Budget } from '../budgets/entities/budget.entity';
+import { Announcement } from '../announcements/entities/announcement.entity';
 import {
   EXTRA_DEPARTMENTS,
   EXTRA_USERS,
@@ -17,6 +18,7 @@ import {
   CATALOG,
   PR_SCENARIOS,
   PrScenario,
+  ANNOUNCEMENTS,
 } from './seed-demo-data';
 import * as bcrypt from 'bcrypt';
 import { itemTotal, sumMoney } from '../common/money';
@@ -321,6 +323,9 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     const avg = round2(scores.reduce((s, n) => s + n, 0) / scores.length);
     await vendorRepo.update(vendorId, { ratingAvg: avg });
   }
+
+  // 10) announcements (login page) — 5 รายการ (1 ปักหมุด)
+  await ds.getRepository(Announcement).save(ANNOUNCEMENTS);
 }
 
 // push contribution helper (top-level, นอก seedDemo)
@@ -528,9 +533,13 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     if (exp !== actual) fail(`vendor ${v.id} ratingAvg=${actual} expected ${exp}`);
   }
 
+  const announcements = await ds.getRepository(Announcement).find();
+  if (announcements.length !== 5) fail(`announcements=${announcements.length} expected 5`);
+
   console.log(
     `✓ verify ok — budgets:${budgets.length} vendors-rated:${scoresByVendor.size} ` +
-      `PR:${prs.length} PO:${pos.length} GRN:${grns.length} ratings:${ratings.length}`,
+      `PR:${prs.length} PO:${pos.length} GRN:${grns.length} ratings:${ratings.length} ` +
+      `announcements:${announcements.length}`,
   );
 }
 

@@ -15,7 +15,7 @@ export class CreateVendorDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: '0105563123456' })
   @IsOptional()

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -16,6 +16,7 @@ import { ListLoadingState } from '@/shared/components/ListLoadingState'
 import { ListEmptyRow } from '@/shared/components/ListEmptyRow'
 import { ListSearchPrompt } from '@/shared/components/ListSearchPrompt'
 import { ListPaginationFooter } from '@/shared/components/ListPaginationFooter'
+import { RowLink } from '@/shared/components/RowLink'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 import { usePagination, useClampPageToTotal } from '@/shared/hooks/usePagination'
 import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
@@ -30,6 +31,7 @@ import type { PRStatus, PurchaseRequest } from '../types'
 
 export function PRListPage() {
   const { data: user } = useCurrentUser()
+  const navigate = useNavigate()
   const { page, limit, nextPage, prevPage, setLimit } = usePagination()
   const { filters, hasSearched, signature, commit, clear } = useUrlFilters(prUrlFilterConfig)
   const { deleteMutation } = usePRMutations()
@@ -54,7 +56,7 @@ export function PRListPage() {
   const { data, isLoading } = usePurchaseRequests(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
-  const canCreate = user?.role === 'employee'
+  const isEmployee = user?.role === 'employee'
   // running number sticks to the page actually returned by the server (meta),
   // not the local page state which momentarily leads the fetch
   const displayPage = data?.meta.page ?? page
@@ -66,10 +68,10 @@ export function PRListPage() {
   return (
     <div>
       <PageHeader
-        title="Purchase Requests"
-        description="Manage purchase requests"
+        title="ใบขอซื้อ"
+        description="ค้นหาและเรียกดูใบขอซื้อ"
         action={
-          canCreate ? (
+          isEmployee ? (
             <Button asChild>
               <Link to="/purchase-requests/new">New PR</Link>
             </Button>
@@ -93,29 +95,35 @@ export function PRListPage() {
       ) : (
         <>
           <div className="rounded-md border">
-            <Table className="table-fixed min-w-[1000px]">
+            <Table className="table-fixed min-w-[1040px]">
               <TableHeader className="bg-table-header text-table-header-foreground">
                 <TableRow>
                   <TableHead className="w-[60px] text-center">ลำดับ</TableHead>
-                  <TableHead className="w-[140px]">PR Number</TableHead>
-                  <TableHead className="min-w-[200px]">Title</TableHead>
-                  <TableHead className="w-[140px]">Requester</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[140px] text-right">Amount</TableHead>
-                  <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead className="w-[80px]" />
+                  <TableHead className="w-[140px]">เลขที่ PR</TableHead>
+                  <TableHead className="min-w-[200px]">ชื่อรายการ</TableHead>
+                  <TableHead className="w-[140px]">ผู้ขอ</TableHead>
+                  <TableHead className="w-[120px]">สถานะ</TableHead>
+                  <TableHead className="w-[140px] text-right">มูลค่า</TableHead>
+                  <TableHead className="w-[120px]">วันที่</TableHead>
+                  {isEmployee && <TableHead className="w-[120px]" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data?.data.length === 0 ? (
-                  <ListEmptyRow colSpan={8} />
+                  <ListEmptyRow colSpan={isEmployee ? 8 : 7} />
                 ) : (
                   data?.data.map((pr, i) => (
-                    <TableRow key={pr.id}>
+                    <TableRow
+                      key={pr.id}
+                      onClick={() => navigate(`/purchase-requests/${pr.id}`)}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
                       <TableCell className="text-center">
                         {getRowIndex(displayPage, displayLimit, i)}
                       </TableCell>
-                      <TableCell className="font-mono text-sm truncate">{pr.prNumber}</TableCell>
+                      <TableCell className="font-mono text-sm truncate">
+                        <RowLink to={`/purchase-requests/${pr.id}`}>{pr.prNumber}</RowLink>
+                      </TableCell>
                       <TableCell className="font-medium truncate">{pr.title}</TableCell>
                       <TableCell className="text-muted-foreground text-sm truncate">
                         {pr.requester.fullName}
@@ -129,21 +137,32 @@ export function PRListPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(pr.createdAt)}
                       </TableCell>
-                      <TableCell>
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to={`/purchase-requests/${pr.id}`}>View</Link>
-                        </Button>
-                        {canManageRow(pr) && (
-                          <>
-                            <Button asChild variant="ghost" size="sm">
-                              <Link to={`/purchase-requests/${pr.id}/edit`}>แก้ไข</Link>
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(pr)}>
-                              ลบ
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>
+                      {isEmployee && (
+                        <TableCell>
+                          {canManageRow(pr) && (
+                            <div className="flex items-center gap-1">
+                              <Button asChild variant="ghost" size="sm">
+                                <Link
+                                  to={`/purchase-requests/${pr.id}/edit`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  แก้ไข
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setDeleteTarget(pr)
+                                }}
+                              >
+                                ลบ
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}

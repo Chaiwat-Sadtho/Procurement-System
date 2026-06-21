@@ -12,23 +12,23 @@ export enum ItemCondition {
 export class GoodsReceiptItem {
   @ApiProperty()
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => GoodsReceiptNote, (grn) => grn.items, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'grn_id' })
-  goodsReceiptNote: GoodsReceiptNote;
+  goodsReceiptNote!: GoodsReceiptNote;
 
   @Column({ name: 'grn_id' })
-  grnId: number;
+  grnId!: number;
 
   @ManyToOne(() => PurchaseOrderItem, { eager: false })
   @JoinColumn({ name: 'po_item_id' })
-  poItem: PurchaseOrderItem;
+  poItem!: PurchaseOrderItem;
 
   @Column({ name: 'po_item_id' })
-  poItemId: number;
+  poItemId!: number;
 
   @ApiProperty()
   @Column({
@@ -37,9 +37,9 @@ export class GoodsReceiptItem {
     precision: 10,
     scale: 2,
   })
-  receivedQuantity: number;
+  receivedQuantity!: number;
 
   @ApiProperty({ enum: ItemCondition })
   @Column({ type: 'enum', enum: ItemCondition })
-  condition: ItemCondition;
+  condition!: ItemCondition;
 }

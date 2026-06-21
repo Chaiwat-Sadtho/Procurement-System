@@ -16,16 +16,16 @@ export class CreatePurchaseOrderDto {
   @ApiProperty({ description: 'ID ของ approved PR' })
   @IsInt()
   @IsPositive()
-  prId: number;
+  prId!: number;
 
   @ApiProperty({ description: 'ID ของ vendor (ต้องไม่ blacklisted)' })
   @IsInt()
   @IsPositive()
-  vendorId: number;
+  vendorId!: number;
 
   @ApiProperty({ example: '2025-12-31' })
   @IsDateString()
-  expectedDeliveryDate: string;
+  expectedDeliveryDate!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -37,5 +37,5 @@ export class CreatePurchaseOrderDto {
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreatePurchaseOrderItemDto)
-  items: CreatePurchaseOrderItemDto[];
+  items!: CreatePurchaseOrderItemDto[];
 }

@@ -20,11 +20,11 @@ export class CreatePurchaseRequestDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  title: string;
+  title!: string;
 
   @ApiProperty({ example: '2025-12-31' })
   @IsDateString()
-  requiredDate: string;
+  requiredDate!: string;
 
   // P5-3: ไตรมาสงบประมาณ (1-4) ที่จะไปจอง — เว้นว่าง = งบรายปี (annual)
   @ApiPropertyOptional({
@@ -44,5 +44,5 @@ export class CreatePurchaseRequestDto {
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreatePurchaseRequestItemDto)
-  items: CreatePurchaseRequestItemDto[];
+  items!: CreatePurchaseRequestItemDto[];
 }

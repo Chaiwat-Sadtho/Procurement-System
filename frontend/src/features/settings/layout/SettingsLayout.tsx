@@ -3,14 +3,14 @@ import { cn } from '@/shared/lib/utils'
 import { PageHeader } from '@/shared/components/PageHeader'
 
 const tabs = [
-  { label: 'Profile', path: '/settings/profile' },
-  { label: 'Security', path: '/settings/security' },
+  { label: 'โปรไฟล์', path: '/settings/profile' },
+  { label: 'ความปลอดภัย', path: '/settings/security' },
 ]
 
 export function SettingsLayout() {
   return (
     <div>
-      <PageHeader title="Settings" description="จัดการโปรไฟล์และความปลอดภัยของบัญชี" />
+      <PageHeader title="ตั้งค่า" description="จัดการโปรไฟล์และความปลอดภัยของบัญชี" />
       <nav aria-label="Settings sections" className="flex gap-2 border-b mb-6">
         {tabs.map((tab) => (
           <NavLink

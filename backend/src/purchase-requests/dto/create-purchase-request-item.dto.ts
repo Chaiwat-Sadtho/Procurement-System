@@ -7,7 +7,7 @@ export class CreatePurchaseRequestItemDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  itemName: string;
+  itemName!: string;
 
   @ApiPropertyOptional({ example: 'สำหรับทีม Engineering' })
   @IsOptional()
@@ -18,17 +18,17 @@ export class CreatePurchaseRequestItemDto {
   @IsNumber()
   @Min(0.01)
   @Type(() => Number)
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({ example: 'unit' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  unit: string;
+  unit!: string;
 
   @ApiProperty({ example: 69900 })
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  estimatedUnitPrice: number;
+  estimatedUnitPrice!: number;
 }

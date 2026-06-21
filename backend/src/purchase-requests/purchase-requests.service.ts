@@ -11,6 +11,7 @@ import { Repository, Like, DataSource, QueryFailedError, SelectQueryBuilder } fr
 import { PurchaseRequest, PrStatus } from './entities/purchase-request.entity';
 import { PurchaseRequestItem } from './entities/purchase-request-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
+import { requireManagerDepartmentId } from '../common/manager-scope';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { UpdatePurchaseRequestDto } from './dto/update-purchase-request.dto';
 import { RejectPurchaseRequestDto } from './dto/reject-purchase-request.dto';
@@ -22,6 +23,13 @@ import { NotificationType } from '../notifications/entities/notification.entity'
 import { itemTotal, sumMoney } from '../common/money';
 import { formatRunningNumber } from '../common/running-number';
 import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
+import {
+  buildMonthWindow,
+  fillTrend,
+  mapSpendRows,
+  SpendPoint,
+  TrendPoint,
+} from './pr-analytics.util';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -103,29 +111,23 @@ export class PurchaseRequestsService {
   }
 
   // role-scope กลาง: ใช้ทั้ง findAll และ stats เพื่อกัน scope เพี้ยนคนละทาง
-  private async applyRoleScope(
+  private applyRoleScope(
     qb: SelectQueryBuilder<PurchaseRequest>,
-    user: { id: number; role: UserRole },
-  ): Promise<void> {
+    user: { id: number; role: UserRole; departmentId?: number | null },
+  ): void {
     if (user.role === UserRole.EMPLOYEE) {
       qb.andWhere('pr.requesterId = :userId', { userId: user.id });
     } else if (user.role === UserRole.MANAGER) {
-      const fullUser = await this.userRepository.findOne({
-        where: { id: user.id },
-      });
-      if (!fullUser) throw new NotFoundException('User not found');
-      if (fullUser.departmentId == null) {
-        throw new ForbiddenException('ผู้ใช้ระดับ manager ต้องสังกัดแผนก');
-      }
+      // dept จาก auth payload (สดทุก request) — ไม่ re-load user จาก DB
       qb.andWhere('pr.departmentId = :deptId', {
-        deptId: fullUser.departmentId,
+        deptId: requireManagerDepartmentId(user),
       });
     }
     // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
   }
 
   async findAll(
-    user: { id: number; role: UserRole },
+    user: { id: number; role: UserRole; departmentId?: number | null },
     query: PrQueryDto,
   ): Promise<{
     data: PurchaseRequest[];
@@ -152,7 +154,7 @@ export class PurchaseRequestsService {
       .leftJoinAndSelect('pr.requester', 'requester')
       .leftJoinAndSelect('pr.approver', 'approver');
 
-    await this.applyRoleScope(qb, user);
+    this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
     // §3.1/§4A: เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
@@ -201,18 +203,65 @@ export class PurchaseRequestsService {
     };
   }
 
-  async stats(user: { id: number; role: UserRole }): Promise<PrStatsResponse> {
+  async stats(user: {
+    id: number;
+    role: UserRole;
+    departmentId?: number | null;
+  }): Promise<PrStatsResponse> {
     const qb = this.prRepository
       .createQueryBuilder('pr')
       .select('pr.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .groupBy('pr.status');
-    await this.applyRoleScope(qb, user);
+    this.applyRoleScope(qb, user);
     const rows = await qb.getRawMany<{ status: PrStatus; count: string }>();
     return mapStatsRows(rows);
   }
 
-  async findOne(id: number, user: { id: number; role: UserRole }): Promise<PurchaseRequest> {
+  async trend(user: {
+    id: number;
+    role: UserRole;
+    departmentId?: number | null;
+  }): Promise<TrendPoint[]> {
+    const now = new Date();
+    const months = buildMonthWindow(now, 12);
+    const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const qb = this.prRepository
+      .createQueryBuilder('pr')
+      .select("to_char(date_trunc('month', pr.created_at), 'YYYY-MM')", 'month')
+      .addSelect('COUNT(*)', 'count')
+      .where('pr.created_at >= :start', { start })
+      .groupBy("to_char(date_trunc('month', pr.created_at), 'YYYY-MM')");
+    this.applyRoleScope(qb, user);
+    const rows = await qb.getRawMany<{ month: string; count: string }>();
+    return fillTrend(months, rows);
+  }
+
+  async spendByDepartment(): Promise<SpendPoint[]> {
+    const fiscalYear = new Date().getFullYear();
+    const qb = this.prRepository
+      .createQueryBuilder('pr')
+      .innerJoin('pr.department', 'dept')
+      .select('pr.departmentId', 'departmentId')
+      .addSelect('dept.name', 'departmentName')
+      .addSelect('SUM(pr.total_estimated_amount)', 'total')
+      .where('pr.status = :status', { status: PrStatus.APPROVED })
+      .andWhere('pr.fiscalYear = :fiscalYear', { fiscalYear })
+      .groupBy('pr.departmentId')
+      .addGroupBy('dept.name')
+      .orderBy('total', 'DESC');
+    const rows = await qb.getRawMany<{
+      departmentId: string;
+      departmentName: string;
+      total: string;
+    }>();
+    return mapSpendRows(rows);
+  }
+
+  async findOne(
+    id: number,
+    user: { id: number; role: UserRole; departmentId?: number | null },
+  ): Promise<PurchaseRequest> {
     const pr = await this.prRepository.findOne({
       where: { id },
       relations: {
@@ -229,11 +278,8 @@ export class PurchaseRequestsService {
     }
 
     if (user.role === UserRole.MANAGER) {
-      const fullUser = await this.userRepository.findOne({
-        where: { id: user.id },
-      });
-      if (!fullUser) throw new NotFoundException('User not found');
-      if (fullUser.departmentId == null || pr.departmentId !== fullUser.departmentId) {
+      // dept จาก auth payload (สดทุก request) — ไม่ re-load user จาก DB
+      if (pr.departmentId !== requireManagerDepartmentId(user)) {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
     }

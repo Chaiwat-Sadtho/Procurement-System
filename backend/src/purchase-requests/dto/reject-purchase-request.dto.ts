@@ -5,5 +5,5 @@ export class RejectPurchaseRequestDto {
   @ApiProperty({ example: 'งบประมาณไม่เพียงพอ' })
   @IsString()
   @IsNotEmpty()
-  reason: string;
+  reason!: string;
 }

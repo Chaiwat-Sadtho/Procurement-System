@@ -22,23 +22,23 @@ export class CreatePurchaseOrderItemDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  itemName: string;
+  itemName!: string;
 
   @ApiProperty({ example: 2 })
   @IsNumber()
   @Min(0.01)
   @Type(() => Number)
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({ example: 'unit' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  unit: string;
+  unit!: string;
 
   @ApiProperty({ example: 68000 })
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  unitPrice: number;
+  unitPrice!: number;
 }

@@ -18,7 +18,7 @@ export class CacheService {
     try {
       return (await this.cache.get<T>(key)) ?? undefined;
     } catch (err) {
-      this.logger.warn(`cache get failed for ${key}: ${err}`);
+      this.logger.warn(`cache get failed for ${key}: ${this.formatError(err)}`);
       return undefined;
     }
   }
@@ -28,7 +28,7 @@ export class CacheService {
       // cache-manager v7 takes TTL in milliseconds; helpers here take seconds.
       await this.cache.set(key, value, ttlSeconds * 1000);
     } catch (err) {
-      this.logger.warn(`cache set failed for ${key}: ${err}`);
+      this.logger.warn(`cache set failed for ${key}: ${this.formatError(err)}`);
     }
   }
 
@@ -36,7 +36,7 @@ export class CacheService {
     try {
       await this.cache.del(key);
     } catch (err) {
-      this.logger.warn(`cache del failed for ${key}: ${err}`);
+      this.logger.warn(`cache del failed for ${key}: ${this.formatError(err)}`);
     }
   }
 
@@ -46,6 +46,10 @@ export class CacheService {
     const fresh = await factory();
     await this.set(key, fresh, ttlSeconds);
     return fresh;
+  }
+
+  private formatError(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
   }
 
   private genKey(namespace: string): string {

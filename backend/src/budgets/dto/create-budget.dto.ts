@@ -6,14 +6,14 @@ export class CreateBudgetDto {
   @ApiProperty({ description: 'ID ของ department' })
   @IsInt()
   @IsPositive()
-  departmentId: number;
+  departmentId!: number;
 
   @ApiProperty({ example: 2026 })
   @IsInt()
   @Min(2020)
   @Max(2100)
   @Type(() => Number)
-  fiscalYear: number;
+  fiscalYear!: number;
 
   @ApiPropertyOptional({
     example: null,
@@ -30,5 +30,5 @@ export class CreateBudgetDto {
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  totalAmount: number;
+  totalAmount!: number;
 }
