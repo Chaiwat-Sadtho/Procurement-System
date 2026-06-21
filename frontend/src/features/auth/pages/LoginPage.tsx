@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { Package } from 'lucide-react'
+import { Package, Pin } from 'lucide-react'
 import { authApi } from '@/features/auth/api'
 import { usePublicAnnouncements } from '@/features/announcements/hooks/usePublicAnnouncements'
 import { getAnnouncementIcon } from '@/features/announcements/lib/announcementIcons'
@@ -26,7 +26,7 @@ const schema = z.object({
 
 type LoginFormValues = z.infer<typeof schema>
 
-const MAX_ROWS_PER_COL = 5
+const MAX_VISIBLE = 10
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -47,11 +47,7 @@ export function LoginPage() {
     },
   })
 
-  const visible = (announcements ?? []).slice(0, MAX_ROWS_PER_COL * 2)
-  const columns =
-    visible.length > MAX_ROWS_PER_COL
-      ? [visible.slice(0, MAX_ROWS_PER_COL), visible.slice(MAX_ROWS_PER_COL)]
-      : [visible]
+  const visible = (announcements ?? []).slice(0, MAX_VISIBLE)
 
   return (
     <div className="grid min-h-screen lg:grid-cols-12">
@@ -69,29 +65,36 @@ export function LoginPage() {
           {visible.length === 0 ? (
             <p className="mt-6 text-sm text-slate-400">ยังไม่มีประกาศ</p>
           ) : (
-            <div
-              className={cn('mt-6 grid gap-4', columns.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}
-            >
-              {columns.map((column, columnIndex) => (
-                <ul key={columnIndex} className="space-y-4">
-                  {column.map((item) => {
-                    const Icon = getAnnouncementIcon(item.icon)
-                    return (
-                      <li
-                        key={item.id}
-                        className="flex gap-3 rounded-lg border border-slate-700/60 bg-white/5 p-4"
-                      >
-                        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                        <div>
-                          <p className="font-medium text-white">{item.title}</p>
-                          <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
-              ))}
-            </div>
+            <ul className="mt-6 grid grid-cols-2 gap-4">
+              {visible.map((item) => {
+                const Icon = getAnnouncementIcon(item.icon)
+                return (
+                  <li
+                    key={item.id}
+                    className={cn(
+                      'rounded-lg border p-4',
+                      item.isPinned
+                        ? 'border-l-4 border-primary/60 bg-primary/10'
+                        : 'border-slate-700/60 bg-white/5',
+                    )}
+                  >
+                    {item.isPinned && (
+                      <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary">
+                        <Pin className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>ปักหมุด</span>
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-white">{item.title}</p>
+                        <p className="mt-0.5 text-sm text-slate-300">{item.detail}</p>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
 

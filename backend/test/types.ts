@@ -138,4 +138,5 @@ export interface PublicAnnouncementResponse {
   title: string;
   detail: string;
   icon: string;
+  isPinned: boolean;
 }

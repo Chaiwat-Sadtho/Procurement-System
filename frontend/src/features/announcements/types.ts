@@ -16,6 +16,7 @@ export interface PublicAnnouncement {
   title: string
   detail: string
   icon: AnnouncementIconKey
+  isPinned: boolean
 }
 
 export interface AnnouncementPayload {
