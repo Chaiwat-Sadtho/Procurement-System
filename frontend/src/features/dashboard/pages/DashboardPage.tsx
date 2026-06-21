@@ -48,7 +48,7 @@ export function DashboardPage() {
       {showAnalytics && <PrTrendChart data={trend} isLoading={trendLoading} />}
 
       {showAnalytics && (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           <StatusChart stats={stats} isLoading={statsLoading} />
           {isPO && <SpendByDeptChart data={spend} isLoading={spendLoading} />}
           <BudgetSummary
