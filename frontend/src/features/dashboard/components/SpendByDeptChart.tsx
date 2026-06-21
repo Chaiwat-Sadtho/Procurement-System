@@ -2,7 +2,7 @@ import type { ApexOptions } from 'apexcharts'
 import { ApexChart } from '@/shared/components/ApexChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { formatCurrency } from '@/shared/lib/utils'
+import { formatBahtShort, formatCurrency } from '@/shared/lib/utils'
 import type { SpendByDept } from '../api'
 
 interface SpendByDeptChartProps {
@@ -34,7 +34,8 @@ export function SpendByDeptChart({ data, isLoading }: SpendByDeptChartProps) {
                 plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
                 xaxis: {
                   categories: data.map((d) => d.departmentName),
-                  labels: { formatter: (v: string) => formatCurrency(Number(v)) },
+                  tickAmount: 4,
+                  labels: { formatter: (v: string) => formatBahtShort(Number(v)) },
                 },
                 tooltip: { y: { formatter: (v: number) => formatCurrency(v) } },
               } as ApexOptions
