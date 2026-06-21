@@ -123,3 +123,19 @@ export interface Paginated<T> {
   data: T[];
   meta: PaginationMeta;
 }
+
+export interface AnnouncementResponse {
+  id: number;
+  title: string;
+  detail: string;
+  icon: string;
+  isActive: boolean;
+  isPinned: boolean;
+}
+
+export interface PublicAnnouncementResponse {
+  id: number;
+  title: string;
+  detail: string;
+  icon: string;
+}
