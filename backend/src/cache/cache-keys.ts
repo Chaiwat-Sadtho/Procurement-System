@@ -7,6 +7,7 @@ export const CacheTtl = {
   AUTH_ME: 300,
   VENDOR_LIST: 120,
   VENDOR_RATINGS: 120,
+  ANNOUNCEMENTS_PUBLIC: 60, // public login announcements — invalidated on every write
 } as const;
 
 export const CacheKeys = {
@@ -15,6 +16,7 @@ export const CacheKeys = {
   authMe: (userId: number) => `auth:me:${userId}`,
   vendorListNs: 'vendor:list',
   vendorRatingsNs: (vendorId: number) => `vendor:ratings:${vendorId}`,
+  announcementPublicNs: 'announcement:public',
 } as const;
 
 /** Coerce a query value to a stable string without tripping no-base-to-string on objects. */
