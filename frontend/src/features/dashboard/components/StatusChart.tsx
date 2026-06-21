@@ -26,50 +26,52 @@ export function StatusChart({ stats, isLoading }: StatusChartProps) {
         {isLoading || !stats ? (
           <Skeleton data-testid="status-chart-loading" className="h-48 w-full" />
         ) : (
-          <div data-testid="status-chart-body" className="flex justify-center">
-            <div className="flex w-full max-w-xl items-center justify-between gap-8">
-              <div className="h-52 w-52 shrink-0">
-                <ApexChart
-                  type="donut"
-                  height={208}
-                  series={SEGMENTS.map((s) => stats[s.key])}
-                  options={
-                    {
-                      labels: SEGMENTS.map((s) => s.label),
-                      colors: SEGMENTS.map((s) => s.color),
-                      legend: { show: false },
-                      plotOptions: {
-                        pie: {
-                          donut: {
-                            size: '62%',
-                            labels: {
+          // donut อยู่กลางการ์ด (stack) + legend 2 คอลัมน์ใต้ donut
+          <div
+            data-testid="status-chart-body"
+            className="flex flex-col items-center justify-center gap-4"
+          >
+            <div className="h-52 w-52">
+              <ApexChart
+                type="donut"
+                height={208}
+                series={SEGMENTS.map((s) => stats[s.key])}
+                options={
+                  {
+                    labels: SEGMENTS.map((s) => s.label),
+                    colors: SEGMENTS.map((s) => s.color),
+                    legend: { show: false },
+                    plotOptions: {
+                      pie: {
+                        donut: {
+                          size: '62%',
+                          labels: {
+                            show: true,
+                            total: {
                               show: true,
-                              total: {
-                                show: true,
-                                label: 'ทั้งหมด',
-                                formatter: () => String(stats.total),
-                              },
+                              label: 'ทั้งหมด',
+                              formatter: () => String(stats.total),
                             },
                           },
                         },
                       },
-                    } as ApexOptions
-                  }
-                />
-              </div>
-              <ul className="space-y-1 text-sm">
-                {SEGMENTS.map((s) => (
-                  <li key={s.key} data-testid={`legend-${s.key}`} className="flex items-center gap-2">
-                    <span
-                      className="inline-block h-3 w-3 rounded-sm"
-                      style={{ backgroundColor: s.color }}
-                    />
-                    <span className="text-muted-foreground">{s.label}</span>
-                    <span className="ml-auto font-medium">{stats[s.key]}</span>
-                  </li>
-                ))}
-              </ul>
+                    },
+                  } as ApexOptions
+                }
+              />
             </div>
+            <ul className="grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+              {SEGMENTS.map((s) => (
+                <li key={s.key} data-testid={`legend-${s.key}`} className="flex items-center gap-2">
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm"
+                    style={{ backgroundColor: s.color }}
+                  />
+                  <span className="text-muted-foreground">{s.label}</span>
+                  <span className="ml-auto font-medium">{stats[s.key]}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </CardContent>
