@@ -12,6 +12,7 @@ export interface PublicAnnouncement {
   title: string;
   detail: string;
   icon: string;
+  isPinned: boolean;
 }
 
 @Injectable()
@@ -35,7 +36,13 @@ export class AnnouncementsService {
           where: { isActive: true },
           order: { isPinned: 'DESC', createdAt: 'DESC' },
         });
-        return rows.map((a) => ({ id: a.id, title: a.title, detail: a.detail, icon: a.icon }));
+        return rows.map((a) => ({
+          id: a.id,
+          title: a.title,
+          detail: a.detail,
+          icon: a.icon,
+          isPinned: a.isPinned,
+        }));
       },
     );
   }

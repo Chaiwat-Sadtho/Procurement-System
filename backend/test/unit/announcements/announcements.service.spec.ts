@@ -46,7 +46,7 @@ describe('AnnouncementsService', () => {
 
   describe('findActive', () => {
     it('returns active only, pinned-first then newest, mapped to public shape, cached', async () => {
-      mockRepo.find.mockResolvedValue([mockActive]);
+      mockRepo.find.mockResolvedValue([{ ...mockActive, isPinned: true }]);
       const result = await service.findActive();
 
       expect(mockRepo.find).toHaveBeenCalledWith({
@@ -54,7 +54,13 @@ describe('AnnouncementsService', () => {
         order: { isPinned: 'DESC', createdAt: 'DESC' },
       });
       expect(result).toEqual([
-        { id: 1, title: 'ปิดปรับปรุงระบบ', detail: 'เสาร์นี้ 22:00', icon: 'megaphone' },
+        {
+          id: 1,
+          title: 'ปิดปรับปรุงระบบ',
+          detail: 'เสาร์นี้ 22:00',
+          icon: 'megaphone',
+          isPinned: true,
+        },
       ]);
       expect(mockCache.getOrSetNamespaced).toHaveBeenCalledWith(
         'announcement:public',

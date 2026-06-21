@@ -93,8 +93,10 @@ describe('Announcements (e2e)', () => {
     expect(Array.isArray(body)).toBe(true);
     const found = body.find((a) => a.id === createdId);
     expect(found).toBeDefined();
-    // public payload trims server-side fields
+    // public payload trims server-side fields but now exposes isPinned
     expect(found && 'isActive' in found).toBe(false);
+    expect(typeof found?.isPinned).toBe('boolean');
+    expect(found?.isPinned).toBe(false); // the created announcement is not pinned
   });
 
   it('GET /announcements — employee → 403', async () => {
