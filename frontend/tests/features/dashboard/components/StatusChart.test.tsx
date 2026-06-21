@@ -1,16 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
-// jsdom วัดขนาด SVG ไม่ได้ → stub recharts เป็น div ที่ render children
-vi.mock('recharts', () => {
-  const Stub = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>
-  return {
-    ResponsiveContainer: Stub,
-    PieChart: Stub,
-    Pie: Stub,
-    Cell: () => null,
-  }
-})
+vi.mock('react-apexcharts', () => ({
+  default: ({ type, series }: { type: string; series: number[] }) => (
+    <div data-testid="apex-donut" data-type={type} data-series={JSON.stringify(series)} />
+  ),
+}))
 
 import { StatusChart } from '@/features/dashboard/components/StatusChart'
 import type { PrStatsResponse } from '@/features/purchase-requests/types'
@@ -18,13 +13,19 @@ import type { PrStatsResponse } from '@/features/purchase-requests/types'
 const stats: PrStatsResponse = { total: 10, draft: 2, submitted: 3, approved: 4, rejected: 1 }
 
 describe('StatusChart', () => {
+  it('renders an ApexCharts donut with status counts as series', () => {
+    render(<StatusChart stats={stats} isLoading={false} />)
+    const donut = screen.getByTestId('apex-donut')
+    expect(donut).toHaveAttribute('data-type', 'donut')
+    expect(donut).toHaveAttribute('data-series', '[2,3,4,1]')
+  })
+
   it('renders legend with each status label and count', () => {
     render(<StatusChart stats={stats} isLoading={false} />)
     expect(screen.getByText('ฉบับร่าง')).toBeInTheDocument()
     expect(screen.getByText('รออนุมัติ')).toBeInTheDocument()
     expect(screen.getByText('อนุมัติแล้ว')).toBeInTheDocument()
     expect(screen.getByText('ไม่อนุมัติ')).toBeInTheDocument()
-    // legend counts
     expect(screen.getByTestId('legend-approved')).toHaveTextContent('4')
   })
 

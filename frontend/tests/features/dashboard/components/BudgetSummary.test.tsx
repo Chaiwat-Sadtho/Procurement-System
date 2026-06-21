@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 vi.mock('@/features/dashboard/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
 vi.mock('@/features/dashboard/hooks/useDepartments', () => ({ useDepartments: vi.fn() }))
@@ -91,7 +90,7 @@ describe('BudgetSummary', () => {
     expect(screen.getByTestId('budget-year-select')).toBeInTheDocument()
   })
 
-  it('collapses to first N (sorted least-remaining first) with a show-all toggle', async () => {
+  it('renders all budgets (sorted least-remaining first) with no collapse toggle — the card scrolls instead', () => {
     // remaining = total - (reserved+used): dept ids by remaining ascending = 5,4,3,2,1
     const many = [1, 2, 3, 4, 5].map((id) =>
       budget({
@@ -106,19 +105,13 @@ describe('BudgetSummary', () => {
     mockBudgets(many)
     render(<BudgetSummary scope={{}} />)
 
-    // collapsed: only 4 rows; the least-remaining (id=5, reserved 500) shows first
-    expect(screen.getAllByTestId('budget-row')).toHaveLength(4)
-    expect(screen.getAllByTestId('budget-row')[0]).toHaveTextContent('Dept 5')
-    expect(screen.queryByText('Dept 1')).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: /แสดงทั้งหมด/ }))
+    // every budget renders (no slice); least-remaining (id=5, reserved 500) shows first
     expect(screen.getAllByTestId('budget-row')).toHaveLength(5)
+    expect(screen.getAllByTestId('budget-row')[0]).toHaveTextContent('Dept 5')
     expect(screen.getByText('Dept 1')).toBeInTheDocument()
 
-    // ย่อกลับได้
-    await userEvent.click(screen.getByRole('button', { name: /ย่อ/ }))
-    expect(screen.getAllByTestId('budget-row')).toHaveLength(4)
-    expect(screen.queryByText('Dept 1')).not.toBeInTheDocument()
+    // the show-all / collapse toggle is gone (replaced by in-card vertical scroll)
+    expect(screen.queryByRole('button', { name: /แสดงทั้งหมด|ย่อ/ })).not.toBeInTheDocument()
   })
 
   it('shows skeletons while loading', () => {
@@ -127,5 +120,14 @@ describe('BudgetSummary', () => {
     expect(screen.getByTestId('budget-summary-loading')).toBeInTheDocument()
     expect(screen.queryByTestId('budget-row')).not.toBeInTheDocument()
     expect(screen.queryByText(/ยังไม่มีงบ/)).not.toBeInTheDocument()
+  })
+
+  it('renders each budget as a table row with mono used/total figures', () => {
+    mockBudgets([budget({ reservedAmount: 300, usedAmount: 200, totalAmount: 1000 })])
+    render(<BudgetSummary scope={{ departmentId: 1 }} />)
+    const row = screen.getByTestId('budget-row')
+    expect(row.tagName).toBe('TR')
+    // used = reserved+used = 500; total = 1000 — compact baht (฿500 / ฿1K)
+    expect(screen.getByText(/฿500 \/ ฿1K/)).toBeInTheDocument()
   })
 })

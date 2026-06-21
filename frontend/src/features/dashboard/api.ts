@@ -28,6 +28,17 @@ export interface DashboardDepartment {
   name: string
 }
 
+export interface TrendPoint {
+  month: string // 'YYYY-MM'
+  count: number
+}
+
+export interface SpendByDept {
+  departmentId: number
+  departmentName: string
+  total: number
+}
+
 export const dashboardApi = {
   getStats: (): Promise<PrStatsResponse> =>
     api.get<PrStatsResponse>('/purchase-requests/stats').then((r) => r.data),
@@ -73,4 +84,12 @@ export const dashboardApi = {
 
   getDepartments: (): Promise<DashboardDepartment[]> =>
     api.get<DashboardDepartment[]>('/departments').then((r) => r.data),
+
+  getTrend: (): Promise<TrendPoint[]> =>
+    api.get<TrendPoint[]>('/purchase-requests/trend').then((r) => r.data),
+
+  getSpendByDepartment: (): Promise<SpendByDept[]> =>
+    api
+      .get<SpendByDept[]>('/purchase-requests/spend-by-department')
+      .then((r) => r.data.map((s) => ({ ...s, total: safeNum(s.total) }))),
 }
