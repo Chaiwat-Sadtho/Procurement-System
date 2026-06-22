@@ -31,3 +31,13 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     disconnect() {}
   } as unknown as typeof ResizeObserver
 }
+
+// happy-dom (unlike jsdom) does not implement HTMLFormElement.requestSubmit, which
+// @testing-library/user-event calls when a type="submit" button is clicked. Without it
+// the form's `submit` event never fires and react-hook-form's onSubmit never runs.
+// Reimplement it faithfully: dispatch a real bubbling, cancelable submit event.
+HTMLFormElement.prototype.requestSubmit = function (submitter?: HTMLElement | null) {
+  const event = new Event('submit', { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'submitter', { value: submitter ?? null, configurable: true })
+  this.dispatchEvent(event)
+}
