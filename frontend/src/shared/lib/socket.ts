@@ -7,6 +7,10 @@ let socket: Socket | null = null
 // long-polling handshake → nginx needs no sticky sessions.
 export function connectNotificationSocket(token: string): Socket {
   if (socket?.connected) return socket
+  if (socket) {
+    socket.disconnect()
+    socket = null
+  }
   socket = io('/notifications', {
     transports: ['websocket'],
     auth: { token },
