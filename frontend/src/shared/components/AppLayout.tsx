@@ -2,10 +2,13 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { MobileSidebar } from './MobileSidebar'
 import { ThemeToggle } from './ThemeToggle'
+import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import { useNotificationSocket } from '@/features/notifications/hooks/useNotificationSocket'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
 
 export function AppLayout() {
   const { data: user } = useCurrentUser()
+  useNotificationSocket()
 
   return (
     <div className="min-h-screen bg-background">
@@ -15,6 +18,7 @@ export function AppLayout() {
           <MobileSidebar />
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{user?.fullName}</span>
+            <NotificationBell />
             <ThemeToggle />
           </div>
         </header>
