@@ -72,6 +72,17 @@ describe('NotificationsGateway', () => {
       await gateway.authenticate(socket as never, next);
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Unauthorized' }));
     });
+
+    it('token from Authorization header (no auth.token) -> accepted, Bearer stripped', async () => {
+      jwt.verify.mockReturnValue({ sub: 7 });
+      users.findOne.mockResolvedValue(activeUser);
+      const socket = makeSocket(undefined);
+      (socket.handshake.headers as Record<string, string>).authorization = 'Bearer header-token';
+      const next: NextFn = jest.fn();
+      await gateway.authenticate(socket as never, next);
+      expect(jwt.verify).toHaveBeenCalledWith('header-token');
+      expect(next).toHaveBeenCalledWith();
+    });
   });
 
   describe('handleConnection', () => {
