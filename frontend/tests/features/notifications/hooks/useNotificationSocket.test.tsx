@@ -21,7 +21,7 @@ vi.mock('@/shared/lib/socket', () => ({
 vi.mock('sonner', () => ({ toast: vi.fn() }))
 
 import { toast } from 'sonner'
-import { connectNotificationSocket } from '@/shared/lib/socket'
+import { connectNotificationSocket, disconnectNotificationSocket } from '@/shared/lib/socket'
 import { useNotificationSocket } from '@/features/notifications/hooks/useNotificationSocket'
 
 function makeWrapper(qc: QueryClient) {
@@ -46,7 +46,7 @@ describe('useNotificationSocket', () => {
 
     handlers['notification:new']({ title: 'มี PR ใหม่', message: 'PR-2026-0001' })
 
-    expect(toast).toHaveBeenCalled()
+    expect(toast).toHaveBeenCalledWith('มี PR ใหม่', { description: 'PR-2026-0001' })
     await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] }))
   })
 
@@ -55,5 +55,41 @@ describe('useNotificationSocket', () => {
     const qc = new QueryClient()
     renderHook(() => useNotificationSocket(), { wrapper: makeWrapper(qc) })
     expect(connectNotificationSocket).not.toHaveBeenCalled()
+  })
+
+  it('removes all listeners and disconnects on unmount', () => {
+    const qc = new QueryClient()
+    const { unmount } = renderHook(() => useNotificationSocket(), { wrapper: makeWrapper(qc) })
+
+    unmount()
+
+    expect(fakeSocket.off).toHaveBeenCalledWith('notification:new', expect.any(Function))
+    expect(fakeSocket.off).toHaveBeenCalledWith('connect_error', expect.any(Function))
+    expect(fakeSocket.io.off).toHaveBeenCalledWith('reconnect', expect.any(Function))
+    expect(disconnectNotificationSocket).toHaveBeenCalledTimes(1)
+  })
+
+  it('connect_error Unauthorized clears token and redirects to /login', () => {
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      value: { href: '' },
+      writable: true,
+      configurable: true,
+    })
+
+    localStorage.setItem('token', 'jwt-token')
+    const qc = new QueryClient()
+    renderHook(() => useNotificationSocket(), { wrapper: makeWrapper(qc) })
+
+    handlers['connect_error']({ message: 'Unauthorized' })
+
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(window.location.href).toBe('/login')
+
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    })
   })
 })
