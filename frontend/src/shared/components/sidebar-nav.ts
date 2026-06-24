@@ -9,6 +9,7 @@ import {
   Wallet,
   Users,
   Megaphone,
+  Bell,
   Settings,
 } from 'lucide-react'
 import type { Role } from '@/shared/types'
@@ -37,6 +38,7 @@ export const SIDEBAR_GROUP_STORAGE_PREFIX = 'sidebar-group:'
 
 export const navItems: NavEntry[] = [
   { kind: 'link', label: 'แดชบอร์ด', path: '/dashboard', allowedRoles: ALL_ROLES, icon: LayoutDashboard },
+  { kind: 'link', label: 'การแจ้งเตือน', path: '/notifications', allowedRoles: ALL_ROLES, icon: Bell },
   {
     kind: 'group',
     label: 'จัดซื้อ',

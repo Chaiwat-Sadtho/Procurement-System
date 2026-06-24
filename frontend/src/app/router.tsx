@@ -22,6 +22,7 @@ import { BudgetFormPage } from '@/features/budgets/pages/BudgetFormPage'
 import { UsersPage } from '@/features/users/pages/UsersPage'
 import { AnnouncementsPage } from '@/features/announcements/pages/AnnouncementsPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
+import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SettingsLayout } from '@/features/settings/layout/SettingsLayout'
 import { ProfilePage } from '@/features/settings/pages/ProfilePage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
       { path: 'purchase-requests', element: <PRListPage /> },
       {
         path: 'purchase-requests/new',
