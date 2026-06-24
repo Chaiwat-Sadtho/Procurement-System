@@ -46,5 +46,6 @@ describe('NotificationBell', () => {
     // the bell button is present, but no numeric badge
     expect(screen.getByLabelText('การแจ้งเตือน')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByText('0')).not.toBeInTheDocument())
+    expect(document.querySelector('.bg-red-600')).toBeNull()
   })
 })

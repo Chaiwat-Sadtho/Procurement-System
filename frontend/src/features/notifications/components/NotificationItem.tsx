@@ -28,6 +28,7 @@ export function NotificationItem({
     <button
       type="button"
       onClick={handleClick}
+      disabled={markReadMutation.isPending}
       className={cn(
         'flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted/50',
         !notification.isRead && 'bg-muted/30',
