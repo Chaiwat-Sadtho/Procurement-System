@@ -3,19 +3,22 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { RedisIoAdapter } from './common/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // เชื่อ proxy ชั้นเดียว (nginx / load balancer) ให้ req.ip เป็น client IP จริง
-  // จาก X-Forwarded-For ไม่งั้น throttler เห็นทุก request เป็น IP ของ proxy ตัวเดียว
   app.set('trust proxy', 1);
+  app.enableCors();
 
   app.setGlobalPrefix('api/v1');
-
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // Real-time notifications: multi-instance via Redis adapter (degrades to in-memory).
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   const config = new DocumentBuilder()
     .setTitle('Procurement System API')
