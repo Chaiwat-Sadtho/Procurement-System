@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { NotificationQueryDto } from './dto/notification-query.dto';
+import { NotificationsGateway } from './notifications.gateway';
+import { toNotificationDto } from './notification-events';
 
 export interface SendNotificationParams {
   userId: number;
@@ -15,9 +17,12 @@ export interface SendNotificationParams {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger('NotificationsService');
+
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   async send(params: SendNotificationParams): Promise<Notification> {
@@ -30,7 +35,9 @@ export class NotificationsService {
       referenceType: params.referenceType ?? null,
       isRead: false,
     });
-    return this.notificationRepository.save(notification);
+    const saved = await this.notificationRepository.save(notification);
+    this.safeEmit(saved);
+    return saved;
   }
 
   async sendToMany(
@@ -49,7 +56,8 @@ export class NotificationsService {
         isRead: false,
       }),
     );
-    await this.notificationRepository.save(notifications);
+    const saved = await this.notificationRepository.save(notifications);
+    for (const n of saved) this.safeEmit(n);
   }
 
   async findAll(
@@ -90,5 +98,18 @@ export class NotificationsService {
 
   async markAllRead(userId: number): Promise<void> {
     await this.notificationRepository.update({ userId, isRead: false }, { isRead: true });
+  }
+
+  unreadCount(userId: number): Promise<number> {
+    return this.notificationRepository.count({ where: { userId, isRead: false } });
+  }
+
+  // Best-effort real-time push. Never lets a socket error break the DB write (invariant #10).
+  private safeEmit(n: Notification): void {
+    try {
+      this.gateway.emitToUser(n.userId, toNotificationDto(n));
+    } catch (err) {
+      this.logger.warn(`ws emit failed for notification ${n.id}: ${String(err)}`);
+    }
   }
 }

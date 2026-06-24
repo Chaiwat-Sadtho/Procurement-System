@@ -77,7 +77,7 @@ describe('NotificationsGateway', () => {
       jwt.verify.mockReturnValue({ sub: 7 });
       users.findOne.mockResolvedValue(activeUser);
       const socket = makeSocket(undefined);
-      (socket.handshake.headers as Record<string, string>).authorization = 'Bearer header-token';
+      socket.handshake.headers.authorization = 'Bearer header-token';
       const next: NextFn = jest.fn();
       await gateway.authenticate(socket as never, next);
       expect(jwt.verify).toHaveBeenCalledWith('header-token');
