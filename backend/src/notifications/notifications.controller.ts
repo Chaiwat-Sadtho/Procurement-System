@@ -22,6 +22,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @ApiOperation({ summary: 'นับ notification ที่ยังไม่อ่าน' })
+  @Get('unread-count')
+  async unreadCount(@CurrentUser() user: { id: number }) {
+    return { count: await this.notificationsService.unreadCount(user.id) };
+  }
+
   @ApiOperation({ summary: 'ดู notification ของตัวเอง' })
   @Get()
   findAll(@CurrentUser() user: { id: number }, @Query() query: NotificationQueryDto) {
