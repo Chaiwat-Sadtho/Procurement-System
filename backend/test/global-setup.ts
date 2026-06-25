@@ -1,6 +1,7 @@
 import { AppDataSource } from '../src/data-source';
 import { seedBaseline } from '../src/database/seed';
 import { truncateAllTables } from '../src/common/truncate';
+import { flushCacheDb } from './flush-cache';
 import { Client } from 'pg';
 
 const TEST_DB = 'procurement_test_db';
@@ -40,4 +41,10 @@ export default async function globalSetup(): Promise<void> {
   await seedBaseline(AppDataSource);
 
   await AppDataSource.destroy();
+
+  // (6) Flush the e2e Redis cache (REDIS_DB) alongside the Postgres truncate, so a stale
+  //     entry from a previous run — e.g. auth:me:<id> after RESTART IDENTITY reuses an id —
+  //     can't HIT and false-fail this run (#171). Best-effort: a no-op when Redis is down,
+  //     so e2e still runs in cache-degraded mode without hanging globalSetup.
+  await flushCacheDb();
 }
