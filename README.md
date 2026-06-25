@@ -29,6 +29,82 @@ A procurement and vendor management system (Purchase Request → Approval → Pu
 - **Rate Limiting** — global throttle + auth-specific overrides (login/register/change-password), counters stored in Redis (multi-instance ready), fail-open when Redis is down
 - **Load Balancing** — nginx round-robin across 2 backend instances (stateless + transparent failover), database migrations run once via a one-off service
 
+## Screenshots
+
+> The interface is in Thai (the system targets Thai procurement teams). Screenshots use the seeded demo data.
+
+<p align="center">
+  <img src="docs/screenshots/02-dashboard.png" alt="Dashboard" width="80%"><br>
+  <sub><b>Dashboard</b> — monthly PR trend, status breakdown, per-department spend, budget utilization, and recent requests</sub>
+</p>
+
+### Real-time notifications
+
+<p align="center">
+  <img src="docs/screenshots/14-notifications.png" alt="Real-time notifications" width="80%"><br>
+  <sub><b>Notifications</b> — users are notified the moment their request is approved or rejected, pushed live over WebSocket (with an unread badge on the bell)</sub>
+</p>
+
+### Authentication & Account
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/01-login.png" alt="Sign in"><br><sub><b>Sign in</b> — split screen with a public announcements panel</sub></td>
+    <td width="50%"><img src="docs/screenshots/13-settings.png" alt="Account settings"><br><sub><b>Account</b> — profile editing and password change</sub></td>
+  </tr>
+</table>
+
+### Purchase Requests
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/03-pr-list.png" alt="PR list"><br><sub><b>List</b> — filter by number, name, date range, and status</sub></td>
+    <td width="50%"><img src="docs/screenshots/04-pr-detail.png" alt="PR detail"><br><sub><b>Detail</b> — line items and totals</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/05-pr-approve.png" alt="PR approval" width="80%"><br>
+  <sub><b>Approval</b> — a manager approves or rejects; budget is reserved on approval</sub>
+</p>
+
+### Purchase Orders & Goods Receipt
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/06-po-list.png" alt="PO list"><br><sub><b>PO list</b> — filter by status and vendor</sub></td>
+    <td width="50%"><img src="docs/screenshots/07-po-detail.png" alt="PO detail"><br><sub><b>PO detail</b> — per-line received progress and GRN history</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/08-grn.png" alt="Goods receipt" width="80%"><br>
+  <sub><b>Goods receipt (GRN)</b> — ordered vs received with item condition; the PO auto-completes when fully received</sub>
+</p>
+
+### Vendor Management
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/09-vendor-list.png" alt="Vendor list"><br><sub><b>List</b> — categories, status, and blacklist</sub></td>
+    <td width="50%"><img src="docs/screenshots/10-vendor-detail.png" alt="Vendor detail"><br><sub><b>Detail</b> — average rating and rating history linked to POs</sub></td>
+  </tr>
+</table>
+
+### Budget Control
+
+<p align="center">
+  <img src="docs/screenshots/11-budget.png" alt="Budget detail" width="80%"><br>
+  <sub><b>Budget</b> — total / reserved / consumed / remaining, with a money trail of the requests that consumed it</sub>
+</p>
+
+### User Management
+
+<p align="center">
+  <img src="docs/screenshots/12-users.png" alt="User management" width="80%"><br>
+  <sub><b>Users</b> — inline role assignment and active-status toggles</sub>
+</p>
+
 ## Quick Start (Docker — recommended)
 
 Requires Docker + Docker Compose
