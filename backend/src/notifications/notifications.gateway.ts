@@ -15,7 +15,8 @@ import { NOTIFICATION_NEW_EVENT, NotificationDto } from './notification-events';
 type SocketUser = { id: number; role: User['role']; departmentId: number | null };
 type NextFn = (err?: Error) => void;
 
-@WebSocketGateway({ namespace: '/notifications', cors: { origin: true } })
+// CORS is governed centrally by RedisIoAdapter.createIOServer (reads CORS_ORIGIN).
+@WebSocketGateway({ namespace: '/notifications' })
 export class NotificationsGateway implements OnGatewayInit, OnGatewayConnection {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger('NotificationsGateway');

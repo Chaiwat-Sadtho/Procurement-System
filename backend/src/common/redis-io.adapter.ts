@@ -4,6 +4,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import type { ServerOptions } from 'socket.io';
+import { resolveCorsOrigin } from './cors';
 
 // Same redis:// shape CacheModule / throttler build from REDIS_* (host/port/password/db).
 function buildRedisUrl(config: ConfigService): string {
@@ -51,7 +52,13 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   createIOServer(port: number, options?: ServerOptions): unknown {
-    const server = super.createIOServer(port, options) as {
+    // Govern WebSocket CORS centrally here (the @WebSocketGateway decorator is
+    // evaluated before ConfigService exists, so it cannot read CORS_ORIGIN).
+    const config = this.appContext.get(ConfigService);
+    const cors = {
+      origin: resolveCorsOrigin(config.get<string>('CORS_ORIGIN'), config.get<string>('NODE_ENV')),
+    };
+    const server = super.createIOServer(port, { ...options, cors }) as {
       adapter: (a: ReturnType<typeof createAdapter>) => void;
     };
     if (this.adapterConstructor) server.adapter(this.adapterConstructor);
