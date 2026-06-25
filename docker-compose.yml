@@ -56,6 +56,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       PORT: 3000
       NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       MIGRATIONS_RUN: 'false'
@@ -84,6 +85,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       PORT: 3000
       NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       MIGRATIONS_RUN: 'false'
