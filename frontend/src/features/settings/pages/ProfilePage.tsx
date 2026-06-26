@@ -84,10 +84,10 @@ export function ProfilePage() {
         <CardTitle>ข้อมูลส่วนตัว</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div className="min-w-0">
             <p className="text-muted-foreground">อีเมล</p>
-            <p className="font-medium">{user?.email}</p>
+            <p className="font-medium break-words">{user?.email}</p>
           </div>
           <div>
             <p className="text-muted-foreground">บทบาท</p>
@@ -144,7 +144,7 @@ export function ProfilePage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending || !isDirty}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending || !isDirty}>
               บันทึก
             </Button>
           </form>

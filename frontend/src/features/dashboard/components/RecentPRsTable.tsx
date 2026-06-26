@@ -20,9 +20,9 @@ export function RecentPRsTable() {
 
   return (
     <div data-testid="recent-prs">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
         <h2 className="text-lg font-semibold">PR ล่าสุด</h2>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
           <Link to="/purchase-requests">ดูทั้งหมด</Link>
         </Button>
       </div>

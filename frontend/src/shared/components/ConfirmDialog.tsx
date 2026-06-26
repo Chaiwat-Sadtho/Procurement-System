@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -37,12 +37,27 @@ export function ConfirmDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            ยกเลิก
-          </Button>
-          <Button variant={variant} onClick={onConfirm} disabled={isPending}>
-            {confirmLabel}
-          </Button>
+          <ActionButtons
+            cols={2}
+            className="w-full"
+            buttons={[
+              {
+                key: 'cancel',
+                label: 'ยกเลิก',
+                type: 'button',
+                variant: 'outline',
+                disabled: isPending,
+                onClick: () => onOpenChange(false),
+              },
+              {
+                key: 'confirm',
+                label: confirmLabel,
+                variant,
+                disabled: isPending,
+                onClick: onConfirm,
+              },
+            ]}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -15,7 +15,7 @@ function Section({
   if (prs.length === 0) return null
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-semibold text-amber-700 dark:text-amber-500">
           {title} ({prs.length})
         </p>

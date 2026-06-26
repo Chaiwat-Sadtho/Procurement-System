@@ -116,7 +116,7 @@ export function SecurityPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending || !isDirty || !isValid}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending || !isDirty || !isValid}>
               เปลี่ยนรหัสผ่าน
             </Button>
           </form>

@@ -15,12 +15,13 @@ export function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">การแจ้งเตือน</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Button
             variant={unreadOnly ? 'default' : 'outline'}
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => {
               setUnreadOnly((v) => !v)
               setPage(1)
@@ -31,6 +32,7 @@ export function NotificationsPage() {
           <Button
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
             disabled={markAllReadMutation.isPending}
             onClick={() => markAllReadMutation.mutate()}
           >

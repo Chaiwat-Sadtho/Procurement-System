@@ -1,4 +1,4 @@
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons, type ActionButton } from '@/shared/components/ActionButtons'
 import type { User } from '@/shared/types'
 import type { Vendor } from '../types'
 
@@ -19,20 +19,24 @@ export function VendorActions({
 }: VendorActionsProps) {
   if (user.role !== 'procurement_officer') return null
 
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-      <Button variant="outline" className="w-full sm:w-auto" onClick={onEdit}>
-        แก้ไข
-      </Button>
-      {vendor.isBlacklisted ? (
-        <Button variant="outline" className="w-full sm:w-auto" onClick={onUnblacklist}>
-          ยกเลิกแบล็คลิสต์
-        </Button>
-      ) : (
-        <Button variant="destructive" className="w-full sm:w-auto" onClick={onBlacklist}>
-          แบล็คลิสต์
-        </Button>
-      )}
-    </div>
-  )
+  const buttons: ActionButton[] = [
+    { key: 'edit', label: 'แก้ไข', variant: 'outline', onClick: onEdit },
+  ]
+  if (vendor.isBlacklisted) {
+    buttons.push({
+      key: 'unblacklist',
+      label: 'ยกเลิกแบล็คลิสต์',
+      variant: 'outline',
+      onClick: onUnblacklist,
+    })
+  } else {
+    buttons.push({
+      key: 'blacklist',
+      label: 'แบล็คลิสต์',
+      variant: 'destructive',
+      onClick: onBlacklist,
+    })
+  }
+
+  return <ActionButtons buttons={buttons} />
 }

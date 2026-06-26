@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import {
   Form,
   FormControl,
@@ -162,24 +162,24 @@ export function VendorForm(props: VendorFormProps) {
           )}
         />
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            disabled={isPending}
-            onClick={() => navigate('/vendors')}
-          >
-            ยกเลิก
-          </Button>
-          <Button
-            type="submit"
-            className="w-full sm:w-auto"
-            disabled={!isDirty || !isValid || isPending}
-          >
-            บันทึก
-          </Button>
-        </div>
+        <ActionButtons
+          buttons={[
+            {
+              key: 'cancel',
+              label: 'ยกเลิก',
+              type: 'button',
+              variant: 'outline',
+              disabled: isPending,
+              onClick: () => navigate('/vendors'),
+            },
+            {
+              key: 'submit',
+              label: 'บันทึก',
+              type: 'submit',
+              disabled: !isDirty || !isValid || isPending,
+            },
+          ]}
+        />
       </form>
     </Form>
   )
