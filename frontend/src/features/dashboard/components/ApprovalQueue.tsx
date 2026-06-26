@@ -10,7 +10,7 @@ export function ApprovalQueue() {
 
   return (
     <Card data-testid="approval-queue" className="border-l-4 border-l-primary">
-      <CardHeader className="pb-2 flex-row items-center justify-between">
+      <CardHeader className="pb-2 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base">
           รออนุมัติของฉัน{data ? ` (${data.length})` : ''}
         </CardTitle>

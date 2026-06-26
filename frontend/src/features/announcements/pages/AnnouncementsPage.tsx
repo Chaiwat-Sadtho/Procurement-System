@@ -75,10 +75,11 @@ export function AnnouncementsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <PageHeader title="ประกาศ" description="จัดการประกาศที่แสดงบนหน้าเข้าสู่ระบบ" />
-        <Button onClick={openCreate}>เพิ่มประกาศ</Button>
-      </div>
+      <PageHeader
+        title="ประกาศ"
+        description="จัดการประกาศที่แสดงบนหน้าเข้าสู่ระบบ"
+        action={<Button onClick={openCreate}>เพิ่มประกาศ</Button>}
+      />
 
       {isError ? (
         <ListErrorState message="โหลดประกาศไม่สำเร็จ" onRetry={() => refetch()} />
