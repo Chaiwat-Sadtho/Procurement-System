@@ -133,11 +133,12 @@ describe('POActions gating', () => {
     expect(onAcknowledge).toHaveBeenCalledOnce()
   })
 
-  it('lays buttons out on an equal-column 12-grid', () => {
-    const { container } = renderActions({ status: 'draft' }) // 3 buttons -> col-span-4 each
+  it('lays buttons out on a responsive right-aligned col-grid', () => {
+    const { container } = renderActions({ status: 'draft' }) // 3 buttons -> right-align col-start 2,3,4
     const grid = container.querySelector('.grid')
-    expect(grid).toHaveClass('grid-cols-12')
-    const spanned = container.querySelectorAll('.col-span-4')
-    expect(spanned.length).toBe(3)
+    expect(grid).toHaveClass('grid-cols-1', 'sm:grid-cols-4')
+    expect(container.querySelectorAll('.sm\\:col-start-2').length).toBe(1)
+    expect(container.querySelectorAll('.sm\\:col-start-3').length).toBe(1)
+    expect(container.querySelectorAll('.sm\\:col-start-4').length).toBe(1)
   })
 })
