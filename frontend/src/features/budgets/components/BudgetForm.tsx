@@ -3,7 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import { Form, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
@@ -205,14 +205,24 @@ export function BudgetForm(props: BudgetFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant="outline" disabled={isPending} onClick={() => navigate(-1)}>
-            ยกเลิก
-          </Button>
-          <Button type="submit" disabled={!isDirty || !isValid || isPending}>
-            บันทึก
-          </Button>
-        </div>
+        <ActionButtons
+          buttons={[
+            {
+              key: 'cancel',
+              label: 'ยกเลิก',
+              type: 'button',
+              variant: 'outline',
+              disabled: isPending,
+              onClick: () => navigate(-1),
+            },
+            {
+              key: 'submit',
+              label: 'บันทึก',
+              type: 'submit',
+              disabled: !isDirty || !isValid || isPending,
+            },
+          ]}
+        />
       </form>
     </Form>
   )
