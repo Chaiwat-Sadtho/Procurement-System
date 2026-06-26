@@ -215,7 +215,7 @@ export const router = createBrowserRouter([
               <h2 className="text-3xl font-bold">404</h2>
               <p className="text-muted-foreground">ไม่พบหน้าที่คุณกำลังค้นหา</p>
             </div>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link to="/dashboard">กลับสู่หน้าหลัก</Link>
             </Button>
           </div>

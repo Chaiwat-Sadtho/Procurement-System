@@ -12,7 +12,7 @@ function Notice({ message, to }: { message: string; to?: string }) {
     <div className="flex flex-col items-center justify-center gap-4 py-16 text-muted-foreground">
       <p>{message}</p>
       {to && (
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="w-full sm:w-auto">
           <Link to={to}>กลับ</Link>
         </Button>
       )}

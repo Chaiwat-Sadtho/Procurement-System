@@ -144,7 +144,7 @@ export function ProfilePage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={mutation.isPending || !isDirty}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending || !isDirty}>
               บันทึก
             </Button>
           </form>
