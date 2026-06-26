@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/utils'
 import { useNotificationMutations } from '../hooks/useNotificationMutations'
@@ -13,7 +14,12 @@ export function NotificationItem({
 }) {
   const navigate = useNavigate()
   const { markReadMutation } = useNotificationMutations()
-  const Icon = getNotificationIcon(notification.type)
+  // createElement (not <Icon/>) so the icon — selected at runtime from a static map —
+  // isn't treated as a component created during render (react-hooks/static-components).
+  const icon = createElement(getNotificationIcon(notification.type), {
+    className: 'mt-0.5 h-4 w-4 shrink-0 text-muted-foreground',
+    'aria-hidden': 'true',
+  })
 
   const handleClick = () => {
     if (!notification.isRead) markReadMutation.mutate(notification.id)
@@ -34,7 +40,7 @@ export function NotificationItem({
         !notification.isRead && 'bg-muted/30',
       )}
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      {icon}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{notification.title}</span>
