@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 
@@ -61,17 +61,27 @@ export function BlacklistReasonDialog({
             <p className="text-sm text-destructive min-h-[1.25rem]">{errors.reason?.message}</p>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              ยกเลิก
-            </Button>
-            <Button type="submit" variant="destructive" disabled={isPending}>
-              ยืนยันแบล็คลิสต์
-            </Button>
+            <ActionButtons
+              cols={2}
+              className="w-full"
+              buttons={[
+                {
+                  key: 'cancel',
+                  label: 'ยกเลิก',
+                  type: 'button',
+                  variant: 'outline',
+                  disabled: isPending,
+                  onClick: () => onOpenChange(false),
+                },
+                {
+                  key: 'confirm',
+                  label: 'ยืนยันแบล็คลิสต์',
+                  type: 'submit',
+                  variant: 'destructive',
+                  disabled: isPending,
+                },
+              ]}
+            />
           </DialogFooter>
         </form>
       </DialogContent>
