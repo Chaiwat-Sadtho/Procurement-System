@@ -51,7 +51,7 @@ export function POForm(props: POFormProps) {
   // pull a large page of vendors for the dropdown; filter blacklist client-side (§6.3)
   const { data: vendorsPage } = useVendors({ limit: 100 }, { enabled: true })
 
-  const prList = eligible?.data ?? []
+  const prList = useMemo(() => eligible?.data ?? [], [eligible?.data])
   const vendorList = vendorsPage?.data ?? []
 
   // prId/vendorId are numbers in POFormValues (poFormSchema = z.number); the
