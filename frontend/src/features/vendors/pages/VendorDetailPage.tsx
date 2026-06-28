@@ -38,7 +38,7 @@ export function VendorDetailPage() {
         <AlertTitle>ไม่พบผู้ขายรายนี้ หรือคุณไม่มีสิทธิ์เข้าถึง</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-3">
           {isError && (
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => refetch()}>
               ลองใหม่
             </Button>
           )}

@@ -3,7 +3,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import { Form, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -51,7 +51,7 @@ export function POForm(props: POFormProps) {
   // pull a large page of vendors for the dropdown; filter blacklist client-side (§6.3)
   const { data: vendorsPage } = useVendors({ limit: 100 }, { enabled: true })
 
-  const prList = eligible?.data ?? []
+  const prList = useMemo(() => eligible?.data ?? [], [eligible?.data])
   const vendorList = vendorsPage?.data ?? []
 
   // prId/vendorId are numbers in POFormValues (poFormSchema = z.number); the
@@ -258,14 +258,24 @@ export function POForm(props: POFormProps) {
           <POBudgetPreview budget={budget} prEstimate={prEstimate} poTotal={poTotal} />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant="outline" disabled={isPending} onClick={() => navigate(-1)}>
-            ยกเลิก
-          </Button>
-          <Button type="submit" disabled={!isDirty || !isValid || isPending}>
-            บันทึก
-          </Button>
-        </div>
+        <ActionButtons
+          buttons={[
+            {
+              key: 'cancel',
+              label: 'ยกเลิก',
+              type: 'button',
+              variant: 'outline',
+              disabled: isPending,
+              onClick: () => navigate(-1),
+            },
+            {
+              key: 'submit',
+              label: 'บันทึก',
+              type: 'submit',
+              disabled: !isDirty || !isValid || isPending,
+            },
+          ]}
+        />
       </form>
     </Form>
   )

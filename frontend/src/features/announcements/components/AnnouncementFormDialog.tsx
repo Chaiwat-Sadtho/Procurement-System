@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import { Label } from '@/shared/components/ui/label'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -136,17 +136,26 @@ export function AnnouncementFormDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              ยกเลิก
-            </Button>
-            <Button type="submit" disabled={!isValid || isPending}>
-              บันทึก
-            </Button>
+            <ActionButtons
+              cols={2}
+              className="w-full"
+              buttons={[
+                {
+                  key: 'cancel',
+                  label: 'ยกเลิก',
+                  type: 'button',
+                  variant: 'outline',
+                  disabled: isPending,
+                  onClick: () => onOpenChange(false),
+                },
+                {
+                  key: 'confirm',
+                  label: 'บันทึก',
+                  type: 'submit',
+                  disabled: !isValid || isPending,
+                },
+              ]}
+            />
           </DialogFooter>
         </form>
       </DialogContent>

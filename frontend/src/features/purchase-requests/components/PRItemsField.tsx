@@ -34,12 +34,18 @@ export function PRItemsField({ form }: PRItemsFieldProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-base font-semibold">
           รายการ
           <RequiredMark />
         </h2>
-        <Button type="button" variant="outline" size="sm" onClick={() => append(emptyItem())}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={() => append(emptyItem())}
+        >
           <Plus className="mr-1 h-4 w-4" />
           เพิ่มรายการ
         </Button>

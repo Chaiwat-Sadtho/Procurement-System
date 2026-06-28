@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import {
@@ -183,21 +183,20 @@ export function PRListFilterForm({
         </div>
       </div>
 
-      {/* Row 3: ค้นหา + ล้าง (grid 4-col ชิดขวา; ค้นหา col 3, ล้าง col 4; mobile stack เต็มกว้าง) */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Button type="submit" className="w-full md:col-start-3">
-          ค้นหา
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full md:col-start-4"
-          disabled={!isDirty && !canClear}
-          onClick={handleClear}
-        >
-          ล้าง
-        </Button>
-      </div>
+      {/* Row 3: ค้นหา + ล้าง (right-aligned cluster ผ่าน ActionButtons; mobile stack เต็มกว้าง) */}
+      <ActionButtons
+        buttons={[
+          { key: 'search', label: 'ค้นหา', type: 'submit' },
+          {
+            key: 'clear',
+            label: 'ล้าง',
+            type: 'button',
+            variant: 'destructive',
+            disabled: !isDirty && !canClear,
+            onClick: handleClear,
+          },
+        ]}
+      />
     </form>
   )
 }

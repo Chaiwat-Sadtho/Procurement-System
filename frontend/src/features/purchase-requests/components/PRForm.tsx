@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button } from '@/shared/components/ui/button'
+import { ActionButtons } from '@/shared/components/ActionButtons'
 import {
   Form,
   FormControl,
@@ -98,6 +98,11 @@ export function PRForm(props: PRFormProps) {
     }
   }
 
+  // handleSubmit returns an event handler; the inFlight ref inside onSave is read on
+  // submit, never during render (same false positive as the <form> onSubmit below).
+  // eslint-disable-next-line react-hooks/refs
+  const onSubmitForApproval = form.handleSubmit((v) => onSave(v, 'submit'))
+
   return (
     <Form {...form}>
       <form
@@ -175,36 +180,35 @@ export function PRForm(props: PRFormProps) {
 
         <PRItemsField form={form} />
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            disabled={isPending}
-            onClick={() => navigate(-1)}
-          >
-            ยกเลิก
-          </Button>
-          {/* draft save is a no-op on an unchanged form -> gate on isDirty too (matches VendorForm + form-submit preference) */}
-          <Button
-            type="submit"
-            variant="secondary"
-            className="w-full sm:w-auto"
-            disabled={!isDirty || !isValid || isPending}
-          >
-            บันทึกร่าง
-          </Button>
-          {/* submit-for-approval changes state (draft -> pending) so it stays usable on an unchanged valid draft: gate on validity only, not isDirty */}
-          <Button
-            type="button"
-            className="w-full sm:w-auto"
-            disabled={!isValid || isPending}
-            // eslint-disable-next-line react-hooks/refs -- handleSubmit returns an event handler; inFlight ref in onSave is read on submit, not during render
-            onClick={form.handleSubmit((v) => onSave(v, 'submit'))}
-          >
-            บันทึก + ส่งอนุมัติ
-          </Button>
-        </div>
+        <ActionButtons
+          cols={3}
+          buttons={[
+            {
+              key: 'cancel',
+              label: 'ยกเลิก',
+              type: 'button',
+              variant: 'outline',
+              disabled: isPending,
+              onClick: () => navigate(-1),
+            },
+            // draft save is a no-op on an unchanged form -> gate on isDirty too (matches VendorForm + form-submit preference)
+            {
+              key: 'draft',
+              label: 'บันทึกร่าง',
+              type: 'submit',
+              variant: 'secondary',
+              disabled: !isDirty || !isValid || isPending,
+            },
+            // submit-for-approval changes state (draft -> pending) so it stays usable on an unchanged valid draft: gate on validity only, not isDirty
+            {
+              key: 'submit',
+              label: 'บันทึก + ส่งอนุมัติ',
+              type: 'button',
+              disabled: !isValid || isPending,
+              onClick: onSubmitForApproval,
+            },
+          ]}
+        />
       </form>
     </Form>
   )
