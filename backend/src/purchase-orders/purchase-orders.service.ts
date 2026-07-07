@@ -208,7 +208,7 @@ export class PurchaseOrdersService {
     data: PurchaseOrder[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    const { page = 1, limit = 20, status, vendorId, prId, receivable } = query;
+    const { page = 1, limit = 20, status, vendorId, prId, receivable, withReceipts } = query;
 
     const qb = this.poRepository
       .createQueryBuilder('po')
@@ -222,6 +222,12 @@ export class PurchaseOrdersService {
     if (receivable)
       qb.andWhere('po.status IN (:...receivable)', {
         receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
+      });
+    // POs that already have a GRN (history filter) — partially_received + completed.
+    // acknowledged ถูกตัดออก (ยังไม่มี GRN) ต่างจาก receivable ที่รวม acknowledged.
+    if (withReceipts)
+      qb.andWhere('po.status IN (:...withReceipts)', {
+        withReceipts: [PoStatus.PARTIALLY_RECEIVED, PoStatus.COMPLETED],
       });
 
     const [data, total] = await qb

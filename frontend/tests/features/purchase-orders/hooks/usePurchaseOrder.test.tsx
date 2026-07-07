@@ -84,6 +84,8 @@ describe('usePurchaseOrder', () => {
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // status-only: send moves no budget/eligibility → stays lean (exactly 2)
+      expect(spy).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -101,6 +103,8 @@ describe('usePurchaseOrder', () => {
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // status-only: acknowledge moves no budget/eligibility → stays lean (exactly 2)
+      expect(spy).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -118,6 +122,15 @@ describe('usePurchaseOrder', () => {
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // cancel releases budget + returns the PR to the eligible-for-PO picker (M3)
+      expect(spy).toHaveBeenCalledWith({
+        queryKey: ['purchase-requests', { eligibleForPo: true }],
+      })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
+      // exactly 6 — cancel is the only status mutation here that moves money/eligibility
+      expect(spy).toHaveBeenCalledTimes(6)
     })
   })
 })

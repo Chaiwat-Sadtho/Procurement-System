@@ -48,7 +48,19 @@ describe('usePOMutations', () => {
     }
     await result.current.createMutation.mutateAsync(payload)
     expect(purchaseOrdersApi.create).toHaveBeenCalledWith(payload)
-    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] }))
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // a new PO consumes its PR → drop it from the eligible-for-PO picker (M3)
+      expect(spy).toHaveBeenCalledWith({
+        queryKey: ['purchase-requests', { eligibleForPo: true }],
+      })
+      // budget surface (reserved delta): list/preview + detail money-trail + dashboard
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
+      // exclusivity: exactly these 5, no over-invalidation creep
+      expect(spy).toHaveBeenCalledTimes(5)
+    })
   })
 
   it('update calls api.update with id + data and invalidates singular + plural', async () => {
@@ -64,6 +76,15 @@ describe('usePOMutations', () => {
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 3] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
+      // budget surface (edited items re-adjust reserved delta)
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
+      // update does NOT touch the eligible-picker (PR already linked); exactly 5
+      expect(spy).not.toHaveBeenCalledWith({
+        queryKey: ['purchase-requests', { eligibleForPo: true }],
+      })
+      expect(spy).toHaveBeenCalledTimes(5)
     })
   })
 })
