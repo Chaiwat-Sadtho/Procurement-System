@@ -399,6 +399,23 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(403);
   });
 
+  // L6: POST GRN = PROCUREMENT_OFFICER เท่านั้น (guard ตัดก่อน validation — ไม่ต้องส่ง body จริง)
+  it('POST /api/v1/goods-receipts — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({})
+      .expect(403);
+  });
+
+  it('POST /api/v1/goods-receipts — 403 for manager', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({})
+      .expect(403);
+  });
+
   it('GET /api/v1/purchase-orders — manager allowed (200)', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/purchase-orders')
@@ -586,6 +603,26 @@ describe('PurchaseOrders + GRN (e2e)', () => {
 
     const afterReserved = await getReservedAnnual();
     expect(afterReserved - before).toBeCloseTo(4000, 2);
+  });
+
+  // M5: FE เคลียร์ notes ด้วยการส่ง null — contract ที่ BE ต้องคงไว้
+  // (omit field = ไม่แตะค่าเดิม จึงใช้เคลียร์ไม่ได้; IsOptional ข้าม null → ผ่าน validation)
+  it('PATCH /api/v1/purchase-orders/:id — notes: null clears a previously saved note', async () => {
+    const draftPoId = await freshDraftPo(1000);
+
+    const saved = await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ notes: 'ส่งที่ชั้น 5' })
+      .expect(200);
+    expect((saved.body as PurchaseOrderResponse).notes).toBe('ส่งที่ชั้น 5');
+
+    const cleared = await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ notes: null })
+      .expect(200);
+    expect((cleared.body as PurchaseOrderResponse).notes).toBeNull();
   });
 
   // --- Slice A filters (placed at end of suite: by here poId is completed, a cancelled PO exists
