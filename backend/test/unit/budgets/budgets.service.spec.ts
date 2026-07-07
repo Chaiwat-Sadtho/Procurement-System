@@ -420,6 +420,32 @@ describe('BudgetsService', () => {
     });
   });
 
+  // review #183 M2: GET /budgets/department/:id เคยเปิดทุก role + ไม่ scope (IDOR) —
+  // ต้องใช้ assertCanAccessDept เหมือน getSummary/getTransactions
+  describe('findByDepartment (role scoping)', () => {
+    it('PO can list budgets of any department', async () => {
+      mockBudgetRepo.find.mockResolvedValue([mockBudget]);
+
+      const result = await service.findByDepartment(1, poUser);
+
+      expect(result).toEqual([mockBudget]);
+      expect(mockBudgetRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { departmentId: 1 } }),
+      );
+    });
+
+    it('manager can list budgets of their own department', async () => {
+      mockBudgetRepo.find.mockResolvedValue([{ ...mockBudget, departmentId: 7 }]);
+
+      await expect(service.findByDepartment(7, managerUser)).resolves.toHaveLength(1);
+    });
+
+    it('manager cannot list budgets of another department', async () => {
+      await expect(service.findByDepartment(1, managerUser)).rejects.toThrow(ForbiddenException);
+      expect(mockBudgetRepo.find).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getSummary (role scoping)', () => {
     it('manager cannot read a summary from another department', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({ ...mockBudget, departmentId: 1 });
