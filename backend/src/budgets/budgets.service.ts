@@ -96,7 +96,11 @@ export class BudgetsService {
     });
   }
 
-  async findByDepartment(departmentId: number): Promise<Budget[]> {
+  async findByDepartment(
+    departmentId: number,
+    user: { id: number; role: UserRole; departmentId?: number | null },
+  ): Promise<Budget[]> {
+    this.assertCanAccessDept(departmentId, user);
     return this.budgetRepository.find({
       where: { departmentId },
       order: { fiscalYear: 'DESC' },
