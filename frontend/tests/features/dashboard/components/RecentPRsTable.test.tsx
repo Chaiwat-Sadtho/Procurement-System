@@ -20,7 +20,7 @@ const pr: PurchaseRequest = {
   prNumber: 'PR-2026-0001',
   title: 'Laptop',
   status: 'submitted',
-  totalEstimatedAmount: 5000,
+  totalEstimatedAmount: '5000',
   quarter: null,
   requiredDate: '2026-02-01',
   requesterId: 1,

@@ -15,8 +15,8 @@ export interface PRItem {
   description: string | null
   quantity: number
   unit: string
-  estimatedUnitPrice: number
-  estimatedTotalPrice: number
+  estimatedUnitPrice: string // decimal(15,2) → string (§4A: Number() ก่อนคำนวณ)
+  estimatedTotalPrice: string // decimal → string
 }
 
 export interface PurchaseRequest {
@@ -24,7 +24,7 @@ export interface PurchaseRequest {
   prNumber: string
   title: string
   status: PRStatus
-  totalEstimatedAmount: number
+  totalEstimatedAmount: string // decimal → string
   quarter: number | null
   requiredDate: string
   requesterId: number
