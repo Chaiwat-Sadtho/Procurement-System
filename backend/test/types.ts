@@ -82,6 +82,7 @@ export interface PurchaseOrderResponse {
   status: string;
   totalAmount: string;
   actualDeliveryDate: string | null;
+  notes: string | null;
   items: PurchaseOrderItemResponse[];
 }
 

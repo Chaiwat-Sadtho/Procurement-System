@@ -117,9 +117,11 @@ export interface CreatePORequest {
 }
 
 // PATCH /purchase-orders/:id body (UpdatePurchaseOrderDto — draft only):
-// แก้ได้เฉพาะ expectedDeliveryDate/notes/items (prId/vendorId immutable).
-// Partial<Omit<...>> = { expectedDeliveryDate?, notes?, items? } = ตรง shape ของ UpdatePurchaseOrderDto เป๊ะ
-export type UpdatePORequest = Partial<Omit<CreatePORequest, 'prId' | 'vendorId'>>
+// แก้ได้เฉพาะ expectedDeliveryDate/notes/items (prId/vendorId immutable) = ตรง shape ของ UpdatePurchaseOrderDto เป๊ะ
+// notes รับ null ด้วย (M5): null = สั่งเคลียร์ค่าเดิม / omit = ไม่แตะ field
+export type UpdatePORequest = Partial<Omit<CreatePORequest, 'prId' | 'vendorId' | 'notes'>> & {
+  notes?: string | null
+}
 
 // Vendor rating ของ PO (GET /purchase-orders/:id/rating — VendorRating entity ดิบ
 // ไม่ load relation, null ถ้ายังไม่ rate). createdAt = Date serialized → ISO string.
