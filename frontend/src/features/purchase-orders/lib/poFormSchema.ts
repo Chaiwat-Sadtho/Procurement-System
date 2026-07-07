@@ -57,7 +57,8 @@ export function toUpdatePayload(values: POFormValues): UpdatePORequest {
   const notes = values.notes?.trim()
   return {
     expectedDeliveryDate: values.expectedDeliveryDate,
-    ...(notes ? { notes } : {}),
+    // M5: blank → null = สั่ง BE เคลียร์ค่าเดิม (ถ้า omit field BE จะไม่แตะ → เคลียร์ notes ไม่ได้)
+    notes: notes || null,
     items: mapItems(values),
   }
 }

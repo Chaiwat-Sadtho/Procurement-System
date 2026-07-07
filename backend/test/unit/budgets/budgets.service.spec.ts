@@ -138,6 +138,63 @@ describe('BudgetsService', () => {
     });
   });
 
+  // M6: committed-floor rule — invariant เงินตัวเดียวของ update() ที่เคยไม่มี test
+  describe('update', () => {
+    it('should raise totalAmount and save', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: 100000,
+        usedAmount: 50000,
+      });
+      mockBudgetRepo.save.mockImplementation((e: unknown) => Promise.resolve(e));
+
+      const result = await service.update(1, { totalAmount: 2000000 });
+
+      expect(result.totalAmount).toBe(2000000);
+      expect(mockBudgetRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when reducing totalAmount below reserved + used', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: 600000,
+        usedAmount: 300000,
+      });
+
+      await expect(service.update(1, { totalAmount: 800000 })).rejects.toThrow(BadRequestException);
+      expect(mockBudgetRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should allow reducing totalAmount to exactly reserved + used (floor is inclusive)', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: 600000,
+        usedAmount: 300000,
+      });
+      mockBudgetRepo.save.mockImplementation((e: unknown) => Promise.resolve(e));
+
+      const result = await service.update(1, { totalAmount: 900000 });
+
+      expect(result.totalAmount).toBe(900000);
+    });
+
+    // DB decimal มาเป็น string บน wire — floor ต้องคิดเลขจริง ไม่ใช่ string concat
+    it('should coerce decimal-as-string reserved/used before comparing the floor', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue({
+        ...mockBudget,
+        reservedAmount: '600000.50',
+        usedAmount: '300000.25',
+      });
+
+      await expect(service.update(1, { totalAmount: 900000 })).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when the budget does not exist', async () => {
+      mockBudgetRepo.findOne.mockResolvedValue(null);
+      await expect(service.update(99, { totalAmount: 1 })).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('reserveAmount', () => {
     it('should increase reservedAmount successfully', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({ ...mockBudget });
