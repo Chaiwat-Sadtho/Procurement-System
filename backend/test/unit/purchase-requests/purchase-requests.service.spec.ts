@@ -68,7 +68,10 @@ const mockNotificationsService = {
   sendToMany: jest.fn().mockResolvedValue(undefined),
 };
 // approve() ใช้ dataSource.transaction(cb) — mock ให้รัน cb พร้อม fake EntityManager
-const mockTxManager = { save: jest.fn((_, e) => Promise.resolve(e)) };
+const mockTxManager = {
+  save: jest.fn((_, e) => Promise.resolve(e)),
+  findOne: jest.fn(),
+};
 const mockDataSource = {
   transaction: jest.fn((cb: (m: typeof mockTxManager) => unknown) => cb(mockTxManager)),
 };
@@ -254,11 +257,7 @@ describe('PurchaseRequestsService', () => {
     it('should approve a submitted PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
-      mockPrRepo.save.mockResolvedValue({
-        ...mockSubmittedPr,
-        status: PrStatus.APPROVED,
-        approvedBy: 2,
-      });
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // H2: โหลดใต้ lock ใน tx
 
       const result = await service.approve(1, 2);
       expect(result.status).toBe(PrStatus.APPROVED);
@@ -287,6 +286,7 @@ describe('PurchaseRequestsService', () => {
         quarter: null,
       });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: null });
 
       await service.approve(1, 2);
 
@@ -303,6 +303,7 @@ describe('PurchaseRequestsService', () => {
     it('P5-3: should reserve the PR quarter when approving a quarterly PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: 2 });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: 2 });
 
       await service.approve(1, 2);
 
@@ -314,12 +315,41 @@ describe('PurchaseRequestsService', () => {
         mockTxManager,
       );
     });
+
+    // H2 (review 2026-07-07): เช็ค status นอก tx อย่างเดียวกัน race ไม่ได้ —
+    // 2 approve พร้อมกัน = reserve ซ้ำ / approve ชน reject = reserved ค้างถาวร
+    it('H2: re-checks status under a row lock inside the tx — PR that already flipped is rejected without reserving', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr }); // pre-read เห็น SUBMITTED
+      mockUserRepo.findOne.mockResolvedValue(mockManager);
+      // ใน tx (หลัง lock) เห็นว่าอีก request approve ตัดหน้าไปแล้ว
+      mockTxManager.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        status: PrStatus.APPROVED,
+      });
+
+      await expect(service.approve(1, 2)).rejects.toThrow(BadRequestException);
+      expect(mockBudgetsService.reserveAmount).not.toHaveBeenCalled();
+    });
+
+    it('H2: loads the PR with pessimistic_write lock inside the transaction', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
+      mockUserRepo.findOne.mockResolvedValue(mockManager);
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr });
+
+      await service.approve(1, 2);
+
+      expect(mockTxManager.findOne).toHaveBeenCalledWith(
+        PurchaseRequest,
+        expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+      );
+    });
   });
 
   describe('reject', () => {
     it('should reject a submitted PR with reason', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // H2: โหลดใต้ lock ใน tx
 
       const result = await service.reject(1, 2, { reason: 'No budget' });
       expect(result.status).toBe(PrStatus.REJECTED);
@@ -346,6 +376,22 @@ describe('PurchaseRequestsService', () => {
       await expect(service.reject(1, 2, { reason: 'No budget' })).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    // H2: reject ก็ต้อง re-check ใต้ lock เดียวกัน — approve ที่ commit ไปก่อนต้องชนะ
+    // (ถ้าไม่เช็ค: PR จบที่ REJECTED ทั้งที่ reserve ไปแล้ว = งบค้างถาวร)
+    it('H2: re-checks status under the row lock — reject loses to an approve that landed first', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
+      mockUserRepo.findOne.mockResolvedValue(mockManager);
+      mockTxManager.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        status: PrStatus.APPROVED,
+      });
+
+      await expect(service.reject(1, 2, { reason: 'No budget' })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockTxManager.save).not.toHaveBeenCalled();
     });
   });
 
