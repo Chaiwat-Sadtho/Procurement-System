@@ -38,7 +38,7 @@ function makeWrapper(qc: QueryClient) {
 describe('useGRNMutations', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('create calls api.create and invalidates GRN + PO + budget caches (exactly 5 prefixes)', async () => {
+  it('create calls api.create and invalidates GRN + PO + budget caches (exactly 6 prefixes)', async () => {
     vi.mocked(goodsReceiptsApi.create).mockResolvedValue(created)
     const qc = makeQc()
     const spy = vi.spyOn(qc, 'invalidateQueries')
@@ -59,9 +59,11 @@ describe('useGRNMutations', () => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
       // budget caches — a completing GRN consumes reserved -> used (spec §4A.6)
       expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
+      // ['budget'] (singular) = the detail money-trail page — distinct prefix from ['budgets'] (M3)
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
-      // exclusivity: exactly these 5 prefixes, no over-invalidation creep
-      expect(spy).toHaveBeenCalledTimes(5)
+      // exclusivity: exactly these 6 prefixes, no over-invalidation creep
+      expect(spy).toHaveBeenCalledTimes(6)
     })
   })
 

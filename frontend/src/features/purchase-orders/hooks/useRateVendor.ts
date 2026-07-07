@@ -21,6 +21,9 @@ export function useRateVendor(poId: number, vendorId: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['purchase-order', poId] })
       void queryClient.invalidateQueries({ queryKey: ['vendor', vendorId] })
+      // the vendors LIST shows a ratingAvg column; a new rating changes it, so refresh the
+      // list too (the sibling useVendorMutations already invalidates ['vendors']) (M3)
+      void queryClient.invalidateQueries({ queryKey: ['vendors'] })
     },
     onError: () => {
       void queryClient.invalidateQueries({ queryKey: ['purchase-order', poId, 'rating'] })

@@ -5,12 +5,27 @@ import type { CreatePORequest, UpdatePORequest } from '../types'
 export function usePOMutations() {
   const queryClient = useQueryClient()
 
+  // Budget surface a PO write moves: create/update re-adjust the dept's reserved amount
+  // (delta gate, P5-6). ['budgets'] = budget list + PO-form preview; ['budget'] = the detail
+  // money-trail page (summary/transactions — a DISTINCT prefix, NOT covered by ['budgets']);
+  // ['dashboard','budgets'] = dashboard reserved/used cards (M3).
+  function invalidateBudget() {
+    void queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    void queryClient.invalidateQueries({ queryKey: ['budget'] })
+    void queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
+  }
+
   function invalidateList() {
     void queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+    // a new PO consumes its PR → that PR must drop out of the eligible-for-PO picker (M3)
+    void queryClient.invalidateQueries({ queryKey: ['purchase-requests', { eligibleForPo: true }] })
+    invalidateBudget()
   }
   function invalidateOne(id: number) {
     void queryClient.invalidateQueries({ queryKey: ['purchase-order', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+    // editing a draft PO's items re-adjusts reserved (eligibility unchanged → no picker key)
+    invalidateBudget()
   }
 
   const createMutation = useMutation({
