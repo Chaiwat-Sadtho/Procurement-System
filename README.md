@@ -187,6 +187,11 @@ GitHub Actions (`.github/workflows/ci.yml`) runs lint + test + build for both th
 5. Log in as procurement → create a PO from the PR → record a GRN → PO auto-completes + budget is consumed
 6. Rate the vendor → view it on the vendor detail page
 
+## Project Report
+
+A full project report (Thai, 85 pages) covering requirements analysis, system design, database schema with data dictionary, implementation results, and test results:
+[`docs/report/Procurement-System-Report.pdf`](docs/report/Procurement-System-Report.pdf)
+
 ## Architecture
 
 ```
