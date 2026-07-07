@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 import { DepartmentsService } from '@app/departments/departments.service';
 import { Department } from '@app/departments/entities/department.entity';
 import { CacheService } from '@app/cache/cache.service';
@@ -48,6 +49,18 @@ describe('DepartmentsService', () => {
 
     it('should throw ConflictException if name already exists', async () => {
       mockDepartmentRepo.findOne.mockResolvedValue(mockDepartment);
+      await expect(service.create({ name: 'Finance' })).rejects.toThrow(ConflictException);
+    });
+
+    it('translates a unique-violation race (23505) into ConflictException', async () => {
+      // L3: app-level findOne check passes (concurrent insert) but the DB unique index rejects
+      // the second write — surface it as a clean 409, not a raw 500.
+      mockDepartmentRepo.findOne.mockResolvedValue(null);
+      mockDepartmentRepo.create.mockReturnValue(mockDepartment);
+      const dbErr = new QueryFailedError('insert', [], new Error('dup'));
+      (dbErr as { code?: string }).code = '23505';
+      mockDepartmentRepo.save.mockRejectedValue(dbErr);
+
       await expect(service.create({ name: 'Finance' })).rejects.toThrow(ConflictException);
     });
 
