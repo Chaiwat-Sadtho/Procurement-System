@@ -49,6 +49,7 @@ const mockPoRepo = {
   count: jest.fn().mockResolvedValue(0),
   create: jest.fn(),
   save: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
   findOne: jest.fn(),
   createQueryBuilder: jest.fn(),
 };

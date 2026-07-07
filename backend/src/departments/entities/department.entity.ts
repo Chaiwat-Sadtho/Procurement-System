@@ -8,7 +8,7 @@ export class Department {
   id!: number;
 
   @ApiProperty({ example: 'IT Department' })
-  @Column({ length: 100 })
+  @Column({ length: 100, unique: true })
   name!: string;
 
   @ApiProperty()

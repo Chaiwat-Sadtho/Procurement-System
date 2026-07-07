@@ -132,7 +132,7 @@ export function PRListPage() {
                         <PRStatusBadge status={pr.status as PRStatus} />
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {formatCurrency(pr.totalEstimatedAmount)}
+                        {formatCurrency(Number(pr.totalEstimatedAmount))}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(pr.createdAt)}

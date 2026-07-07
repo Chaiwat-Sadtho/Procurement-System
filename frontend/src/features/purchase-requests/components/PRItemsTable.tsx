@@ -42,10 +42,10 @@ export function PRItemsTable({ items, totalEstimatedAmount }: PRItemsTableProps)
                 <TableCell className="text-right">{item.quantity}</TableCell>
                 <TableCell>{item.unit}</TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(item.estimatedUnitPrice)}
+                  {formatCurrency(Number(item.estimatedUnitPrice))}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(item.estimatedTotalPrice)}
+                  {formatCurrency(Number(item.estimatedTotalPrice))}
                 </TableCell>
               </TableRow>
             ))}

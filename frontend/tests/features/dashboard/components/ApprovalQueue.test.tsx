@@ -12,7 +12,7 @@ const makePr = (id: number): PurchaseRequest => ({
   prNumber: `PR-2026-000${id}`,
   title: `Item ${id}`,
   status: 'submitted',
-  totalEstimatedAmount: 1000,
+  totalEstimatedAmount: '1000',
   quarter: null,
   requiredDate: '2026-02-01',
   requesterId: id,

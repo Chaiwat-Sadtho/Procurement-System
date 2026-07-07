@@ -18,7 +18,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
-import { formatRunningNumber } from '../common/running-number';
+import { formatRunningNumber, nextRunningSeq } from '../common/running-number';
 
 const RECEIVABLE_STATUSES = [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED];
 
@@ -56,15 +56,15 @@ export class GoodsReceiptsService {
         );
       }
 
-      // 2. Generate GRN number — ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen ซ้ำ → 23505.
-      // suffix zero-padded 4 หลัก ดังนั้น ORDER BY lexical = numeric order ภายใน prefix ปีเดียวกัน (อยู่ใน transaction เดียวกัน)
+      // 2. Generate GRN number — ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว —
+      // count ต่ำกว่า suffix สูงสุดหลัง DELETE → gen ซ้ำ → 23505; ORDER BY lexical + slice(-4) เดิมพังเมื่อ > 9999 (L2).
+      // (อยู่ใน transaction เดียวกัน)
       const year = new Date().getFullYear();
-      const latestGrn = await manager.findOne(GoodsReceiptNote, {
+      const grnRows = await manager.find(GoodsReceiptNote, {
         where: { grnNumber: Like(`GRN-${year}-%`) },
-        order: { grnNumber: 'DESC' },
-        select: { id: true, grnNumber: true },
+        select: { grnNumber: true },
       });
-      const nextGrn = latestGrn ? parseInt(latestGrn.grnNumber.slice(-4), 10) + 1 : 1;
+      const nextGrn = nextRunningSeq(grnRows.map((r) => r.grnNumber));
       const grnNumber = formatRunningNumber('GRN', year, nextGrn);
 
       // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)

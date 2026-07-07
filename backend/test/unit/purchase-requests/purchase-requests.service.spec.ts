@@ -42,6 +42,7 @@ const mockPrRepo = {
   count: jest.fn().mockResolvedValue(0),
   create: jest.fn(),
   save: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
   findOne: jest.fn(),
   remove: jest.fn(),
   createQueryBuilder: jest.fn(),
@@ -143,10 +144,10 @@ describe('PurchaseRequestsService', () => {
       const year = new Date().getFullYear();
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.count.mockResolvedValue(2);
-      mockPrRepo.findOne.mockResolvedValue({
-        id: 3,
-        prNumber: `PR-${year}-0003`,
-      });
+      mockPrRepo.find.mockResolvedValue([
+        { prNumber: `PR-${year}-0001` },
+        { prNumber: `PR-${year}-0003` },
+      ]);
 
       let generatedPrNumber = '';
       mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
@@ -171,6 +172,29 @@ describe('PurchaseRequestsService', () => {
 
       // MAX+1 = 0004 (ไม่ใช่ count+1 = 0003 ที่จะชน unique constraint)
       expect(generatedPrNumber).toBe(`PR-${year}-0004`);
+    });
+
+    it('should not break past 9999 when generating the PR number (L2)', async () => {
+      const year = new Date().getFullYear();
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      mockPrRepo.find.mockResolvedValue([{ prNumber: `PR-${year}-9999` }]);
+
+      let generatedPrNumber = '';
+      mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
+      mockPrRepo.create.mockImplementation((entity: PurchaseRequest) => {
+        generatedPrNumber = entity.prNumber;
+        return { ...mockDraftPr, prNumber: entity.prNumber };
+      });
+      mockPrRepo.save.mockImplementation((e) => Promise.resolve(e));
+
+      await service.create(1, {
+        title: 'Test PR',
+        requiredDate: '2026-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+      });
+
+      // numeric MAX 9999 → 10000 (ไม่ใช่ slice(-4) → 0000 → 0001)
+      expect(generatedPrNumber).toBe(`PR-${year}-10000`);
     });
 
     // Minor #1: คูณ quantity × unitPrice ต้องใช้ decimal ไม่ใช่ float
