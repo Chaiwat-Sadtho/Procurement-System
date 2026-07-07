@@ -14,7 +14,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('@/features/goods-receipts/hooks/useGoodsReceipts', () => ({ useGoodsReceipts: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
-vi.mock('@/features/goods-receipts/hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useReceivedPOs', () => ({ useReceivedPOs: vi.fn() }))
 // keep this page test focused on the page, not filter internals (mirror POListPage test).
 // mockFilter.values lets a test drive a specific (non-'all') submission so the page's
 // value->queryParam mapping (string id -> Number, 'all' -> undefined) is actually exercised.
@@ -42,7 +42,7 @@ vi.mock('@/features/goods-receipts/components/GRNListFilterForm', () => ({
 
 import { useGoodsReceipts } from '@/features/goods-receipts/hooks/useGoodsReceipts'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { useReceivablePOs } from '@/features/goods-receipts/hooks/useReceivablePOs'
+import { useReceivedPOs } from '@/features/goods-receipts/hooks/useReceivedPOs'
 import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 
 const mockGrn: GoodsReceiptListItem = {
@@ -84,8 +84,8 @@ function setup({
   vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<
     typeof useCurrentUser
   >)
-  vi.mocked(useReceivablePOs).mockReturnValue({ data: [] } as unknown as ReturnType<
-    typeof useReceivablePOs
+  vi.mocked(useReceivedPOs).mockReturnValue({ data: [] } as unknown as ReturnType<
+    typeof useReceivedPOs
   >)
   return { refetch }
 }

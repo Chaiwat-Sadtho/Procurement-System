@@ -23,4 +23,13 @@ export const goodsReceiptsApi = {
         params: { receivable: true, limit: 100 },
       })
       .then((r) => r.data.data),
+
+  // POs that already have a GRN (partially_received + completed) — the GRN-list history
+  // filter dropdown. Same {data,meta}→array unwrap as receivable (M4).
+  listPOsWithReceipts: () =>
+    api
+      .get<{ data: ReceivablePO[]; meta: unknown }>('/purchase-orders', {
+        params: { withReceipts: true, limit: 100 },
+      })
+      .then((r) => r.data.data),
 }

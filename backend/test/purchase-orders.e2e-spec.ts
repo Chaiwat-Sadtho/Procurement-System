@@ -670,6 +670,30 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     expect(allRows.some((po) => po.status === 'completed')).toBe(true);
   });
 
+  it('GET /api/v1/purchase-orders?withReceipts=true — returns only partially_received/completed', async () => {
+    // runs right after the receivable test, so the acknowledged ackPoId it created is a live
+    // negative control (acknowledged has no GRN → must NOT appear in the history filter), and
+    // poId (received in full earlier in the suite) is a completed positive control.
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?withReceipts=true&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = (res.body as Paginated<PurchaseOrderResponse>).data;
+    expect(rows).toBeInstanceOf(Array);
+    // positive: the completed poId IS returned (non-vacuous — poId reached completed via GRNs)
+    expect(rows.some((po) => po.id === poId && po.status === 'completed')).toBe(true);
+    // every returned row has a GRN (partial or complete)
+    for (const po of rows) {
+      expect(['partially_received', 'completed']).toContain(po.status);
+    }
+    // negative control: acknowledged (ackPoId, no GRN yet), draft, sent, cancelled must NOT leak
+    const leaked = rows.filter((po) =>
+      ['draft', 'sent', 'acknowledged', 'cancelled'].includes(po.status),
+    );
+    expect(leaked).toHaveLength(0);
+  });
+
   it('GET /api/v1/goods-receipts?status=partial — returns only partial GRNs', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/goods-receipts?status=partial&limit=100')

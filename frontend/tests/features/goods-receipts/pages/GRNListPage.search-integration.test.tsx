@@ -17,11 +17,11 @@ import { GRNListPage } from '@/features/goods-receipts/pages/GRNListPage'
 // distinction is browser-only (verify-live, tools/eyeball).
 vi.mock('@/features/goods-receipts/hooks/useGoodsReceipts', () => ({ useGoodsReceipts: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))
-vi.mock('@/features/goods-receipts/hooks/useReceivablePOs', () => ({ useReceivablePOs: vi.fn() }))
+vi.mock('@/features/goods-receipts/hooks/useReceivedPOs', () => ({ useReceivedPOs: vi.fn() }))
 
 import { useGoodsReceipts } from '@/features/goods-receipts/hooks/useGoodsReceipts'
 import { useCurrentUser } from '@/shared/hooks/useCurrentUser'
-import { useReceivablePOs } from '@/features/goods-receipts/hooks/useReceivablePOs'
+import { useReceivedPOs } from '@/features/goods-receipts/hooks/useReceivedPOs'
 
 function setup() {
   vi.mocked(useGoodsReceipts).mockReturnValue({
@@ -31,8 +31,8 @@ function setup() {
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useGoodsReceipts>)
   vi.mocked(useCurrentUser).mockReturnValue({ data: undefined } as ReturnType<typeof useCurrentUser>)
-  vi.mocked(useReceivablePOs).mockReturnValue({ data: [] } as unknown as ReturnType<
-    typeof useReceivablePOs
+  vi.mocked(useReceivedPOs).mockReturnValue({ data: [] } as unknown as ReturnType<
+    typeof useReceivedPOs
   >)
 }
 
