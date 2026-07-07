@@ -336,7 +336,7 @@ describe('GoodsReceiptsService', () => {
       // ปีนี้ออกถึง 9999 แล้ว — helper ต้องได้ 10000 (ไม่ใช่ slice(-4) → 0000 → 0001)
       manager.find.mockResolvedValue([{ grnNumber: `GRN-${year}-9999` }]);
       let generatedGrn = '';
-      manager.create.mockImplementation((entity: any, data: any) => {
+      manager.create.mockImplementation((entity: unknown, data: { grnNumber: string }) => {
         if (entity === GoodsReceiptNote) generatedGrn = data.grnNumber;
         return mockGrn;
       });
