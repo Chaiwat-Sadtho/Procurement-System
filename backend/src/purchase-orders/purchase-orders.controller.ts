@@ -41,13 +41,19 @@ export class PurchaseOrdersController {
     return this.poService.create(user.id, dto);
   }
 
-  @ApiOperation({ summary: 'ดู PO list (All)' })
+  // H3: read = Manager + PO เท่านั้น (mirror FE routing) — เปิด All จะให้ employee
+  // อ่านข้อมูล PR ของคนอื่น (ที่ PR module ห้าม) ผ่าน relation ใน PO ได้
+  @ApiOperation({ summary: 'ดู PO list (Manager, PO)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get()
   findAll(@Query() query: PoQueryDto) {
     return this.poService.findAll(query);
   }
 
-  @ApiOperation({ summary: 'ดู PO รายละเอียด (All)' })
+  @ApiOperation({ summary: 'ดู PO รายละเอียด (Manager, PO)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.poService.findOne(id);
@@ -105,7 +111,9 @@ export class PurchaseOrdersController {
     return this.poService.findRatingForPo(id);
   }
 
-  @ApiOperation({ summary: 'ดู GRN ทั้งหมดของ PO (All)' })
+  @ApiOperation({ summary: 'ดู GRN ทั้งหมดของ PO (Manager, PO)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get(':id/goods-receipts')
   findGrnsByPo(@Param('id', ParseIntPipe) id: number) {
     return this.grnService.findByPo(id);

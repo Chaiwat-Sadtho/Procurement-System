@@ -404,17 +404,27 @@ export class PurchaseRequestsService {
     const fiscalYear = new Date().getFullYear();
 
     const savedPr = await this.dataSource.transaction(async (txManager) => {
-      pr.status = PrStatus.APPROVED;
-      pr.approvedBy = managerId;
-      pr.approvedAt = new Date();
-      pr.fiscalYear = fiscalYear;
-      const saved = await txManager.save(PurchaseRequest, pr);
+      // H2: lock PR row + re-check status ใน tx — เช็คนอก tx อย่างเดียวกัน race ไม่ได้:
+      // 2 approve พร้อมกัน = reserve ซ้ำ / approve ชน reject = reserved ค้างถาวร
+      // (budget row lock ใน reserveAmount กัน lost-update ที่ตัวเลข แต่กันจองซ้ำระดับ PR ไม่ได้)
+      const lockedPr = await txManager.findOne(PurchaseRequest, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!lockedPr || lockedPr.status !== PrStatus.SUBMITTED) {
+        throw new BadRequestException('Only submitted PRs can be approved');
+      }
+      lockedPr.status = PrStatus.APPROVED;
+      lockedPr.approvedBy = managerId;
+      lockedPr.approvedAt = new Date();
+      lockedPr.fiscalYear = fiscalYear;
+      const saved = await txManager.save(PurchaseRequest, lockedPr);
 
       await this.budgetsService.reserveAmount(
         prDepartmentId,
         fiscalYear,
-        pr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
-        Number(pr.totalEstimatedAmount),
+        lockedPr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
+        Number(lockedPr.totalEstimatedAmount),
         txManager,
       );
 
@@ -469,10 +479,19 @@ export class PurchaseRequestsService {
       throw new ForbiddenException('Cannot reject PRs from other departments');
     }
 
-    pr.status = PrStatus.REJECTED;
-    pr.rejectReason = dto.reason;
     const saved = await this.dataSource.transaction(async (txManager) => {
-      const result = await txManager.save(PurchaseRequest, pr);
+      // H2: lock + re-check เหมือน approve — approve ที่ commit ก่อนต้องชนะ
+      // (ไม่งั้น PR จบที่ REJECTED ทั้งที่ reserve งบไปแล้ว = ค้างถาวร ไม่มีทาง release)
+      const lockedPr = await txManager.findOne(PurchaseRequest, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!lockedPr || lockedPr.status !== PrStatus.SUBMITTED) {
+        throw new BadRequestException('Only submitted PRs can be rejected');
+      }
+      lockedPr.status = PrStatus.REJECTED;
+      lockedPr.rejectReason = dto.reason;
+      const result = await txManager.save(PurchaseRequest, lockedPr);
       await this.auditLogsService.log(
         {
           userId: managerId,
