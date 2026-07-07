@@ -304,20 +304,26 @@ export class PurchaseRequestsService {
     if (dto.requiredDate) pr.requiredDate = dto.requiredDate;
 
     if (dto.items) {
-      await this.prItemRepository.delete({ prId: id });
-      const newItems = dto.items.map((item) =>
-        this.prItemRepository.create({
-          prId: id,
-          itemName: item.itemName,
-          description: item.description,
-          quantity: item.quantity,
-          unit: item.unit,
-          estimatedUnitPrice: item.estimatedUnitPrice,
-          estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
-        }),
-      );
-      pr.items = await this.prItemRepository.save(newItems);
-      pr.totalEstimatedAmount = sumMoney(pr.items.map((item) => item.estimatedTotalPrice));
+      // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
+      // draft PR จะเหลือ 0 item + totalEstimatedAmount stale (pattern เดียวกับ PO update)
+      const items = dto.items;
+      return this.dataSource.transaction(async (manager) => {
+        await manager.delete(PurchaseRequestItem, { prId: id });
+        const newItems = items.map((item) =>
+          manager.create(PurchaseRequestItem, {
+            prId: id,
+            itemName: item.itemName,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            estimatedUnitPrice: item.estimatedUnitPrice,
+            estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
+          }),
+        );
+        pr.items = await manager.save(PurchaseRequestItem, newItems);
+        pr.totalEstimatedAmount = sumMoney(pr.items.map((item) => item.estimatedTotalPrice));
+        return manager.save(PurchaseRequest, pr);
+      });
     }
 
     return this.prRepository.save(pr);
