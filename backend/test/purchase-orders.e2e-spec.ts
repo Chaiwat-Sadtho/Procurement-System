@@ -360,6 +360,59 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(200);
   });
 
+  // --- H3 (review 2026-07-07): PO/GRN read = MANAGER + PROCUREMENT_OFFICER เท่านั้น ---
+  // FE routing กัน employee ออกจากหน้า PO/GRN อยู่แล้ว — BE ต้อง mirror ไม่งั้น employee
+  // อ่านข้อมูล PR ของคนอื่น (ที่ PR module ห้ามไว้) ผ่าน PO/GRN endpoints ได้
+
+  it('GET /api/v1/purchase-orders — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-orders/:id — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-orders/:id/goods-receipts — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/purchase-orders/${poId}/goods-receipts`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/goods-receipts — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/goods-receipts/:id — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts/1')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/purchase-orders — manager allowed (200)', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+  });
+
+  it('GET /api/v1/goods-receipts — manager allowed (200)', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+  });
+
   // --- Queries ---
 
   it('GET /api/v1/goods-receipts — lists all GRNs with pagination', async () => {

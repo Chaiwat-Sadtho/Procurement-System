@@ -25,13 +25,18 @@ export class GoodsReceiptsController {
     return this.grnService.create(user.id, dto);
   }
 
-  @ApiOperation({ summary: 'ดู GRN list (All)' })
+  // H3: read = Manager + PO เท่านั้น (mirror FE routing) — เหตุผลเดียวกับ PO controller
+  @ApiOperation({ summary: 'ดู GRN list (Manager, PO)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get()
   findAll(@Query() query: GrnQueryDto) {
     return this.grnService.findAll(query);
   }
 
-  @ApiOperation({ summary: 'ดู GRN รายละเอียด (All)' })
+  @ApiOperation({ summary: 'ดู GRN รายละเอียด (Manager, PO)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.grnService.findOne(id);
