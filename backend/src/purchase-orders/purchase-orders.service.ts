@@ -79,6 +79,14 @@ export class PurchaseOrdersService {
       );
     }
 
+    // H1: ถ้า PR นี้เคยมี PO ถูก cancel — cancel ได้ release reservation ทั้งก้อนไปแล้ว (P5-2)
+    // เส้นทาง delta ด้านล่างตั้งสมมติฐานว่า PR estimate ยังถูกจองอยู่ ซึ่งไม่จริงแล้ว
+    // → ต้อง reserve ใหม่เต็มยอด PO (ผ่าน validate งบ) แทนการ adjust delta
+    const hadCancelledPo = await this.poRepository.findOne({
+      where: { prId: dto.prId, status: PoStatus.CANCELLED },
+      select: { id: true },
+    });
+
     const vendor = await this.vendorRepository.findOne({
       where: { id: dto.vendorId },
     });
@@ -127,13 +135,23 @@ export class PurchaseOrdersService {
     let savedPo: PurchaseOrder;
     try {
       savedPo = await this.dataSource.transaction(async (manager) => {
-        await this.budgetsService.adjustReservedAmount(
-          prDepartmentId,
-          pr.fiscalYear ?? new Date().getFullYear(),
-          pr.quarter,
-          reserveDelta,
-          manager,
-        );
+        if (hadCancelledPo) {
+          await this.budgetsService.reserveAmount(
+            prDepartmentId,
+            pr.fiscalYear ?? new Date().getFullYear(),
+            pr.quarter,
+            Number(totalAmount),
+            manager,
+          );
+        } else {
+          await this.budgetsService.adjustReservedAmount(
+            prDepartmentId,
+            pr.fiscalYear ?? new Date().getFullYear(),
+            pr.quarter,
+            reserveDelta,
+            manager,
+          );
+        }
         const created = await manager.save(PurchaseOrder, po);
         await this.auditLogsService.log(
           {

@@ -69,6 +69,7 @@ const mockDataSource = { transaction: jest.fn() };
 const mockBudgetsService = {
   releaseReservedAmount: jest.fn().mockResolvedValue(undefined),
   adjustReservedAmount: jest.fn().mockResolvedValue(undefined),
+  reserveAmount: jest.fn().mockResolvedValue(undefined),
 };
 const mockAuditLogsService = { log: jest.fn().mockResolvedValue(undefined) };
 const mockNotificationsService = {
@@ -239,6 +240,46 @@ describe('PurchaseOrdersService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(save).not.toHaveBeenCalled();
+    });
+
+    // H1 (review 2026-07-07): cancel ได้ release reservation ของ PR ทั้งก้อนไปแล้ว —
+    // PO ใบใหม่จาก PR เดิมต้อง reserve เต็มยอด PO (validate งบ) ไม่ใช่ adjust delta จาก PR estimate
+    it('should reserve the full PO total (not the delta) when the PR has a previously cancelled PO', async () => {
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockApprovedPr,
+        totalEstimatedAmount: 1000,
+      });
+      // ตอบตาม where clause (ไม่ผูกลำดับ call): เฉพาะ query หา PO ที่ status = CANCELLED ตรง ๆ
+      // ถึงเจอ — ส่วน active-check (Not(CANCELLED)) และ running number ได้ null
+      mockPoRepo.findOne.mockImplementation(({ where }: { where: { status?: unknown } }) =>
+        Promise.resolve(
+          where?.status === PoStatus.CANCELLED ? { id: 99, status: PoStatus.CANCELLED } : null,
+        ),
+      );
+      mockVendorRepo.findOne.mockResolvedValue(mockVendor);
+      const item = {
+        itemName: 'Item',
+        quantity: 1,
+        unit: 'unit',
+        unitPrice: 900,
+        totalPrice: 900,
+        receivedQuantity: 0,
+      };
+      mockPoItemRepo.create.mockReturnValue(item);
+      const createdPo = { ...mockDraftPo, items: [item], totalAmount: 900 };
+      mockPoRepo.create.mockReturnValue(createdPo);
+      const manager = mockTxSave(jest.fn().mockResolvedValue(createdPo));
+
+      await service.create(1, {
+        prId: 1,
+        vendorId: 1,
+        expectedDeliveryDate: '2025-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', unitPrice: 900 }],
+      });
+
+      // reserve เต็ม 900 บน dept/fy/quarter ที่ตรึงจาก PR — ห้ามใช้เส้นทาง delta
+      expect(mockBudgetsService.reserveAmount).toHaveBeenCalledWith(1, 2026, null, 900, manager);
+      expect(mockBudgetsService.adjustReservedAmount).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException if po_number collides (23505) instead of leaking 500', async () => {
