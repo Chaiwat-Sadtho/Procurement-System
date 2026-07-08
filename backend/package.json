@@ -1,8 +1,8 @@
 {
-  "name": "backend",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "procurement-system-backend",
+  "version": "1.0.0",
+  "description": "REST API for a Procurement & Vendor Management System covering the purchase request, approval, purchase order, and goods receipt flow, with budget control, audit logging, and notifications. Built with NestJS, PostgreSQL/TypeORM, and Redis.",
+  "author": "Chaiwat Sadtho",
   "private": true,
   "license": "UNLICENSED",
   "engines": {

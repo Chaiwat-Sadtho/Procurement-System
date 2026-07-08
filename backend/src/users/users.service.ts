@@ -47,7 +47,9 @@ export class UsersService {
       throw new ForbiddenException('Cannot change your own role');
     }
     const isDemotingPo =
-      user.role === UserRole.PROCUREMENT_OFFICER && dto.role !== UserRole.PROCUREMENT_OFFICER;
+      user.isActive &&
+      user.role === UserRole.PROCUREMENT_OFFICER &&
+      dto.role !== UserRole.PROCUREMENT_OFFICER;
     if (isDemotingPo) await this.assertNotLastActivePo();
     user.role = dto.role;
     const saved = await this.userRepository.save(user);

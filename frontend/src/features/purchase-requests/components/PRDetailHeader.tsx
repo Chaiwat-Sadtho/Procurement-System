@@ -48,7 +48,7 @@ export function PRDetailHeader({ pr, actions }: PRDetailHeaderProps) {
           <MetaItem label="ไตรมาส" value={pr.quarter ?? '-'} />
           <MetaItem label="วันที่ขอ" value={formatDate(pr.createdAt)} />
           <MetaItem label="ต้องการภายใน" value={formatDate(pr.requiredDate)} />
-          <MetaItem label="มูลค่าประเมิน" value={formatCurrency(pr.totalEstimatedAmount)} />
+          <MetaItem label="มูลค่าประเมิน" value={formatCurrency(Number(pr.totalEstimatedAmount))} />
         </dl>
 
         {pr.status === 'rejected' && pr.rejectReason && (

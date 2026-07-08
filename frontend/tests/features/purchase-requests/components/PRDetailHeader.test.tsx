@@ -10,7 +10,7 @@ const basePR: PurchaseRequest = {
   prNumber: 'PR-2026-0001',
   title: 'Office Supplies',
   status: 'draft',
-  totalEstimatedAmount: 1000,
+  totalEstimatedAmount: '1000',
   quarter: 2,
   requiredDate: '2026-02-01',
   requesterId: 10,

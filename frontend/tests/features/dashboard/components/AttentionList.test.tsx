@@ -13,7 +13,7 @@ function mkPR(over: Partial<PurchaseRequest>): PurchaseRequest {
     prNumber: 'PR-2026-0001',
     title: 'Item',
     status: 'draft',
-    totalEstimatedAmount: 1000,
+    totalEstimatedAmount: '1000',
     quarter: null,
     requiredDate: '2026-02-01',
     requesterId: 1,

@@ -117,7 +117,7 @@ export function PRDetailPage() {
         }
       />
 
-      <PRItemsTable items={pr.items} totalEstimatedAmount={pr.totalEstimatedAmount} />
+      <PRItemsTable items={pr.items} totalEstimatedAmount={Number(pr.totalEstimatedAmount)} />
 
       <ConfirmDialog
         open={confirmAction !== null}

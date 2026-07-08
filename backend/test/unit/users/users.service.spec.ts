@@ -73,6 +73,27 @@ describe('UsersService', () => {
     );
   });
 
+  it('updateRole allows demoting an INACTIVE procurement officer even when one active PO remains', async () => {
+    // L1: demoting an already-inactive PO does not reduce the active-PO count,
+    // so the last-active-PO guard must not fire (mirrors updateStatus which checks isActive).
+    mockRepo.findOne.mockResolvedValue({
+      ...mockUser,
+      id: 2,
+      role: UserRole.PROCUREMENT_OFFICER,
+      isActive: false,
+    });
+    mockRepo.count.mockResolvedValue(1);
+    mockRepo.save.mockResolvedValue({
+      ...mockUser,
+      id: 2,
+      role: UserRole.EMPLOYEE,
+      isActive: false,
+    });
+
+    const result = await service.updateRole(2, { role: UserRole.EMPLOYEE }, 999);
+    expect(result.role).toBe(UserRole.EMPLOYEE);
+  });
+
   it('updateStatus forbids deactivating yourself', async () => {
     mockRepo.findOne.mockResolvedValue({ ...mockUser, id: 5 });
     await expect(service.updateStatus(5, { isActive: false }, 5)).rejects.toThrow(

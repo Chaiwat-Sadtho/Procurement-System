@@ -237,4 +237,37 @@ describe('Budget money trail + manager scoping (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
   });
+
+  // review #183 M2: GET /budgets/department/:id เคยเปิดทุก role + ไม่ scope (IDOR)
+  it('rejects an employee listing department budgets', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/budgets/department/${deptId}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+  });
+
+  it('forbids a manager listing another department budgets', async () => {
+    const scopeDeptRes = await request(app.getHttpServer())
+      .post('/api/v1/departments')
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ name: `Dept Scope ${tag}` })
+      .expect(201);
+    const scopeDeptId = (scopeDeptRes.body as IdResponse).id;
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/budgets/department/${scopeDeptId}`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(403);
+  });
+
+  it('lets the own-department manager list department budgets', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/budgets/department/${deptId}`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    const rows = res.body as Array<{ departmentId: number }>;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((b) => b.departmentId === deptId)).toBe(true);
+  });
 });

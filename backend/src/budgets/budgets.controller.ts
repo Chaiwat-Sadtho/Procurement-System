@@ -44,11 +44,11 @@ export class BudgetsController {
     return this.budgetsService.findAll(query, user);
   }
 
-  @ApiOperation({ summary: 'ดูงบของ department ที่ระบุ' })
-  @Roles(UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
+  @ApiOperation({ summary: 'ดูงบของ department ที่ระบุ (Manager=แผนกตัวเอง, PO=ทุกแผนก)' })
+  @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)
   @Get('department/:id')
-  findByDepartment(@Param('id', ParseIntPipe) id: number) {
-    return this.budgetsService.findByDepartment(id);
+  findByDepartment(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: CurrentUserPayload) {
+    return this.budgetsService.findByDepartment(id, user);
   }
 
   @ApiOperation({ summary: 'สรุปงบ: reserved/used/remaining (Manager, PO)' })

@@ -42,6 +42,7 @@ const mockPrRepo = {
   count: jest.fn().mockResolvedValue(0),
   create: jest.fn(),
   save: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
   findOne: jest.fn(),
   remove: jest.fn(),
   createQueryBuilder: jest.fn(),
@@ -71,6 +72,8 @@ const mockNotificationsService = {
 const mockTxManager = {
   save: jest.fn((_, e) => Promise.resolve(e)),
   findOne: jest.fn(),
+  delete: jest.fn().mockResolvedValue({ affected: 1 }),
+  create: jest.fn((_: unknown, data: unknown) => data),
 };
 const mockDataSource = {
   transaction: jest.fn((cb: (m: typeof mockTxManager) => unknown) => cb(mockTxManager)),
@@ -141,10 +144,10 @@ describe('PurchaseRequestsService', () => {
       const year = new Date().getFullYear();
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.count.mockResolvedValue(2);
-      mockPrRepo.findOne.mockResolvedValue({
-        id: 3,
-        prNumber: `PR-${year}-0003`,
-      });
+      mockPrRepo.find.mockResolvedValue([
+        { prNumber: `PR-${year}-0001` },
+        { prNumber: `PR-${year}-0003` },
+      ]);
 
       let generatedPrNumber = '';
       mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
@@ -169,6 +172,29 @@ describe('PurchaseRequestsService', () => {
 
       // MAX+1 = 0004 (ไม่ใช่ count+1 = 0003 ที่จะชน unique constraint)
       expect(generatedPrNumber).toBe(`PR-${year}-0004`);
+    });
+
+    it('should not break past 9999 when generating the PR number (L2)', async () => {
+      const year = new Date().getFullYear();
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      mockPrRepo.find.mockResolvedValue([{ prNumber: `PR-${year}-9999` }]);
+
+      let generatedPrNumber = '';
+      mockPrItemRepo.create.mockReturnValue({ estimatedTotalPrice: 100 });
+      mockPrRepo.create.mockImplementation((entity: PurchaseRequest) => {
+        generatedPrNumber = entity.prNumber;
+        return { ...mockDraftPr, prNumber: entity.prNumber };
+      });
+      mockPrRepo.save.mockImplementation((e) => Promise.resolve(e));
+
+      await service.create(1, {
+        title: 'Test PR',
+        requiredDate: '2026-12-31',
+        items: [{ itemName: 'Item', quantity: 1, unit: 'unit', estimatedUnitPrice: 100 }],
+      });
+
+      // numeric MAX 9999 → 10000 (ไม่ใช่ slice(-4) → 0000 → 0001)
+      expect(generatedPrNumber).toBe(`PR-${year}-10000`);
     });
 
     // Minor #1: คูณ quantity × unitPrice ต้องใช้ decimal ไม่ใช่ float
@@ -364,6 +390,21 @@ describe('PurchaseRequestsService', () => {
       );
     });
 
+    // L6: guard เดียวกับ approve — ฝั่ง approve มี cross-dept test แล้วแต่ reject ยังไม่มี
+    it('should throw ForbiddenException when manager from different department', async () => {
+      mockPrRepo.findOne.mockResolvedValue({
+        ...mockSubmittedPr,
+        departmentId: 1,
+      });
+      mockUserRepo.findOne.mockResolvedValue({
+        ...mockManager,
+        departmentId: 2,
+      });
+      await expect(service.reject(1, 2, { reason: 'No budget' })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
     it('throws BadRequest when rejecting a PR with null department', async () => {
       mockPrRepo.findOne.mockResolvedValue({
         ...mockSubmittedPr,
@@ -392,6 +433,35 @@ describe('PurchaseRequestsService', () => {
         BadRequestException,
       );
       expect(mockTxManager.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    // M1: delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
+    // draft PR จะเหลือ 0 item + totalEstimatedAmount stale (pattern เดียวกับ PO update)
+    it('should delete and recreate items inside a single transaction (atomic)', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, items: [{ id: 9 }] });
+      mockPrRepo.save.mockImplementation((e: unknown) => Promise.resolve(e));
+      mockPrItemRepo.create.mockImplementation((d: unknown) => d);
+      mockPrItemRepo.save.mockImplementation((d: unknown) => Promise.resolve(d));
+
+      const result = await service.update(1, 1, {
+        items: [
+          { itemName: 'A', quantity: 2, unit: 'pcs', estimatedUnitPrice: 100 },
+          { itemName: 'B', quantity: 1, unit: 'pcs', estimatedUnitPrice: 50 },
+        ],
+      });
+
+      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockTxManager.delete).toHaveBeenCalledWith(PurchaseRequestItem, { prId: 1 });
+      // destructive delete + recreate must run through the transaction manager, never the bare repo
+      expect(mockPrItemRepo.delete).not.toHaveBeenCalled();
+      expect(result.totalEstimatedAmount).toBe(250);
+    });
+
+    it('should throw BadRequestException when updating a non-draft PR', async () => {
+      mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
+      await expect(service.update(1, 1, { title: 'x' })).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -21,7 +21,7 @@ import { formatDate, getRowIndex } from '@/shared/lib/utils'
 import { GrnStatusBadge } from '../components/GrnStatusBadge'
 import { GRNListFilterForm, type GRNListFilterValues } from '../components/GRNListFilterForm'
 import { useGoodsReceipts } from '../hooks/useGoodsReceipts'
-import { useReceivablePOs } from '../hooks/useReceivablePOs'
+import { useReceivedPOs } from '../hooks/useReceivedPOs'
 import { useUrlFilters } from '@/shared/hooks/useUrlFilters'
 import { grnUrlFilterConfig } from '../lib/grnUrlFilters'
 import type { GrnStatus } from '../types'
@@ -34,7 +34,9 @@ export function GRNListPage() {
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
 
-  const { data: pos } = useReceivablePOs()
+  // history filter: POs that have a GRN (partially_received + completed), not the
+  // create picker's receivable set — completed POs are the bulk of GRN history (M4)
+  const { data: pos } = useReceivedPOs()
   const poOptions = pos ?? []
 
   const queryParams = {

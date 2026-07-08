@@ -22,6 +22,10 @@ export function useGRNMutations() {
       // dashboard summary (['dashboard','budgets',...], useBudgets.ts:6). Prefix forms cover
       // every dept/fiscal-year variant.
       void queryClient.invalidateQueries({ queryKey: ['budgets'] })
+      // ['budget', id, 'summary'|'transactions'] is the money-trail detail page — a DISTINCT
+      // prefix from ['budgets'] above, so it needs its own invalidation. This is the page that
+      // literally shows reserved -> used, i.e. the one most wrong to leave stale after a GRN (M3).
+      void queryClient.invalidateQueries({ queryKey: ['budget'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })

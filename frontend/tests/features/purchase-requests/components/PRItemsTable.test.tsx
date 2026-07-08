@@ -12,8 +12,8 @@ const mockItems: PRItem[] = [
     description: 'Double A 80 GSM',
     quantity: 10,
     unit: 'reams',
-    estimatedUnitPrice: 150,
-    estimatedTotalPrice: 1500,
+    estimatedUnitPrice: '150',
+    estimatedTotalPrice: '1500',
   },
   {
     id: 102,
@@ -22,8 +22,8 @@ const mockItems: PRItem[] = [
     description: null,
     quantity: 24,
     unit: 'pcs',
-    estimatedUnitPrice: 12.5,
-    estimatedTotalPrice: 300,
+    estimatedUnitPrice: '12.5',
+    estimatedTotalPrice: '300',
   },
 ]
 
@@ -52,8 +52,8 @@ describe('PRItemsTable', () => {
             description: null,
             quantity: 1,
             unit: 'pcs',
-            estimatedUnitPrice: 0,
-            estimatedTotalPrice: 0,
+            estimatedUnitPrice: '0',
+            estimatedTotalPrice: '0',
           },
         ]}
         totalEstimatedAmount={0}

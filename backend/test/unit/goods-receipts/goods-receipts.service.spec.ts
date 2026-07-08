@@ -41,6 +41,7 @@ const createMockEntityManager = (po: Partial<PurchaseOrder>) => ({
     if (entity === PurchaseOrder) return Promise.resolve({ ...po });
     return Promise.resolve(null);
   }),
+  find: jest.fn().mockResolvedValue([]),
   count: jest.fn().mockResolvedValue(0),
   create: jest.fn().mockReturnValue(mockGrn),
   save: jest.fn().mockImplementation((entity, data) => Promise.resolve(data || mockGrn)),
@@ -320,7 +321,8 @@ describe('GoodsReceiptsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should scope GRN running number lookup to current year (yearly reset)', async () => {
+    it('should scope GRN running number to current year and not break past 9999 (L2)', async () => {
+      const year = new Date().getFullYear();
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
@@ -330,6 +332,13 @@ describe('GoodsReceiptsService', () => {
           });
         }
         return Promise.resolve(null);
+      });
+      // ปีนี้ออกถึง 9999 แล้ว — helper ต้องได้ 10000 (ไม่ใช่ slice(-4) → 0000 → 0001)
+      manager.find.mockResolvedValue([{ grnNumber: `GRN-${year}-9999` }]);
+      let generatedGrn = '';
+      manager.create.mockImplementation((entity: unknown, data: { grnNumber: string }) => {
+        if (entity === GoodsReceiptNote) generatedGrn = data.grnNumber;
+        return mockGrn;
       });
       manager.save.mockResolvedValue(mockGrn);
       mockDataSource.transaction.mockImplementation((cb: (m: MockManager) => unknown) =>
@@ -342,15 +351,11 @@ describe('GoodsReceiptsService', () => {
         items: [{ poItemId: 1, receivedQuantity: 1, condition: ItemCondition.GOOD }],
       });
 
-      const year = new Date().getFullYear();
-      // GRN number มาจาก MAX(grnNumber) ของปีปัจจุบัน (findOne + ORDER BY DESC) ไม่ใช่ count
-      const grnFindArgs = callsOf(manager.findOne).find((c) => c[0] === GoodsReceiptNote);
-      const grnOpts = grnFindArgs?.[1] as {
-        where: { grnNumber: { value: string } };
-        order: { grnNumber: string };
-      };
+      // running number มาจาก MAX(grnNumber) numeric ของปีปัจจุบัน (find + nextRunningSeq) ไม่ใช่ count/lexical
+      const grnFindArgs = callsOf(manager.find).find((c) => c[0] === GoodsReceiptNote);
+      const grnOpts = grnFindArgs?.[1] as { where: { grnNumber: { value: string } } };
       expect(grnOpts.where.grnNumber.value).toBe(`GRN-${year}-%`);
-      expect(grnOpts.order.grnNumber).toBe('DESC');
+      expect(generatedGrn).toBe(`GRN-${year}-10000`);
     });
 
     it('should NOT count damaged items toward receivedQuantity (PO stays partially_received)', async () => {

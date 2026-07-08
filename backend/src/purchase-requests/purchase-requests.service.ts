@@ -21,7 +21,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
-import { formatRunningNumber } from '../common/running-number';
+import { formatRunningNumber, nextRunningSeq } from '../common/running-number';
 import { mapStatsRows, PrStatsResponse } from './pr-stats.util';
 import {
   buildMonthWindow,
@@ -52,14 +52,13 @@ export class PurchaseRequestsService {
   private async generatePrNumber(): Promise<string> {
     const year = new Date().getFullYear();
     // นับเฉพาะ PR ของปีปัจจุบัน (prefix PR-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen เลขซ้ำ → 23505.
-    // suffix เป็น zero-padded 4 หลัก ดังนั้น ORDER BY แบบ lexical = numeric order ภายใน prefix ปีเดียวกัน
-    const latest = await this.prRepository.findOne({
+    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
+    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    const rows = await this.prRepository.find({
       where: { prNumber: Like(`PR-${year}-%`) },
-      order: { prNumber: 'DESC' },
-      select: { id: true, prNumber: true },
+      select: { prNumber: true },
     });
-    const next = latest ? parseInt(latest.prNumber.slice(-4), 10) + 1 : 1;
+    const next = nextRunningSeq(rows.map((r) => r.prNumber));
     return formatRunningNumber('PR', year, next);
   }
 
@@ -304,20 +303,26 @@ export class PurchaseRequestsService {
     if (dto.requiredDate) pr.requiredDate = dto.requiredDate;
 
     if (dto.items) {
-      await this.prItemRepository.delete({ prId: id });
-      const newItems = dto.items.map((item) =>
-        this.prItemRepository.create({
-          prId: id,
-          itemName: item.itemName,
-          description: item.description,
-          quantity: item.quantity,
-          unit: item.unit,
-          estimatedUnitPrice: item.estimatedUnitPrice,
-          estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
-        }),
-      );
-      pr.items = await this.prItemRepository.save(newItems);
-      pr.totalEstimatedAmount = sumMoney(pr.items.map((item) => item.estimatedTotalPrice));
+      // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
+      // draft PR จะเหลือ 0 item + totalEstimatedAmount stale (pattern เดียวกับ PO update)
+      const items = dto.items;
+      return this.dataSource.transaction(async (manager) => {
+        await manager.delete(PurchaseRequestItem, { prId: id });
+        const newItems = items.map((item) =>
+          manager.create(PurchaseRequestItem, {
+            prId: id,
+            itemName: item.itemName,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            estimatedUnitPrice: item.estimatedUnitPrice,
+            estimatedTotalPrice: itemTotal(item.quantity, item.estimatedUnitPrice),
+          }),
+        );
+        pr.items = await manager.save(PurchaseRequestItem, newItems);
+        pr.totalEstimatedAmount = sumMoney(pr.items.map((item) => item.estimatedTotalPrice));
+        return manager.save(PurchaseRequest, pr);
+      });
     }
 
     return this.prRepository.save(pr);

@@ -42,7 +42,7 @@ export function ApprovalQueue() {
                   {' · '}
                   <span>{pr.requester.fullName}</span>
                   {' · '}
-                  <span>{formatCurrency(pr.totalEstimatedAmount)}</span>
+                  <span>{formatCurrency(Number(pr.totalEstimatedAmount))}</span>
                 </p>
               </div>
               <Button asChild size="sm" className="shrink-0">

@@ -399,6 +399,23 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(403);
   });
 
+  // L6: POST GRN = PROCUREMENT_OFFICER เท่านั้น (guard ตัดก่อน validation — ไม่ต้องส่ง body จริง)
+  it('POST /api/v1/goods-receipts — 403 for employee', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({})
+      .expect(403);
+  });
+
+  it('POST /api/v1/goods-receipts — 403 for manager', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/goods-receipts')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({})
+      .expect(403);
+  });
+
   it('GET /api/v1/purchase-orders — manager allowed (200)', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/purchase-orders')
@@ -588,6 +605,26 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     expect(afterReserved - before).toBeCloseTo(4000, 2);
   });
 
+  // M5: FE เคลียร์ notes ด้วยการส่ง null — contract ที่ BE ต้องคงไว้
+  // (omit field = ไม่แตะค่าเดิม จึงใช้เคลียร์ไม่ได้; IsOptional ข้าม null → ผ่าน validation)
+  it('PATCH /api/v1/purchase-orders/:id — notes: null clears a previously saved note', async () => {
+    const draftPoId = await freshDraftPo(1000);
+
+    const saved = await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ notes: 'ส่งที่ชั้น 5' })
+      .expect(200);
+    expect((saved.body as PurchaseOrderResponse).notes).toBe('ส่งที่ชั้น 5');
+
+    const cleared = await request(app.getHttpServer())
+      .patch(`/api/v1/purchase-orders/${draftPoId}`)
+      .set('Authorization', `Bearer ${poToken}`)
+      .send({ notes: null })
+      .expect(200);
+    expect((cleared.body as PurchaseOrderResponse).notes).toBeNull();
+  });
+
   // --- Slice A filters (placed at end of suite: by here poId is completed, a cancelled PO exists
   //     from the cancel-flow test, draft POs exist from the PATCH tests, and exactly the partial +
   //     complete GRNs were created on poId — so every assertion is exercised against real rows) ---
@@ -631,6 +668,30 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(200);
     const allRows = (all.body as Paginated<PurchaseOrderResponse>).data;
     expect(allRows.some((po) => po.status === 'completed')).toBe(true);
+  });
+
+  it('GET /api/v1/purchase-orders?withReceipts=true — returns only partially_received/completed', async () => {
+    // runs right after the receivable test, so the acknowledged ackPoId it created is a live
+    // negative control (acknowledged has no GRN → must NOT appear in the history filter), and
+    // poId (received in full earlier in the suite) is a completed positive control.
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/purchase-orders?withReceipts=true&limit=100')
+      .set('Authorization', `Bearer ${poToken}`)
+      .expect(200);
+
+    const rows = (res.body as Paginated<PurchaseOrderResponse>).data;
+    expect(rows).toBeInstanceOf(Array);
+    // positive: the completed poId IS returned (non-vacuous — poId reached completed via GRNs)
+    expect(rows.some((po) => po.id === poId && po.status === 'completed')).toBe(true);
+    // every returned row has a GRN (partial or complete)
+    for (const po of rows) {
+      expect(['partially_received', 'completed']).toContain(po.status);
+    }
+    // negative control: acknowledged (ackPoId, no GRN yet), draft, sent, cancelled must NOT leak
+    const leaked = rows.filter((po) =>
+      ['draft', 'sent', 'acknowledged', 'cancelled'].includes(po.status),
+    );
+    expect(leaked).toHaveLength(0);
   });
 
   it('GET /api/v1/goods-receipts?status=partial — returns only partial GRNs', async () => {

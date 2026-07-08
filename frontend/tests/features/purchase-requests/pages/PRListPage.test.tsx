@@ -41,7 +41,7 @@ const mockPR: PurchaseRequest = {
   prNumber: 'PR-2025-0001',
   title: 'Office Supplies',
   status: 'draft',
-  totalEstimatedAmount: 5000,
+  totalEstimatedAmount: '5000',
   quarter: null,
   requiredDate: '2025-02-01',
   requesterId: 1,

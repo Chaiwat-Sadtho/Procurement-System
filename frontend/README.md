@@ -1,55 +1,55 @@
 # Frontend — Procurement & Vendor Management UI
 
-React SPA สำหรับระบบจัดซื้อ-จัดจ้าง (Purchase Request → Approval → Purchase Order → Goods Receipt) พร้อม Budget Control และ Dashboard — UI ภาษาไทย, รองรับ dark mode
+React SPA for a procurement system (Purchase Request → Approval → Purchase Order → Goods Receipt) with Budget Control and a Dashboard — Thai-language UI with dark mode support
 
-> ส่วนนี้คือ **web client** ที่คุยกับ [backend API](../backend/README.md) ผ่าน REST — สำหรับการรันทั้ง stack ด้วย Docker คำสั่งเดียว ดู [`../README.md`](../README.md)
+> This is the **web client** that talks to the [backend API](../backend/README.md) over REST — to run the whole stack with a single Docker command, see [`../README.md`](../README.md)
 
 ## Tech Stack
 
-| ด้าน | เครื่องมือ |
+| Area | Tool |
 |---|---|
-| Framework | React 19 + TypeScript (build ด้วย Vite 8) |
+| Framework | React 19 + TypeScript (built with Vite 8) |
 | Routing | React Router 7 (`react-router-dom`) |
 | Server state | TanStack Query 5 (`@tanstack/react-query`) |
-| HTTP | `axios` (instance กลาง + interceptor) |
+| HTTP | `axios` (shared instance + interceptor) |
 | Forms | React Hook Form 7 + Zod 4 (`@hookform/resolvers`) |
 | Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives) + `lucide-react` icons |
-| Charts | `recharts` |
+| Charts | ApexCharts (`react-apexcharts`) |
 | Theme | `next-themes` (light/dark) |
 | Toast | `sonner` |
 | Font | IBM Plex Sans Thai + IBM Plex Mono (`@fontsource`) |
 | Testing | Vitest 4 + Testing Library + jsdom |
 
-## โครงสร้าง (`src/`)
+## Structure (`src/`)
 
-จัดแบบ **feature-folder** — baseline ของแต่ละ feature คือ `api.ts` + `pages/` แล้วเพิ่ม `hooks/` / `components/` / `lib/` / `types.ts` ตามความซับซ้อน (auth/settings เป็น feature เล็ก มีแค่ `api.ts` + `pages/`; settings มี `layout/` เพิ่ม)
+Organized as **feature folders** — each feature's baseline is `api.ts` + `pages/`, then adds `hooks/` / `components/` / `lib/` / `types.ts` as complexity grows (auth/settings are small features with just `api.ts` + `pages/`; settings adds a `layout/`)
 
-| โฟลเดอร์ | หน้าที่ |
+| Folder | Responsibility |
 |---|---|
-| `app/` | `providers.tsx` (QueryClient + theme + toaster) · `router.tsx` (เส้นทาง + `ProtectedRoute`) |
-| `features/auth` | login + `/auth/me` API (`api.ts` + `LoginPage`); token แนบ/ลบใน `shared/lib/axios` interceptor |
-| `features/dashboard` | สรุปภาพรวม — stat cards, donut, recent PRs, budget summary, attention list |
+| `app/` | `providers.tsx` (QueryClient + theme + toaster) · `router.tsx` (routes + `ProtectedRoute`) |
+| `features/auth` | login + `/auth/me` API (`api.ts` + `LoginPage`); token attached/removed in the `shared/lib/axios` interceptor |
+| `features/dashboard` | overview — stat cards, donut, recent PRs, budget summary, attention list |
 | `features/purchase-requests` | PR list/detail/form + status badge + filter |
-| `features/purchase-orders` | PO list/detail/form + budget preview + ให้คะแนนผู้ขาย |
-| `features/goods-receipts` | GRN (บันทึกรับของ) list/detail/form |
-| `features/vendors` | vendor list/detail/form + หมวดหมู่ + blacklist + rating |
+| `features/purchase-orders` | PO list/detail/form + budget preview + vendor rating |
+| `features/goods-receipts` | GRN (goods receipt) list/detail/form |
+| `features/vendors` | vendor list/detail/form + categories + blacklist + rating |
 | `features/budgets` | budget list/detail/form + breakdown bar + transactions |
-| `features/users` | user management (เฉพาะ procurement_officer) |
-| `features/settings` | โปรไฟล์ + เปลี่ยนรหัสผ่าน |
-| `shared/components` | composite UI ใช้ร่วม (`AppLayout`, `Sidebar`, `PageHeader`, `ProtectedRoute`, `ListSearchPrompt` + `List*`, `DateField`, `ConfirmDialog`, `StarRating`, `ThemeToggle`) |
+| `features/users` | user management (procurement_officer only) |
+| `features/settings` | profile + change password |
+| `shared/components` | shared composite UI (`AppLayout`, `Sidebar`, `PageHeader`, `ProtectedRoute`, `ListSearchPrompt` + `List*`, `DateField`, `ConfirmDialog`, `StarRating`, `ThemeToggle`) |
 | `shared/components/ui` | shadcn/ui primitives (button, card, table, dialog, select, form, ...) |
-| `shared/hooks` | `useCurrentUser` · `usePagination` · `useUrlFilters` (sync filter ↔ URL) |
+| `shared/hooks` | `useCurrentUser` · `usePagination` · `useUrlFilters` (sync filters ↔ URL) |
 | `shared/lib` | `axios` (API client) · `utils` (`cn`, `formatCurrency`) · `buddhistDate` · `getApiErrorMessage` · `safeNum` |
 
-## การเชื่อมต่อ backend
+## Connecting to the backend
 
-- dev server proxy `/api/*` → `http://localhost:3000` (ตั้งใน [`vite.config.ts`](vite.config.ts)) → เรียก API ด้วย path สัมพัทธ์ `/api/v1/...` ได้เลย ไม่ต้องตั้ง base URL
-- **ไม่มี environment variable** ฝั่ง frontend — base path มาจาก proxy (dev) หรือ nginx (prod ใน Docker)
-- import ด้วย alias `@` → `src/` (เช่น `@/shared/components/ui/button`)
+- the dev server proxies `/api/*` → `http://localhost:3000` (configured in [`vite.config.ts`](vite.config.ts)) → you can call the API with relative paths like `/api/v1/...` with no base URL to configure
+- **no frontend environment variables** — the base path comes from the proxy (dev) or nginx (prod, in Docker)
+- import via the `@` alias → `src/` (e.g. `@/shared/components/ui/button`)
 
-## Local development (รัน frontend แยก)
+## Local development (run the frontend standalone)
 
-ต้องมี backend รันอยู่ที่ `:3000` ก่อน (ดู [backend README](../backend/README.md)) เพราะ proxy ชี้ไปที่นั่น
+The backend must be running on `:3000` first (see [backend README](../backend/README.md)) because the proxy points there
 
 ```bash
 cd frontend
@@ -59,25 +59,25 @@ npm run dev          # http://localhost:5173 (proxy /api → :3000)
 
 ## npm scripts
 
-| คำสั่ง | ทำอะไร |
+| Command | What it does |
 |---|---|
-| `npm run dev` | dev server (Vite, HMR) ที่ `:5173` |
+| `npm run dev` | dev server (Vite, HMR) on `:5173` |
 | `npm run build` | type-check (`tsc -b`) + production build → `dist/` |
-| `npm run preview` | serve `dist/` ที่ build แล้วไว้ลองดู |
+| `npm run preview` | serve the built `dist/` for a quick look |
 | `npm run lint` | ESLint |
-| `npm run format` | Prettier (`--write` ใน `src/`) |
+| `npm run format` | Prettier (`--write` in `src/`) |
 | `npm run test` | unit tests (Vitest, watch) |
-| `npm run test:run` | unit tests รันครั้งเดียว (ใช้ใน CI) |
+| `npm run test:run` | unit tests, single run (used in CI) |
 
 ## Key patterns
 
-- **Server state = TanStack Query** — ทุก data fetch ผ่าน custom hook (`useXxx`) ที่ห่อ `useQuery`/`useMutation`; mutation `invalidateQueries` ให้ list/detail refetch เอง ไม่เก็บ server data ใน global store
-- **Forms = RHF + Zod** — schema validation ต้อง **ตรงกับ backend DTO** (login = required-only, register/เปลี่ยนรหัสผ่าน = min 8); ปุ่ม submit disable จนกว่า `isDirty`/`isValid`
-- **Search-first list pages** — หน้า list เริ่มด้วย `ListSearchPrompt` (query `enabled` เมื่อ `hasSearched`) ไม่ดึงทั้งตารางตั้งแต่แรก
-- **Filters-in-URL** — `useUrlFilters` sync ตัวกรอง/หน้า ↔ query string ครบทุกหน้า list (refresh/แชร์ลิงก์ได้, back/forward ทำงาน)
-- **Role-based UI** — `ProtectedRoute` + `useCurrentUser`; ปุ่ม/เมนู/หน้า render ตาม role (employee / manager / procurement_officer)
-- **Thai-first UI** — label/ข้อความเป็นไทย, แสดงวันที่แบบพุทธศักราช (`buddhistDate`), จำนวนเงินผ่าน `formatCurrency`
-- **Error handling** — interceptor ใน `shared/lib/axios.ts` + `getApiErrorMessage` แปลง error เป็นข้อความ + `sonner` toast
+- **Server state = TanStack Query** — every data fetch goes through a custom hook (`useXxx`) wrapping `useQuery`/`useMutation`; mutations `invalidateQueries` so list/detail refetch themselves — no server data in a global store
+- **Forms = RHF + Zod** — schema validation must **match the backend DTO** (login = required-only, register/change-password = min 8); the submit button is disabled until `isDirty`/`isValid`
+- **Search-first list pages** — list pages start with `ListSearchPrompt` (query `enabled` once `hasSearched`) instead of loading the whole table upfront
+- **Filters-in-URL** — `useUrlFilters` syncs filters/page ↔ query string on every list page (refresh/share links work, back/forward work)
+- **Role-based UI** — `ProtectedRoute` + `useCurrentUser`; buttons/menus/pages render by role (employee / manager / procurement_officer)
+- **Thai-first UI** — Thai labels/text, Buddhist-era dates (`buddhistDate`), amounts via `formatCurrency`
+- **Error handling** — interceptor in `shared/lib/axios.ts` + `getApiErrorMessage` turns errors into messages + `sonner` toast
 
 ## Testing
 
@@ -85,4 +85,4 @@ npm run dev          # http://localhost:5173 (proxy /api → :3000)
 npm run test:run     # Vitest (jsdom + Testing Library)
 ```
 
-หมายเหตุ: Vitest (transform) **ไม่จับ type error** จึงต้องรัน `npm run build` (มี `tsc -b`) และ `npm run lint` ก่อน merge ทุกครั้ง เทสต์เน้นพฤติกรรมที่ผู้ใช้เห็น (render, interaction) ผ่าน Testing Library — query ด้วย role/text ไม่ผูกกับ implementation detail
+Note: Vitest (transform) **does not catch type errors**, so run `npm run build` (which runs `tsc -b`) and `npm run lint` before every merge. Tests focus on user-visible behavior (render, interaction) via Testing Library — querying by role/text, not tied to implementation details

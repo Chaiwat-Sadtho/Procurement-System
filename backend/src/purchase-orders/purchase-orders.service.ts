@@ -21,7 +21,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { itemTotal, sumMoney } from '../common/money';
-import { formatRunningNumber } from '../common/running-number';
+import { formatRunningNumber, nextRunningSeq } from '../common/running-number';
 import { CacheService } from '../cache/cache.service';
 import { CacheKeys } from '../cache/cache-keys';
 
@@ -51,14 +51,13 @@ export class PurchaseOrdersService {
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
     // นับเฉพาะ PO ของปีปัจจุบัน (prefix PO-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขล่าสุดของปี (MAX) แทนการนับแถว เพราะหลัง DELETE count จะต่ำกว่า suffix สูงสุด → gen เลขซ้ำ → 23505.
-    // suffix เป็น zero-padded 4 หลัก ดังนั้น ORDER BY แบบ lexical = numeric order ภายใน prefix ปีเดียวกัน
-    const latest = await this.poRepository.findOne({
+    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
+    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    const rows = await this.poRepository.find({
       where: { poNumber: Like(`PO-${year}-%`) },
-      order: { poNumber: 'DESC' },
-      select: { id: true, poNumber: true },
+      select: { poNumber: true },
     });
-    const next = latest ? parseInt(latest.poNumber.slice(-4), 10) + 1 : 1;
+    const next = nextRunningSeq(rows.map((r) => r.poNumber));
     return formatRunningNumber('PO', year, next);
   }
 
@@ -208,7 +207,7 @@ export class PurchaseOrdersService {
     data: PurchaseOrder[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    const { page = 1, limit = 20, status, vendorId, prId, receivable } = query;
+    const { page = 1, limit = 20, status, vendorId, prId, receivable, withReceipts } = query;
 
     const qb = this.poRepository
       .createQueryBuilder('po')
@@ -222,6 +221,12 @@ export class PurchaseOrdersService {
     if (receivable)
       qb.andWhere('po.status IN (:...receivable)', {
         receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
+      });
+    // POs that already have a GRN (history filter) — partially_received + completed.
+    // acknowledged ถูกตัดออก (ยังไม่มี GRN) ต่างจาก receivable ที่รวม acknowledged.
+    if (withReceipts)
+      qb.andWhere('po.status IN (:...withReceipts)', {
+        withReceipts: [PoStatus.PARTIALLY_RECEIVED, PoStatus.COMPLETED],
       });
 
     const [data, total] = await qb

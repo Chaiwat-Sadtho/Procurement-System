@@ -1,7 +1,9 @@
 {
-  "name": "frontend",
+  "name": "procurement-system-frontend",
+  "description": "React SPA for a Procurement & Vendor Management System: purchase requests, approvals, purchase orders, goods receipts, budget control, and dashboard. Built with React 19, Vite, TanStack Query, and Tailwind + shadcn/ui.",
+  "author": "Chaiwat Sadtho",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "engines": {
     "node": ">=24",

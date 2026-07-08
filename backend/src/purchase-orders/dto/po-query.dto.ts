@@ -46,4 +46,14 @@ export class PoQueryDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   receivable?: boolean;
+
+  // history-filter twin of `receivable`: PO ที่มี GRN แล้ว = partially_received + completed
+  // (GRN list dropdown ใช้กรองประวัติ — ต่างจาก create picker ที่ใช้ receivable). coerce เดียวกัน.
+  @ApiPropertyOptional({
+    description: 'เฉพาะ PO ที่มีการรับของแล้ว (partially_received + completed)',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  withReceipts?: boolean;
 }
