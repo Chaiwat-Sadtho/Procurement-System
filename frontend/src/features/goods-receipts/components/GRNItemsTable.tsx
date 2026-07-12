@@ -13,8 +13,8 @@ interface GRNItemsTableProps {
   items: GoodsReceiptItem[]
 }
 
-// Detail read-only received items (spec §6: ชื่อสินค้า | สั่ง | รับครั้งนี้ | สภาพ).
-// GRN has no total → no footer (cf. POItemsTable). Decimals are string → Number() for display.
+// Detail read-only received items. GRN has no total → no footer (cf. POItemsTable).
+// Decimals are string → Number() for display.
 export function GRNItemsTable({ items }: GRNItemsTableProps) {
   return (
     <div className="rounded-md border">

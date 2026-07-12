@@ -50,7 +50,7 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, hasSearched])
 
-  // gotcha #47 (TESTING.md): a commit/clear triggered by RHF handleSubmit runs in an
+  // a commit/clear triggered by RHF handleSubmit runs in an
   // async microtask where setSearchParams (= navigate) is a no-op — only setState survives.
   // So commit/clear record intent via setState (action); the URL is written here in a normal
   // post-commit effect (React-managed flow → the write lands). The effect keys on `action`

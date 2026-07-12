@@ -56,9 +56,8 @@ export class GoodsReceiptsService {
         );
       }
 
-      // 2. Generate GRN number — ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว —
-      // count ต่ำกว่า suffix สูงสุดหลัง DELETE → gen ซ้ำ → 23505; ORDER BY lexical + slice(-4) เดิมพังเมื่อ > 9999 (L2).
-      // (อยู่ใน transaction เดียวกัน)
+      // 2. Generate GRN number ในปีเดียวกัน — หา MAX แบบ numeric จากเลขทั้งปี
+      // (นับแถวพังหลัง DELETE, lexical sort พังเมื่อเลข > 9999; อยู่ใน transaction เดียวกัน)
       const year = new Date().getFullYear();
       const grnRows = await manager.find(GoodsReceiptNote, {
         where: { grnNumber: Like(`GRN-${year}-%`) },
@@ -67,7 +66,7 @@ export class GoodsReceiptsService {
       const nextGrn = nextRunningSeq(grnRows.map((r) => r.grnNumber));
       const grnNumber = formatRunningNumber('GRN', year, nextGrn);
 
-      // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass guard P4-3)
+      // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass over-receipt guard)
       const effectiveByPoItem = new Map<number, number>();
       const grnItems = dto.items.map((dtoItem) => {
         const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
@@ -77,7 +76,7 @@ export class GoodsReceiptsService {
         // ของชำรุดไม่นับเป็นของที่รับจริง — เฉพาะ condition=good เท่านั้นที่นับเข้า receivedQuantity
         const effectiveQty =
           dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
-        // P4-3: ordered ต้องคลุม received สะสมเดิม + ของที่รับใน payload นี้ทั้งหมด (รวมบรรทัดซ้ำ poItemId เดียวกัน)
+        // ordered ต้องคลุม received สะสมเดิม + ของที่รับใน payload นี้ทั้งหมด (รวมบรรทัดซ้ำ poItemId เดียวกัน)
         const priorInRequest = effectiveByPoItem.get(dtoItem.poItemId) ?? 0;
         const totalAfterReceipt = Number(poItem.receivedQuantity) + priorInRequest + effectiveQty;
         if (totalAfterReceipt > Number(poItem.quantity)) {
@@ -148,12 +147,12 @@ export class GoodsReceiptsService {
           },
         });
         if (prData && prData.departmentId != null) {
-          // P5-5: ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
+          // ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
           await this.budgetsService.consumeAmount(
             prData.departmentId,
             prData.fiscalYear ?? new Date().getFullYear(),
-            prData.quarter, // P5-3: consume งบไตรมาสเดียวกับที่ reserve
-            Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) → release ยอด PO ไม่ใช่ PR estimate
+            prData.quarter, // consume งบไตรมาสเดียวกับที่ reserve
+            Number(po.totalAmount), // reserved สะท้อนยอด PO จริง (ปรับตอน create) → release ยอด PO ไม่ใช่ PR estimate
             Number(po.totalAmount),
             manager,
           );

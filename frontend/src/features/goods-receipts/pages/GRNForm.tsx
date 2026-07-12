@@ -22,7 +22,7 @@ interface GRNFormProps {
   defaultValues: GrnFormValues
 }
 
-// PO analog POForm (create path only). GRN is immutable (contract §7): no mode union,
+// PO analog POForm (create path only). GRN is immutable: no mode union,
 // no toUpdatePayload/updateMutation, no budget hooks/preview, no owner check, no PR/vendor
 // Combobox — the host (GRNFormPage) has already chosen the PO.
 export function GRNForm({ po, defaultValues }: GRNFormProps) {
@@ -39,7 +39,7 @@ export function GRNForm({ po, defaultValues }: GRNFormProps) {
   const isPending = createMutation.isPending
   const { isDirty, isValid } = form.formState
 
-  // feed the presentational preview the two figures it compares per line (§4A.2+4)
+  // feed the presentational preview the two figures it compares per line
   const watchedItems = useWatch({ control: form.control, name: 'items' })
   const previewItems = (watchedItems ?? []).map((line) => ({
     remaining: line.remaining,

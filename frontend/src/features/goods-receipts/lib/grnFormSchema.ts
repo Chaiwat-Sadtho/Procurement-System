@@ -22,7 +22,7 @@ const lineSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['good'], message: 'ต้องไม่ติดลบ' })
     if (damaged < 0)
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['damaged'], message: 'ต้องไม่ติดลบ' })
-    // FE-bound stricter than backend (spec §7): good + damaged ≤ remaining.
+    // FE-bound stricter than backend: good + damaged ≤ remaining.
     // Round the sum to 2dp first so float imprecision (0.1+0.2=0.30000000000000004) does not falsely reject an at-bound receive.
     if (Number((good + damaged).toFixed(2)) > line.remaining)
       ctx.addIssue({
@@ -40,8 +40,8 @@ export const grnFormSchema = z
     items: z.array(lineSchema),
   })
   .superRefine((values, ctx) => {
-    // ≥1 emitted DTO item (ArrayMinSize 1) — threshold mirrors the mapper's 0.01 floor (spec §7 +
-    // backend @Min(0.01)) so a schema-valid form never maps to an empty items[] the backend would 400.
+    // ≥1 emitted DTO item (ArrayMinSize 1) — threshold mirrors the mapper's 0.01 floor (backend
+    // @Min(0.01)) so a schema-valid form never maps to an empty items[] the backend would 400.
     const emitted = values.items.some((l) => safeNum(l.good) >= 0.01 || safeNum(l.damaged) >= 0.01)
     if (!emitted)
       ctx.addIssue({
@@ -53,7 +53,7 @@ export const grnFormSchema = z
 
 export type GrnFormValues = z.infer<typeof grnFormSchema>
 
-// damaged-split mapper (spec §7, test 4 cases): per line emit good item if good>0
+// damaged-split mapper: per line emit good item if good>0
 // AND damaged item if damaged>0; drop empty; each emitted qty ≥ 0.01.
 export function toCreatePayload(values: GrnFormValues): CreateGoodsReceiptPayload {
   const notes = values.notes?.trim()

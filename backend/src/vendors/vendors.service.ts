@@ -114,7 +114,7 @@ export class VendorsService {
     if (isBlacklisted !== undefined) {
       qb.andWhere('vendor.isBlacklisted = :isBlacklisted', { isBlacklisted });
     }
-    // filter ด้วย subquery แทน andWhere บน select join เพื่อไม่ให้ categories array ของ vendor ถูกตัดเหลือเฉพาะ category ที่ match (P3-2)
+    // filter ด้วย subquery แทน andWhere บน select join เพื่อไม่ให้ categories array ของ vendor ถูกตัดเหลือเฉพาะ category ที่ match
     if (categoryId) {
       qb.andWhere(
         (qb2) => {

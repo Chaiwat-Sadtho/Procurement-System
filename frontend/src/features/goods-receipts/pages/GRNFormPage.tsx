@@ -11,7 +11,7 @@ import { createDefaultValues } from '../lib/grnFormSchema'
 // Host for the GRN create flow. Unlike POFormPage's create path (which seeds the form
 // immediately), a GRN must first pick a receivable PO, then load that PO in full so
 // createDefaultValues can build one form line per still-outstanding PO item. The picker
-// therefore lives outside GRNForm; GRN is immutable (contract §7) so there is no edit branch.
+// therefore lives outside GRNForm; GRN is immutable so there is no edit branch.
 export function GRNFormPage() {
   const [selectedPoId, setSelectedPoId] = useState(0)
 

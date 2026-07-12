@@ -20,7 +20,7 @@ export function usePurchaseRequest(id: number) {
 
   // approve reserves the dept budget → also refresh the budget list/preview (['budgets']) and
   // the detail money-trail page (['budget'] — distinct prefix). Dashboard budgets + eligible
-  // picker are already covered by invalidate()'s broad prefixes above (M3).
+  // picker are already covered by invalidate()'s broad prefixes above.
   function invalidateApprove() {
     invalidate()
     void queryClient.invalidateQueries({ queryKey: ['budgets'] })

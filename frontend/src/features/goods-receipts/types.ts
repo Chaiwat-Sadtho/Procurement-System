@@ -17,7 +17,7 @@ export interface GoodsReceiptItem {
     quantity: string // decimal(10,2) → string
     unit: string
   }
-  receivedQuantity: string // decimal(10,2) → string (§4A: Number() ก่อนคำนวณ)
+  receivedQuantity: string // decimal(10,2) → string (Number() ก่อนคำนวณ)
   condition: ItemCondition
 }
 

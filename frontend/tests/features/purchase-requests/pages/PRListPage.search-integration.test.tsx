@@ -11,11 +11,11 @@ import { PRListPage } from '@/features/purchase-requests/pages/PRListPage'
 // This guards that a real-form submit actually lands q + the filters + page in the URL
 // (wiring + the effect firing). Non-vacuity: stub commit to a no-op → this test fails.
 //
-// NOTE (#47, verified 2026-06-07): jsdom+RTL cannot reproduce the real-browser navigate
-// no-op. Whether commit writes the URL directly in the RHF microtask or via the effect,
-// the navigate still commits here (RTL flushes the microtask inside React's batching —
-// deferred, never dropped). So this test does NOT distinguish the direct-write regression
-// from the effect fix; that distinction is browser-only (manual verify). See TESTING.md #47.
+// NOTE: jsdom+RTL cannot reproduce the real-browser navigate no-op. Whether commit writes
+// the URL directly in the RHF microtask or via the effect, the navigate still commits here
+// (RTL flushes the microtask inside React's batching — deferred, never dropped). So this
+// test does NOT distinguish the direct-write regression from the effect fix; that
+// distinction is browser-only (manual verify).
 vi.mock('@/features/purchase-requests/hooks/usePurchaseRequests', () => ({ usePurchaseRequests: vi.fn() }))
 vi.mock('@/features/purchase-requests/hooks/usePRMutations', () => ({ usePRMutations: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))

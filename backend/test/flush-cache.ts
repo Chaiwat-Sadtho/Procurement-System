@@ -28,7 +28,7 @@ function isReachable(host: string, port: number, timeoutMs: number): Promise<boo
  * ล้าง Redis logical DB ของ e2e (REDIS_DB) — เรียกจาก global-setup คู่กับ truncate Postgres
  * เพื่อให้ทุก run เริ่มด้วย cache สะอาด ไม่พึ่ง state ข้าม run.
  *
- * ทำไมต้องมี (#171): cache key ไม่มี prefix + Redis อยู่ข้าม run (docker volume) → หลัง
+ * ทำไมต้องมี: cache key ไม่มี prefix + Redis อยู่ข้าม run (docker volume) → หลัง
  * TRUNCATE ... RESTART IDENTITY user ที่ register ใหม่ได้ id เดิม แล้ว GET /auth/me HIT
  * `auth:me:<id>` ของ run ก่อน คืน email เก่า = false-fail ที่ขึ้นกับ state ภายนอก ไม่ใช่ DB.
  *

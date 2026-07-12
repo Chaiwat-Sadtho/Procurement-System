@@ -10,7 +10,7 @@ import { UsersPage } from '@/features/users/pages/UsersPage'
 // This guards that a real-form submit actually lands q + search in the URL (wiring +
 // the effect firing). Non-vacuity: stub the page's commit to a no-op → this test fails.
 //
-// NOTE (#47, TESTING.md): jsdom+RTL cannot reproduce the real-browser navigate no-op.
+// NOTE: jsdom+RTL cannot reproduce the real-browser navigate no-op.
 // Whether commit writes the URL directly in the RHF microtask or via the effect, the
 // navigate still commits here (RTL flushes the microtask inside React's batching). So this
 // test does NOT distinguish the direct-write regression from the effect fix; that

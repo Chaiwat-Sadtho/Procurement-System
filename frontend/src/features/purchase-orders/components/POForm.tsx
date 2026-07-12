@@ -48,7 +48,7 @@ export function POForm(props: POFormProps) {
   })
 
   const { data: eligible, isLoading: prsLoading } = useEligiblePRs()
-  // pull a large page of vendors for the dropdown; filter blacklist client-side (§6.3)
+  // pull a large page of vendors for the dropdown; filter blacklist client-side
   const { data: vendorsPage } = useVendors({ limit: 100 }, { enabled: true })
 
   const prList = useMemo(() => eligible?.data ?? [], [eligible?.data])
@@ -77,7 +77,7 @@ export function POForm(props: POFormProps) {
     .filter((v) => !v.isBlacklisted)
     .map((v) => ({ value: String(v.id), label: v.name }))
 
-  // budget preview (§4A): the form resolves the matching budget row itself
+  // budget preview: the form resolves the matching budget row itself
   // (useBudgetForPR + matchBudgetForPR, exact-quarter no-fallback) and feeds the
   // presentational POBudgetPreview the budget + the two figures it compares.
   const watchedItems = useWatch({ control: form.control, name: 'items' })

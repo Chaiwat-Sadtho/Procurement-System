@@ -104,7 +104,7 @@ export class NotificationsService {
     return this.notificationRepository.count({ where: { userId, isRead: false } });
   }
 
-  // Best-effort real-time push. Never lets a socket error break the DB write (invariant #10).
+  // Best-effort real-time push. Never lets a socket error break the DB write.
   private safeEmit(n: Notification): void {
     try {
       this.gateway.emitToUser(n.userId, toNotificationDto(n));

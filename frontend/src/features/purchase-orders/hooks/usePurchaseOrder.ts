@@ -22,8 +22,8 @@ export function usePurchaseOrder(id: number) {
     void queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
   }
 
-  // cancel releases the reserved budget (P5-2) and returns the PR to the eligible-for-PO
-  // picker, so it must refresh both on top of the status caches (M3). ['budget'] (singular)
+  // cancel releases the reserved budget and returns the PR to the eligible-for-PO
+  // picker, so it must refresh both on top of the status caches. ['budget'] (singular)
   // is the detail money-trail page — a distinct prefix from ['budgets'].
   function invalidateCancel() {
     invalidate()

@@ -18,7 +18,7 @@ export const DEFAULT_USER_FILTERS: UserFilterValues = {
 
 /**
  * Client-side filter. `GET /users` returns the full array in memory, so the
- * list is cheap to filter on every keystroke (spec §2 D2 / §7).
+ * list is cheap to filter on every keystroke.
  */
 export function filterUsers(users: User[], filters: UserFilterValues): User[] {
   const search = filters.search.trim().toLowerCase()

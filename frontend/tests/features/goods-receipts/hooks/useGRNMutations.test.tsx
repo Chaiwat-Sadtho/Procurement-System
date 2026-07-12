@@ -12,7 +12,7 @@ import { goodsReceiptsApi } from '@/features/goods-receipts/api'
 import { useGRNMutations } from '@/features/goods-receipts/hooks/useGRNMutations'
 
 // created.poId (the resolved GoodsReceipt) drives the PO-detail/grn-history
-// invalidation prefix (contract §5). It is DELIBERATELY distinct from payload.poId
+// invalidation prefix. It is DELIBERATELY distinct from payload.poId
 // (9 vs 8) so the invalidation assertion only passes if onSuccess reads the response
 // (created.poId) and NOT the mutation variables (payload.poId) — pins the load-bearing source.
 const created = { id: 42, poId: 9, status: 'partial' } as GoodsReceipt
@@ -57,9 +57,9 @@ describe('useGRNMutations', () => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 9] })
       // PO list + receivable picker (prefix ['purchase-orders'])
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
-      // budget caches — a completing GRN consumes reserved -> used (spec §4A.6)
+      // budget caches — a completing GRN consumes reserved -> used
       expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
-      // ['budget'] (singular) = the detail money-trail page — distinct prefix from ['budgets'] (M3)
+      // ['budget'] (singular) = the detail money-trail page — distinct prefix from ['budgets']
       expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard', 'budgets'] })
       // exclusivity: exactly these 6 prefixes, no over-invalidation creep

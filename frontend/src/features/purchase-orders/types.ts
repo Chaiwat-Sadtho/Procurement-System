@@ -34,7 +34,7 @@ export interface POPrRef {
   fiscalYear: number | null
   departmentId: number | null
   department: PODeptRef | null
-  totalEstimatedAmount: string // decimal → string (§4A: Number() ก่อนคำนวณ)
+  totalEstimatedAmount: string // decimal → string (Number() ก่อนคำนวณ)
 }
 
 export interface POItem {
@@ -76,7 +76,7 @@ export interface POListParams extends PaginationParams {
 
 export type POListResponse = PaginatedResponse<PurchaseOrder>
 
-// GRN history (read-only) — GET /purchase-orders/:id/goods-receipts = bare array (§4 D6),
+// GRN history (read-only) — GET /purchase-orders/:id/goods-receipts = bare array,
 // findByPo() join relations: { items: true } → items มากับ array.
 // GoodsReceiptNote entity ไม่มี updatedAt (มีแค่ createdAt).
 export interface GoodsReceiptItemSummary {
@@ -118,7 +118,7 @@ export interface CreatePORequest {
 
 // PATCH /purchase-orders/:id body (UpdatePurchaseOrderDto — draft only):
 // แก้ได้เฉพาะ expectedDeliveryDate/notes/items (prId/vendorId immutable) = ตรง shape ของ UpdatePurchaseOrderDto เป๊ะ
-// notes รับ null ด้วย (M5): null = สั่งเคลียร์ค่าเดิม / omit = ไม่แตะ field
+// notes รับ null ด้วย: null = สั่งเคลียร์ค่าเดิม / omit = ไม่แตะ field
 export type UpdatePORequest = Partial<Omit<CreatePORequest, 'prId' | 'vendorId' | 'notes'>> & {
   notes?: string | null
 }

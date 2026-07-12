@@ -74,7 +74,7 @@ describe('UsersService', () => {
   });
 
   it('updateRole allows demoting an INACTIVE procurement officer even when one active PO remains', async () => {
-    // L1: demoting an already-inactive PO does not reduce the active-PO count,
+    // demoting an already-inactive PO does not reduce the active-PO count,
     // so the last-active-PO guard must not fire (mirrors updateStatus which checks isActive).
     mockRepo.findOne.mockResolvedValue({
       ...mockUser,

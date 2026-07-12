@@ -122,7 +122,7 @@ describe('usePurchaseOrder', () => {
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
-      // cancel releases budget + returns the PR to the eligible-for-PO picker (M3)
+      // cancel releases budget + returns the PR to the eligible-for-PO picker
       expect(spy).toHaveBeenCalledWith({
         queryKey: ['purchase-requests', { eligibleForPo: true }],
       })

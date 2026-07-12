@@ -53,7 +53,7 @@ describe('DepartmentsService', () => {
     });
 
     it('translates a unique-violation race (23505) into ConflictException', async () => {
-      // L3: app-level findOne check passes (concurrent insert) but the DB unique index rejects
+      // app-level findOne check passes (concurrent insert) but the DB unique index rejects
       // the second write — surface it as a clean 409, not a raw 500.
       mockDepartmentRepo.findOne.mockResolvedValue(null);
       mockDepartmentRepo.create.mockReturnValue(mockDepartment);

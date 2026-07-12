@@ -174,7 +174,7 @@ describe('PurchaseRequestsService', () => {
       expect(generatedPrNumber).toBe(`PR-${year}-0004`);
     });
 
-    it('should not break past 9999 when generating the PR number (L2)', async () => {
+    it('should not break past 9999 when generating the PR number', async () => {
       const year = new Date().getFullYear();
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockPrRepo.find.mockResolvedValue([{ prNumber: `PR-${year}-9999` }]);
@@ -283,7 +283,7 @@ describe('PurchaseRequestsService', () => {
     it('should approve a submitted PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
-      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // H2: โหลดใต้ lock ใน tx
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // โหลดใต้ lock ใน tx
 
       const result = await service.approve(1, 2);
       expect(result.status).toBe(PrStatus.APPROVED);
@@ -316,7 +316,7 @@ describe('PurchaseRequestsService', () => {
 
       await service.approve(1, 2);
 
-      // P5-3: reserve ต้องส่ง quarter (null = งบรายปี) ตาม signature (deptId, fiscalYear, quarter, amount, txManager)
+      // reserve ต้องส่ง quarter (null = งบรายปี) ตาม signature (deptId, fiscalYear, quarter, amount, txManager)
       expect(mockBudgetsService.reserveAmount).toHaveBeenCalledWith(
         mockSubmittedPr.departmentId,
         expect.any(Number),
@@ -326,7 +326,7 @@ describe('PurchaseRequestsService', () => {
       );
     });
 
-    it('P5-3: should reserve the PR quarter when approving a quarterly PR', async () => {
+    it('should reserve the PR quarter when approving a quarterly PR', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: 2 });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
       mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr, quarter: 2 });
@@ -342,9 +342,9 @@ describe('PurchaseRequestsService', () => {
       );
     });
 
-    // H2 (review 2026-07-07): เช็ค status นอก tx อย่างเดียวกัน race ไม่ได้ —
+    // เช็ค status นอก tx อย่างเดียวกัน race ไม่ได้ —
     // 2 approve พร้อมกัน = reserve ซ้ำ / approve ชน reject = reserved ค้างถาวร
-    it('H2: re-checks status under a row lock inside the tx — PR that already flipped is rejected without reserving', async () => {
+    it('re-checks status under a row lock inside the tx — PR that already flipped is rejected without reserving', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr }); // pre-read เห็น SUBMITTED
       mockUserRepo.findOne.mockResolvedValue(mockManager);
       // ใน tx (หลัง lock) เห็นว่าอีก request approve ตัดหน้าไปแล้ว
@@ -357,7 +357,7 @@ describe('PurchaseRequestsService', () => {
       expect(mockBudgetsService.reserveAmount).not.toHaveBeenCalled();
     });
 
-    it('H2: loads the PR with pessimistic_write lock inside the transaction', async () => {
+    it('loads the PR with pessimistic_write lock inside the transaction', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
       mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr });
@@ -375,7 +375,7 @@ describe('PurchaseRequestsService', () => {
     it('should reject a submitted PR with reason', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
-      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // H2: โหลดใต้ lock ใน tx
+      mockTxManager.findOne.mockResolvedValue({ ...mockSubmittedPr }); // โหลดใต้ lock ใน tx
 
       const result = await service.reject(1, 2, { reason: 'No budget' });
       expect(result.status).toBe(PrStatus.REJECTED);
@@ -390,7 +390,7 @@ describe('PurchaseRequestsService', () => {
       );
     });
 
-    // L6: guard เดียวกับ approve — ฝั่ง approve มี cross-dept test แล้วแต่ reject ยังไม่มี
+    // guard cross-dept เดียวกับฝั่ง approve
     it('should throw ForbiddenException when manager from different department', async () => {
       mockPrRepo.findOne.mockResolvedValue({
         ...mockSubmittedPr,
@@ -419,9 +419,9 @@ describe('PurchaseRequestsService', () => {
       );
     });
 
-    // H2: reject ก็ต้อง re-check ใต้ lock เดียวกัน — approve ที่ commit ไปก่อนต้องชนะ
+    // reject ก็ต้อง re-check ใต้ lock เดียวกัน — approve ที่ commit ไปก่อนต้องชนะ
     // (ถ้าไม่เช็ค: PR จบที่ REJECTED ทั้งที่ reserve ไปแล้ว = งบค้างถาวร)
-    it('H2: re-checks status under the row lock — reject loses to an approve that landed first', async () => {
+    it('re-checks status under the row lock — reject loses to an approve that landed first', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockSubmittedPr });
       mockUserRepo.findOne.mockResolvedValue(mockManager);
       mockTxManager.findOne.mockResolvedValue({
@@ -437,7 +437,7 @@ describe('PurchaseRequestsService', () => {
   });
 
   describe('update', () => {
-    // M1: delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
+    // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
     // draft PR จะเหลือ 0 item + totalEstimatedAmount stale (pattern เดียวกับ PO update)
     it('should delete and recreate items inside a single transaction (atomic)', async () => {
       mockPrRepo.findOne.mockResolvedValue({ ...mockDraftPr, items: [{ id: 9 }] });

@@ -30,7 +30,7 @@ export const purchaseOrdersApi = {
   cancel: (id: number) =>
     api.post<PurchaseOrder>(`/purchase-orders/${id}/cancel`).then((r) => r.data),
 
-  // bare array — endpoint ไม่ paginate (§4 D6), เรียง createdAt ASC ฝั่ง server
+  // bare array — endpoint ไม่ paginate, เรียง createdAt ASC ฝั่ง server
   getGoodsReceipts: (id: number) =>
     api.get<GoodsReceiptSummary[]>(`/purchase-orders/${id}/goods-receipts`).then((r) => r.data),
 

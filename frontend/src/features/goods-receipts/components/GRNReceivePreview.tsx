@@ -11,7 +11,7 @@ interface GRNReceivePreviewProps {
 }
 
 export function GRNReceivePreview({ items }: GRNReceivePreviewProps) {
-  // §4A.2+4: a line will-complete when good >= remaining; whole GRN complete only
+  // a line will-complete when good >= remaining; whole GRN complete only
   // when EVERY line completes AND there is at least one line (empty != complete).
   const willComplete = items.length > 0 && items.every((it) => it.good >= it.remaining)
 

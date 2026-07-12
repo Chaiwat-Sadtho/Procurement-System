@@ -220,7 +220,7 @@ describe('UsersPage', () => {
   it('disables both controls on the actor own row with a self hint (own-row wins over last-PO)', async () => {
     // ACTOR is the only active PO here, so this row is BOTH own-row AND last-active-PO.
     // The exact-value assertion pins precedence: an inverted ternary would surface
-    // LAST_PO_HINT and fail this equality (own-row must win, spec §7).
+    // LAST_PO_HINT and fail this equality (own-row must win).
     mockUsers({ data: [ACTOR, makeUser({ id: 1 })] })
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
