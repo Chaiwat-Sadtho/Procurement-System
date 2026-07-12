@@ -26,7 +26,7 @@ export class DepartmentsService {
     try {
       saved = await this.departmentRepository.save(department);
     } catch (err) {
-      // L3: 2 คำขอผ่าน findOne check พร้อมกัน (race) แล้ว DB unique index จับตัวที่สอง → 409 แทน raw 500
+      // 2 คำขอผ่าน findOne check พร้อมกัน (race) แล้ว DB unique index จับตัวที่สอง → 409 แทน raw 500
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         throw new ConflictException(`Department "${dto.name}" already exists`);
       }

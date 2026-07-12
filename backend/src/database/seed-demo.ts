@@ -92,7 +92,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const allCats = await catRepo.find();
   const catByName = new Map(allCats.map((c) => [c.name, c]));
 
-  // 5) vendors (20) + category mapping (M2M ผ่าน owning side) — ratingAvg เติมใน Task 4
+  // 5) vendors (20) + category mapping (M2M ผ่าน owning side) — ratingAvg เติมตอน seed ratings
   const vendorRepo = ds.getRepository(Vendor);
   await vendorRepo.save(
     VENDORS.map((v) => ({

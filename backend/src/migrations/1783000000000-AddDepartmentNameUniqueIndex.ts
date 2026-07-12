@@ -4,8 +4,8 @@ export class AddDepartmentNameUniqueIndex1783000000000 implements MigrationInter
   name = 'AddDepartmentNameUniqueIndex1783000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // L3: departments.name เดิมกันชื่อซ้ำที่ service layer อย่างเดียว (findOne ก่อน insert) ซึ่ง race ได้
-    // เพิ่ม DB-level unique index ให้กันชื่อแผนกซ้ำแบบ race-safe (คู่กับ 23505 -> 409 ใน service)
+    // DB-level unique index กันชื่อแผนกซ้ำแบบ race-safe — findOne check ที่ service อย่างเดียว race ได้
+    // (คู่กับ 23505 -> 409 ใน service)
     await queryRunner.query(`CREATE UNIQUE INDEX "UQ_department_name" ON "departments" ("name")`);
   }
 

@@ -203,7 +203,7 @@ export class BudgetsService {
     });
   }
 
-  // P5-3: where clause กลางสำหรับ reserve/release/consume — เล็ง budget row ตาม quarter
+  // where clause กลางสำหรับ reserve/release/consume — เล็ง budget row ตาม quarter
   // quarter == null → งบรายปี (IsNull), 1-4 → ไตรมาสนั้น (match ตรง ไม่มี fallback)
   private budgetWhere(
     departmentId: number,
@@ -217,7 +217,6 @@ export class BudgetsService {
     };
   }
 
-  // P5-3: label period ใช้ใน NotFound message
   private periodLabel(quarter: number | null): string {
     return quarter == null ? 'รายปี (annual)' : `Q${quarter}`;
   }
@@ -243,7 +242,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: pessimistic write lock กัน lost update เมื่อ 2 approve จองงบ row เดียวกันพร้อมกัน
+    // pessimistic write lock กัน lost update เมื่อ 2 approve จองงบ row เดียวกันพร้อมกัน
     // ต้องเรียกภายใน transaction เสมอ (PR approve ส่ง txManager มาให้อยู่แล้ว)
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
@@ -287,7 +286,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: pessimistic write lock กัน lost update เมื่อ release ชน consume/reserve บน budget row เดียวกัน
+    // pessimistic write lock กัน lost update เมื่อ release ชน consume/reserve บน budget row เดียวกัน
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
       lock: { mode: 'pessimistic_write' },
@@ -309,7 +308,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: lock row เดียวกัน กัน lost update เมื่อ GRN หลายใบ consume budget เดียวกันพร้อมกัน
+    // lock row เดียวกัน กัน lost update เมื่อ GRN หลายใบ consume budget เดียวกันพร้อมกัน
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
       lock: { mode: 'pessimistic_write' },
@@ -328,7 +327,7 @@ export class BudgetsService {
     });
   }
 
-  // P5-6: ปรับ reserved ให้สะท้อนยอด PO จริงตอนสร้าง PO (delta = PO total - PR estimate)
+  // ปรับ reserved ให้สะท้อนยอด PO จริงตอนสร้าง PO (delta = PO total - PR estimate)
   // delta > 0 (PO แพงกว่าที่ประเมิน) ต้องเช็คงบคงเหลือก่อน เพื่อกัน used ทะลุ total ตอน consume
   // delta < 0 (PO ถูกกว่า) คืนงบส่วนเกิน ไม่ต้อง validate
   async adjustReservedAmount(

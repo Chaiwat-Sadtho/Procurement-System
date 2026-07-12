@@ -238,7 +238,7 @@ describe('Budget money trail + manager scoping (e2e)', () => {
       .expect(200);
   });
 
-  // review #183 M2: GET /budgets/department/:id เคยเปิดทุก role + ไม่ scope (IDOR)
+  // GET /budgets/department/:id ต้องปิดจาก employee + scope แผนกของ manager (กัน IDOR)
   it('rejects an employee listing department budgets', async () => {
     await request(app.getHttpServer())
       .get(`/api/v1/budgets/department/${deptId}`)

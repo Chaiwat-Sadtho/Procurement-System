@@ -144,7 +144,7 @@ async function searchDateRange() {
   await userEvent.clear(to)
   await userEvent.type(to, '31122569')
   await userEvent.click(screen.getByRole('button', { name: /ค้นหา/i }))
-  // commit routes through the hook's setState→effect (#47): hasSearched flips only
+  // commit routes through the hook's setState→effect: hasSearched flips only
   // after the URL write lands a render later, so wait for the prompt to disappear
   await waitFor(() =>
     expect(screen.queryByText(/กรุณาเลือกช่วงวันที่และกดค้นหา/i)).not.toBeInTheDocument(),

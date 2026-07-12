@@ -1,7 +1,7 @@
 import { AppDataSource } from './data-source';
 
 // Standalone migration runner — รันใน 'migrate' service ครั้งเดียวก่อน backend pool boot
-// กัน race เมื่อหลาย instance รัน migrationsRun พร้อมกัน (docs/features/load-balancing/spec.md ข้อ 4.3)
+// กัน race เมื่อหลาย instance รัน migrationsRun พร้อมกัน
 
 // postgres healthcheck (pg_isready) อาจผ่านก่อน accept TCP จริงตอน cold start (first-boot init)
 // → retry เฉพาะตอน connect แบบ bounded; migration error เอง (หลัง connect ติดแล้ว) ไม่ retry = fail ชัด exit 1

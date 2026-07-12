@@ -90,7 +90,7 @@ describe('UserStatusToggle', () => {
     render(<UserStatusToggle user={makeUser({ isActive: true })} />)
     await u.click(screen.getByRole('switch'))
     await u.click(screen.getByRole('button', { name: 'ปิดการใช้งาน' }))
-    // onError must close the dialog; otherwise it stays stuck and blocks retry (spec §10).
+    // onError must close the dialog; otherwise it stays stuck and blocks retry.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(toastError).toHaveBeenCalledWith('ต้องมีเจ้าหน้าที่จัดซื้อที่ใช้งานอย่างน้อย 1 คน')
     // switch is server-bound (checked=user.isActive); a failed mutate must not flip it.
@@ -110,7 +110,7 @@ describe('UserStatusToggle', () => {
     expect(toastSuccess).toHaveBeenCalledWith('เปิดการใช้งานแล้ว')
   })
 
-  it('disables the switch while a status update is pending (no double-submit, §2 D10)', () => {
+  it('disables the switch while a status update is pending (no double-submit)', () => {
     hookState.statusPending = true
     render(<UserStatusToggle user={makeUser({ isActive: true })} />)
     expect(screen.getByRole('switch')).toBeDisabled()

@@ -41,8 +41,8 @@ export class PurchaseOrdersController {
     return this.poService.create(user.id, dto);
   }
 
-  // H3: read = Manager + PO เท่านั้น (mirror FE routing) — เปิด All จะให้ employee
-  // อ่านข้อมูล PR ของคนอื่น (ที่ PR module ห้าม) ผ่าน relation ใน PO ได้
+  // read = Manager + PO เท่านั้น — เปิด All จะให้ employee อ่านข้อมูล PR ของคนอื่น
+  // (ที่ PR module ห้าม) ผ่าน relation ใน PO ได้
   @ApiOperation({ summary: 'ดู PO list (Manager, PO)' })
   @UseGuards(RolesGuard)
   @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)

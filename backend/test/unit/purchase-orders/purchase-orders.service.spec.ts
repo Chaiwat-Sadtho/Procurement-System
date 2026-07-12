@@ -118,7 +118,7 @@ describe('PurchaseOrdersService', () => {
 
     it('should create PO from approved PR with non-blacklisted vendor', async () => {
       mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
-      mockPoRepo.findOne.mockResolvedValue(null); // P4-2: ยังไม่มี active PO ผูกกับ PR นี้
+      mockPoRepo.findOne.mockResolvedValue(null); // ยังไม่มี active PO ผูกกับ PR นี้
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
       mockPoRepo.count.mockResolvedValue(0);
       const item = {
@@ -166,7 +166,7 @@ describe('PurchaseOrdersService', () => {
       expect(result.totalAmount).toBe(1.55);
     });
 
-    // P5-6: PO ที่แพงกว่า PR estimate ต้อง reserve ส่วนต่างเพิ่ม (delta บวก) เพื่อกัน used ทะลุ total ตอน consume
+    // PO ที่แพงกว่า PR estimate ต้อง reserve ส่วนต่างเพิ่ม (delta บวก) เพื่อกัน used ทะลุ total ตอน consume
     it('should reserve the positive delta when PO total exceeds PR estimate', async () => {
       mockPrRepo.findOne.mockResolvedValue({
         ...mockApprovedPr,
@@ -204,7 +204,7 @@ describe('PurchaseOrdersService', () => {
       );
     });
 
-    // P5-6: ถ้า PO เกินงบคงเหลือ adjustReservedAmount โยน BadRequest → ไม่สร้าง PO (rollback)
+    // ถ้า PO เกินงบคงเหลือ adjustReservedAmount โยน BadRequest → ไม่สร้าง PO (rollback)
     it('should reject PO creation when PO total exceeds available budget', async () => {
       mockPrRepo.findOne.mockResolvedValue({
         ...mockApprovedPr,
@@ -243,7 +243,7 @@ describe('PurchaseOrdersService', () => {
       expect(save).not.toHaveBeenCalled();
     });
 
-    // H1 (review 2026-07-07): cancel ได้ release reservation ของ PR ทั้งก้อนไปแล้ว —
+    // cancel ได้ release reservation ของ PR ทั้งก้อนไปแล้ว —
     // PO ใบใหม่จาก PR เดิมต้อง reserve เต็มยอด PO (validate งบ) ไม่ใช่ adjust delta จาก PR estimate
     it('should reserve the full PO total (not the delta) when the PR has a previously cancelled PO', async () => {
       mockPrRepo.findOne.mockResolvedValue({
@@ -309,7 +309,7 @@ describe('PurchaseOrdersService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should map active-PO unique violation (P4-2 race) to a clear ConflictException', async () => {
+    it('should map active-PO unique violation (race) to a clear ConflictException', async () => {
       mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
       mockPoRepo.findOne.mockResolvedValue(null); // app-level check ผ่าน (race) แต่ DB index จับได้
       mockVendorRepo.findOne.mockResolvedValue(mockVendor);
@@ -368,7 +368,7 @@ describe('PurchaseOrdersService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw ConflictException if PR already has an active PO (P4-2)', async () => {
+    it('should throw ConflictException if PR already has an active PO', async () => {
       mockPrRepo.findOne.mockResolvedValue(mockApprovedPr);
       mockPoRepo.findOne.mockResolvedValue({ ...mockDraftPo }); // active PO ผูกกับ PR นี้อยู่แล้ว
       await expect(
@@ -455,8 +455,8 @@ describe('PurchaseOrdersService', () => {
       await expect(service.cancel(1, 1)).rejects.toThrow(BadRequestException);
     });
 
-    // P5-2/P5-6: release ยอด PO จริง ภายใน tx เดียวกับ cancel — ส่ง manager (atomic, mutation-proof identity)
-    it('P5-2: should release the PO total from reserved budget within the cancel transaction', async () => {
+    // release ยอด PO จริง ภายใน tx เดียวกับ cancel — ส่ง manager (atomic, mutation-proof identity)
+    it('should release the PO total from reserved budget within the cancel transaction', async () => {
       mockPoRepo.findOne.mockResolvedValue({
         id: 1,
         prId: 1,

@@ -1,6 +1,6 @@
 import type { Role } from '@/shared/types'
 
-/** Role -> Thai label. Single source of truth (spec §7 D6). */
+/** Role -> Thai label. Single source of truth. */
 export const ROLE_LABELS: Record<Role, string> = {
   employee: 'พนักงาน',
   manager: 'ผู้จัดการ',

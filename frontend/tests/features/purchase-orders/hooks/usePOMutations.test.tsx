@@ -50,7 +50,7 @@ describe('usePOMutations', () => {
     expect(purchaseOrdersApi.create).toHaveBeenCalledWith(payload)
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-orders'] })
-      // a new PO consumes its PR → drop it from the eligible-for-PO picker (M3)
+      // a new PO consumes its PR → drop it from the eligible-for-PO picker
       expect(spy).toHaveBeenCalledWith({
         queryKey: ['purchase-requests', { eligibleForPo: true }],
       })

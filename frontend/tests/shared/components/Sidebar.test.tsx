@@ -203,7 +203,7 @@ describe('Sidebar nav — auto-expand active child and role-filtered group', () 
     const user = userEvent.setup()
     renderSidebar('procurement_officer', '/purchase-orders')
     const header = screen.getByRole('button', { name: 'จัดซื้อ' })
-    // auto-expanded because the active route is a child (spec §8)
+    // auto-expanded because the active route is a child
     expect(header).toHaveAttribute('aria-expanded', 'true')
 
     // an explicit toggle MUST take effect — the header is never a dead control

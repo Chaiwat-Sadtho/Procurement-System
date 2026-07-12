@@ -1,4 +1,4 @@
-// page→param mapping สำหรับ filter ของ Vendor List (ดู BE contract gotcha #1, #2)
+// page→param mapping สำหรับ filter ของ Vendor List
 
 export function toIsBlacklistedParam(value: string | undefined): boolean | undefined {
   if (value === 'true') return true

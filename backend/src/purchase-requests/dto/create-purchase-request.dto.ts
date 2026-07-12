@@ -26,7 +26,6 @@ export class CreatePurchaseRequestDto {
   @IsDateString()
   requiredDate!: string;
 
-  // P5-3: ไตรมาสงบประมาณ (1-4) ที่จะไปจอง — เว้นว่าง = งบรายปี (annual)
   @ApiPropertyOptional({
     example: 2,
     minimum: 1,

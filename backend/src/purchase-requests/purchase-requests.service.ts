@@ -51,9 +51,8 @@ export class PurchaseRequestsService {
 
   private async generatePrNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    // นับเฉพาะ PR ของปีปัจจุบัน (prefix PR-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
-    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    // running number reset รายปี (prefix PR-YYYY-) — หา MAX แบบ numeric จากเลขทั้งปี
+    // (นับแถวพังหลัง DELETE, lexical sort พังเมื่อเลข > 9999)
     const rows = await this.prRepository.find({
       where: { prNumber: Like(`PR-${year}-%`) },
       select: { prNumber: true },
@@ -92,7 +91,7 @@ export class PurchaseRequestsService {
       departmentId: requester.departmentId,
       title: dto.title,
       requiredDate: dto.requiredDate,
-      quarter: dto.quarter ?? null, // P5-3: null = งบรายปี
+      quarter: dto.quarter ?? null, // null = งบรายปี
       status: PrStatus.DRAFT,
       totalEstimatedAmount,
       items,
@@ -156,7 +155,7 @@ export class PurchaseRequestsService {
     this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
-    // §3.1/§4A: เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
+    // เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
     // NOT EXISTS อ้าง column ดิบ (pr_id / status) ของตาราง purchase_orders → ต้อง e2e จริง (mock qb พิสูจน์ mapping ไม่ได้)
     if (eligibleForPo) {
       qb.andWhere('pr.status = :eligibleStatus', {
@@ -405,13 +404,12 @@ export class PurchaseRequestsService {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
 
-    // P5-5: ตรึงปีงบประมาณตอน approve เพื่อใช้ค่าเดิมตลอด lifecycle (reserve→consume/release)
+    // ตรึงปีงบประมาณตอน approve เพื่อใช้ค่าเดิมตลอด lifecycle (reserve→consume/release)
     const fiscalYear = new Date().getFullYear();
 
     const savedPr = await this.dataSource.transaction(async (txManager) => {
-      // H2: lock PR row + re-check status ใน tx — เช็คนอก tx อย่างเดียวกัน race ไม่ได้:
-      // 2 approve พร้อมกัน = reserve ซ้ำ / approve ชน reject = reserved ค้างถาวร
-      // (budget row lock ใน reserveAmount กัน lost-update ที่ตัวเลข แต่กันจองซ้ำระดับ PR ไม่ได้)
+      // lock PR row + re-check status ใน tx — กัน 2 approve พร้อมกัน (reserve ซ้ำ)
+      // และ approve ชน reject (reserved ค้างถาวร); budget row lock อย่างเดียวกันจองซ้ำระดับ PR ไม่ได้
       const lockedPr = await txManager.findOne(PurchaseRequest, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -428,7 +426,7 @@ export class PurchaseRequestsService {
       await this.budgetsService.reserveAmount(
         prDepartmentId,
         fiscalYear,
-        lockedPr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
+        lockedPr.quarter, // จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
         Number(lockedPr.totalEstimatedAmount),
         txManager,
       );
@@ -485,7 +483,7 @@ export class PurchaseRequestsService {
     }
 
     const saved = await this.dataSource.transaction(async (txManager) => {
-      // H2: lock + re-check เหมือน approve — approve ที่ commit ก่อนต้องชนะ
+      // lock + re-check เหมือน approve — approve ที่ commit ก่อนต้องชนะ
       // (ไม่งั้น PR จบที่ REJECTED ทั้งที่ reserve งบไปแล้ว = ค้างถาวร ไม่มีทาง release)
       const lockedPr = await txManager.findOne(PurchaseRequest, {
         where: { id },

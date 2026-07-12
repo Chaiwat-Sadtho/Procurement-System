@@ -80,7 +80,7 @@ describe('UserRoleSelect', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     // Snap-back works because `value` is strictly bound to user.role (never pendingRole):
     // cancel routes through onOpenChange(false) -> clears pendingRole WITHOUT touching value,
-    // so Radix re-renders the trigger from the unchanged prop. This is the §7/§10 trap —
+    // so Radix re-renders the trigger from the unchanged prop. This is the trap —
     // an uncontrolled/defaultValue impl would leave the trigger showing 'ผู้จัดการ'.
     expect(screen.getByRole('combobox')).toHaveTextContent('พนักงาน')
     expect(mutateRole).not.toHaveBeenCalled()
@@ -118,7 +118,7 @@ describe('UserRoleSelect', () => {
     expect(toastError).toHaveBeenCalledWith('ต้องมีเจ้าหน้าที่จัดซื้อที่ใช้งานอย่างน้อย 1 คน')
   })
 
-  it('disables the trigger while a role update is pending (no double-submit, §2 D10)', () => {
+  it('disables the trigger while a role update is pending (no double-submit)', () => {
     hookState.rolePending = true
     render(<UserRoleSelect user={user} />)
     expect(screen.getByRole('combobox')).toBeDisabled()

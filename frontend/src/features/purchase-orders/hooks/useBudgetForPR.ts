@@ -12,7 +12,7 @@ export interface BudgetForPRPr {
   fiscalYear?: number | null
 }
 
-// Exact quarter match — mirrors backend budgetWhere (§4A): a quarterly PR uses
+// Exact quarter match — mirrors backend budgetWhere: a quarterly PR uses
 // the row with the same quarter; an annual PR (quarter null) uses the row with
 // quarter null. There is NO quarterly -> annual fallback.
 export function matchBudgetForPR(

@@ -2,12 +2,12 @@ import Redis from 'ioredis';
 import { flushCacheDb } from './flush-cache';
 
 // flushCacheDb ล้าง Redis logical DB ของ e2e (REDIS_DB) — เรียกจาก global-setup คู่กับ
-// truncate Postgres เพื่อให้ทุก run เริ่มด้วย cache สะอาด ไม่พึ่ง state ข้าม run (#171).
+// truncate Postgres เพื่อให้ทุก run เริ่มด้วย cache สะอาด ไม่พึ่ง state ข้าม run.
 // ต้องมี Redis จริง (แนวเดียวกับ cache.e2e-spec.ts / auth.rate-limit.e2e-spec.ts).
 describe('flushCacheDb (e2e)', () => {
   const clients: Redis[] = [];
   // เปิด ioredis แล้วจดไว้ปิดใน afterEach — ปิดเสมอแม้ assertion throw กลางคัน ไม่งั้น
-  // handle ค้าง → "Jest did not exit" (open-handle gotcha ใน TESTING.md / throttler).
+  // handle ค้าง → "Jest did not exit".
   const open = (db: number): Redis => {
     const client = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
@@ -24,7 +24,7 @@ describe('flushCacheDb (e2e)', () => {
 
   it('ล้าง key ที่ค้างใน logical DB ของ e2e (REDIS_DB)', async () => {
     const redis = open(Number(process.env.REDIS_DB ?? 1));
-    // จำลอง entry เก่าที่ค้างจาก run ก่อน (footgun #171: id ซ้ำ → auth:me:<id> stale)
+    // จำลอง entry เก่าที่ค้างจาก run ก่อน (footgun: id ซ้ำ → auth:me:<id> stale)
     await redis.set('auth:me:99999', JSON.stringify({ email: 'stale@old.run' }));
     expect(await redis.exists('auth:me:99999')).toBe(1);
 

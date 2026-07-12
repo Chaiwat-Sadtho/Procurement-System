@@ -35,7 +35,7 @@ export function GRNListPage() {
   const canCreate = user?.role === 'procurement_officer'
 
   // history filter: POs that have a GRN (partially_received + completed), not the
-  // create picker's receivable set — completed POs are the bulk of GRN history (M4)
+  // create picker's receivable set — completed POs are the bulk of GRN history
   const { data: pos } = useReceivedPOs()
   const poOptions = pos ?? []
 

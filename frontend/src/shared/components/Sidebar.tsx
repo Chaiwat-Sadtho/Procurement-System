@@ -55,8 +55,8 @@ export function NavGroupSection({
     (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
   )
   // Default (no explicit click yet): expanded unless persisted-collapsed, but an
-  // active child route forces it open, overriding the persisted collapsed state
-  // (spec §8). An explicit user toggle overrides both so the control always works.
+  // active child route forces it open, overriding the persisted collapsed state.
+  // An explicit user toggle overrides both so the control always works.
   const expanded = userToggled ?? (hasActiveChild || !persistedCollapsed)
 
   function toggle() {

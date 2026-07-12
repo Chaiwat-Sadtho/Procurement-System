@@ -9,10 +9,8 @@ export function formatRunningNumber(
   return `${prefix}-${year}-${String(seq).padStart(4, '0')}`;
 }
 
-// L2: หา running number ถัดไปจากชุดเลขของปีเดียวกัน โดยหา MAX แบบ numeric
-// แทน ORDER BY lexical + slice(-4) เดิม ที่พังถาวรเมื่อเลข > 9999
-// (lexical: '10000' < '9999' → ได้เลขเก่า; slice(-4): '10000' → '0000' → gen ซ้ำ → 23505 loop).
-// parse suffix หลัง '-' ตัวสุดท้ายเต็มความยาว (ไม่ fix 4 หลัก) + ข้าม token ที่ parse ไม่ได้.
+// หา running number ถัดไปจากชุดเลขของปีเดียวกัน — MAX แบบ numeric (lexical sort พังเมื่อเลข > 9999)
+// parse suffix หลัง '-' ตัวสุดท้ายเต็มความยาว (ไม่ fix 4 หลัก) + ข้าม token ที่ parse ไม่ได้
 export function nextRunningSeq(existingNumbers: string[]): number {
   const maxSeq = existingNumbers.reduce((max, n) => {
     const seq = Number(n.slice(n.lastIndexOf('-') + 1));

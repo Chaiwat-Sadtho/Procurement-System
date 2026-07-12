@@ -16,7 +16,7 @@ export const goodsReceiptsApi = {
   create: (data: CreateGoodsReceiptPayload) =>
     api.post<GoodsReceipt>('/goods-receipts', data).then((r) => r.data),
 
-  // receivable PO endpoint returns {data, meta} → map .data to array (§4 D1)
+  // receivable PO endpoint returns {data, meta} → map .data to array
   listReceivablePOs: () =>
     api
       .get<{ data: ReceivablePO[]; meta: unknown }>('/purchase-orders', {
@@ -25,7 +25,7 @@ export const goodsReceiptsApi = {
       .then((r) => r.data.data),
 
   // POs that already have a GRN (partially_received + completed) — the GRN-list history
-  // filter dropdown. Same {data,meta}→array unwrap as receivable (M4).
+  // filter dropdown. Same {data,meta}→array unwrap as receivable.
   listPOsWithReceipts: () =>
     api
       .get<{ data: ReceivablePO[]; meta: unknown }>('/purchase-orders', {

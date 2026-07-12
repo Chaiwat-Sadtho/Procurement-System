@@ -84,10 +84,10 @@ describe('MultiSelectCombobox', () => {
     expect(await screen.findByText('ไม่พบหมวดหมู่')).toBeInTheDocument()
   })
 
-  // a11y harmonized กับ Combobox (#88): popup เป็น Radix dialog (role="dialog") ที่ครอบ cmdk
+  // a11y harmonized กับ Combobox: popup เป็น Radix dialog (role="dialog") ที่ครอบ cmdk
   // listbox → trigger ต้อง haspopup="dialog" (ไม่ใช่ "listbox" ที่ขัดกับ role จริงของ popup).
   // ปล่อย Radix PopoverTrigger wire aria-controls/haspopup เอง (ถอด manual override) =
-  // identical pattern กับ Combobox.test.tsx (ดู TESTING.md #88).
+  // identical pattern กับ Combobox.test.tsx.
   it('wires combobox a11y like Combobox: aria-haspopup=dialog + aria-controls ไป dialog popup ที่ครอบ listbox', async () => {
     render(<MultiSelectCombobox id="cats" value={[]} onChange={vi.fn()} options={options} />)
     const trigger = screen.getByRole('combobox')

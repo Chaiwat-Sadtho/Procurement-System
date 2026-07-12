@@ -15,7 +15,7 @@ export interface PRItem {
   description: string | null
   quantity: number
   unit: string
-  estimatedUnitPrice: string // decimal(15,2) → string (§4A: Number() ก่อนคำนวณ)
+  estimatedUnitPrice: string // decimal(15,2) → string (Number() ก่อนคำนวณ)
   estimatedTotalPrice: string // decimal → string
 }
 

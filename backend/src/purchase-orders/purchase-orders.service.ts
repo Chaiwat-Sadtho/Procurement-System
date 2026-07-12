@@ -50,9 +50,8 @@ export class PurchaseOrdersService {
 
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    // นับเฉพาะ PO ของปีปัจจุบัน (prefix PO-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
-    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    // running number reset รายปี (prefix PO-YYYY-) — หา MAX แบบ numeric จากเลขทั้งปี
+    // (นับแถวพังหลัง DELETE, lexical sort พังเมื่อเลข > 9999)
     const rows = await this.poRepository.find({
       where: { poNumber: Like(`PO-${year}-%`) },
       select: { poNumber: true },
@@ -68,7 +67,7 @@ export class PurchaseOrdersService {
       throw new BadRequestException('Can only create PO from approved Purchase Requests');
     }
 
-    // P4-2: กันสร้าง PO ซ้ำจาก PR เดียว — approved PR แปลงเป็น PO ได้ครั้งเดียว (ยกเว้น PO ที่ถูกยกเลิก)
+    // กันสร้าง PO ซ้ำจาก PR เดียว — approved PR แปลงเป็น PO ได้ครั้งเดียว (ยกเว้น PO ที่ถูกยกเลิก)
     const existingPo = await this.poRepository.findOne({
       where: { prId: dto.prId, status: Not(PoStatus.CANCELLED) },
     });
@@ -78,9 +77,8 @@ export class PurchaseOrdersService {
       );
     }
 
-    // H1: ถ้า PR นี้เคยมี PO ถูก cancel — cancel ได้ release reservation ทั้งก้อนไปแล้ว (P5-2)
-    // เส้นทาง delta ด้านล่างตั้งสมมติฐานว่า PR estimate ยังถูกจองอยู่ ซึ่งไม่จริงแล้ว
-    // → ต้อง reserve ใหม่เต็มยอด PO (ผ่าน validate งบ) แทนการ adjust delta
+    // PR ที่เคยมี PO ถูก cancel = reservation ถูก release ไปแล้ว
+    // → ต้อง reserve เต็มยอด PO ใหม่ (ผ่าน validate งบ) ไม่ใช่ adjust delta
     const hadCancelledPo = await this.poRepository.findOne({
       where: { prId: dto.prId, status: PoStatus.CANCELLED },
       select: { id: true },
@@ -127,7 +125,7 @@ export class PurchaseOrdersService {
     }
     const prDepartmentId: number = pr.departmentId;
 
-    // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
+    // reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
     // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
     const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
 
@@ -172,7 +170,7 @@ export class PurchaseOrdersService {
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         const constraint = (err as { constraint?: string }).constraint;
-        // P4-2: index บังคับว่า PR มี active PO ได้ใบเดียว — ถ้า app-level check หลุดเพราะ race DB จะจับตรงนี้
+        // index บังคับว่า PR มี active PO ได้ใบเดียว — ถ้า app-level check หลุดเพราะ race DB จะจับตรงนี้
         if (constraint === 'UQ_active_po_per_pr') {
           throw new ConflictException(`Purchase Request ${dto.prId} already has an active PO`);
         }
@@ -288,9 +286,8 @@ export class PurchaseOrdersService {
         po.items = await manager.save(PurchaseOrderItem, newItems);
         po.totalAmount = sumMoney(po.items.map((item) => item.totalPrice));
 
-        // P5-6 (F2): keep the dept budget reserved in sync with the edited total —
-        // mirror create's delta-gate. A positive delta beyond remaining budget throws
-        // inside this transaction → the item delete/recreate rolls back (PO unchanged).
+        // keep the dept budget reserved in sync with the edited total — a positive delta
+        // beyond remaining budget throws inside this tx → the delete/recreate rolls back.
         if (pr?.departmentId != null) {
           await this.budgetsService.adjustReservedAmount(
             pr.departmentId,
@@ -366,7 +363,7 @@ export class PurchaseOrdersService {
         manager,
       );
 
-      // P5-2: release reserved budget ของ PR ที่ผูกอยู่ ภายใน tx เดียวกับ cancel (atomic, กัน budget leak)
+      // release reserved budget ของ PR ที่ผูกอยู่ ภายใน tx เดียวกับ cancel (atomic, กัน budget leak)
       // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
       const pr = await manager.findOne(PurchaseRequest, {
         where: { id: po.prId },
@@ -376,14 +373,14 @@ export class PurchaseOrdersService {
           fiscalYear: true,
           quarter: true,
           status: true,
-        }, // ตัด totalEstimatedAmount (dead field โค้ดเดิม) — release ใช้ Number(po.totalAmount) ไม่ใช่ PR estimate
+        }, // release ใช้ยอด PO จริง ไม่ใช่ PR estimate → ไม่ต้อง select totalEstimatedAmount
       });
       if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {
         await this.budgetsService.releaseReservedAmount(
           pr.departmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
-          pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
-          Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
+          pr.quarter, // release งบไตรมาสเดียวกับที่ reserve ไว้
+          Number(po.totalAmount), // reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
           manager,
         );
       }
@@ -415,7 +412,7 @@ export class PurchaseOrdersService {
     try {
       savedRating = await this.ratingRepository.save(rating);
     } catch (err) {
-      // P4-4: ถ้า 2 request ผ่าน findOne พร้อมกัน DB unique constraint (UQ_vendor_rating_po) จะ reject ตัวที่สอง
+      // ถ้า 2 request ผ่าน findOne พร้อมกัน DB unique constraint (UQ_vendor_rating_po) จะ reject ตัวที่สอง
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         throw new ConflictException('This Purchase Order has already been rated');
       }

@@ -44,7 +44,7 @@ export default async function globalSetup(): Promise<void> {
 
   // (6) Flush the e2e Redis cache (REDIS_DB) alongside the Postgres truncate, so a stale
   //     entry from a previous run — e.g. auth:me:<id> after RESTART IDENTITY reuses an id —
-  //     can't HIT and false-fail this run (#171). Best-effort: a no-op when Redis is down,
+  //     can't HIT and false-fail this run. Best-effort: a no-op when Redis is down,
   //     so e2e still runs in cache-degraded mode without hanging globalSetup.
   await flushCacheDb();
 }
