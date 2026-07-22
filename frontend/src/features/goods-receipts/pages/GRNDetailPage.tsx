@@ -5,8 +5,7 @@ import { useGoodsReceipt } from '../hooks/useGoodsReceipt'
 import { GRNDetailHeader } from '../components/GRNDetailHeader'
 import { GRNItemsTable } from '../components/GRNItemsTable'
 
-// PO analog PODetailPage; GRN is immutable (contract §7) so this drops all
-// mutation/action state, ConfirmDialog, useCurrentUser and toast.
+// The GRN counterpart of PODetailPage; GRNs are immutable, so there are no actions or mutations
 export function GRNDetailPage() {
   const { id } = useParams()
   const grnId = Number(id)

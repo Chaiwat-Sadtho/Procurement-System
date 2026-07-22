@@ -29,7 +29,6 @@ export class UsersService {
       });
     }
     if (currentUser.role === UserRole.MANAGER) {
-      // dept จาก auth payload (requireManagerDepartmentId) — ใช้ helper ร่วมกับ budgets/PR (กัน logic ซ้ำ)
       const departmentId = requireManagerDepartmentId(currentUser);
       return this.userRepository.find({
         where: { departmentId },

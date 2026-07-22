@@ -1,9 +1,9 @@
-// page→param mapping สำหรับ filter ของ Vendor List (ดู BE contract gotcha #1, #2)
+// Maps the vendor list's filter values onto query params
 
 export function toIsBlacklistedParam(value: string | undefined): boolean | undefined {
   if (value === 'true') return true
   if (value === 'false') return false
-  return undefined // 'all' หรือ undefined → ไม่ส่ง param
+  return undefined // 'all' or undefined → omit the param
 }
 
 export function toCategoryIdParam(value: string | undefined): number | undefined {

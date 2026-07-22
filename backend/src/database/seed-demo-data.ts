@@ -3,13 +3,11 @@ import { PrStatus } from '../purchase-requests/entities/purchase-request.entity'
 import { PoStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { AnnouncementIcon } from '../announcements/entities/announcement.entity';
 
-// ====== Departments ======
-// baseline (seedBaseline) สร้าง 3 ตัวแล้ว: Engineering(1) / Finance(2) / Operations(3)
-export const EXTRA_DEPARTMENTS = ['IT', 'Marketing', 'HR'] as const; // → ids 4,5,6 หลัง RESTART IDENTITY
+// Departments — seedBaseline already created Engineering(1), Finance(2), Operations(3)
+export const EXTRA_DEPARTMENTS = ['IT', 'Marketing', 'HR'] as const; // ids 4-6 after RESTART IDENTITY
 
-// ====== Users (เพิ่มจาก baseline 3) ======
-// baseline: employee@(EMPLOYEE,Engineering) / manager@(MANAGER,Engineering) / procurement@(PROCUREMENT_OFFICER,Operations)
-// กติกา: ทุก dept ต้องมี MANAGER ≥1 (อนุมัติ PR) + EMPLOYEE ≥1 (เป็น requester)
+// Users, on top of the three baseline logins. Every department needs at least one MANAGER (to approve)
+// and one EMPLOYEE (to request).
 export interface DemoUser {
   email: string;
   firstName: string;
@@ -103,9 +101,9 @@ export const EXTRA_USERS: DemoUser[] = [
     dept: 'Engineering',
   },
 ];
-// รวม 15: managers 6 (Eng baseline + 5) / employees 7 (Eng baseline + 6) / procurement 2 (Ops baseline + 1)
+// 15 users in total: 6 managers, 7 employees, 2 procurement officers
 
-// ====== Vendor categories (6) ======
+// Vendor categories
 export const VENDOR_CATEGORIES = [
   'IT Equipment',
   'Office Supplies',
@@ -115,7 +113,7 @@ export const VENDOR_CATEGORIES = [
   'Logistics',
 ] as const;
 
-// ====== Vendors (20; index 18,19 = blacklisted) ======
+// Vendors (20; the last two are blacklisted)
 export interface DemoVendor {
   name: string;
   taxId: string;
@@ -272,7 +270,7 @@ export const VENDORS: DemoVendor[] = [
   },
 ];
 
-// ====== Item catalog (สำหรับ gen line ของ PR/PO; ราคาตั้งให้คูณแล้วลงตัว) ======
+// Item catalog for PR/PO lines; prices are whole numbers so every total stays exact
 export interface CatalogItem {
   name: string;
   unit: string;
@@ -293,8 +291,8 @@ export const CATALOG: CatalogItem[] = [
   { name: 'UPS 1500VA', unit: 'เครื่อง', price: 6500 }, // 11
 ];
 
-// ====== Budget total ต่อ (dept|fy|quarter) ======
-// default มากพอให้ committed ≤ total เสมอ; override 1 แถวให้เกิด budget warning (committed/total = 85%)
+// Budget total per (dept|fy|quarter). The default is generous enough that committed never exceeds it;
+// one row is overridden to sit at 85% so the budget warning is visible in the demo.
 export const BUDGET_PERIODS: Array<{ fy: number; quarter: number }> = [
   { fy: 2025, quarter: 4 },
   { fy: 2026, quarter: 1 },
@@ -325,14 +323,13 @@ export interface PrScenario {
   status: PrStatus; // DRAFT|SUBMITTED|REJECTED|APPROVED (เว้น UNDER_REVIEW — service ไม่มี transition เข้า)
   rejectReason?: string;
   lines: Array<{ item: number; qty: number }>; // index ใน CATALOG
-  po?: PoPlan; // เฉพาะ status APPROVED
+  po?: PoPlan; // APPROVED scenarios only
 }
 
-// 40 PR: draft 6 / submitted 7 / rejected 4 / approved 23
-// approved 23 = no-PO 4 + active-PO 10 (draft2/sent3/ack2/partial3) + completed 7 + cancelled 2  → PO รวม 19
-// PO.total = PR.est ทุกใบ (priceFactor 1 → reconciliation ตรงไปตรงมา)
+// 40 PRs: 6 draft / 7 submitted / 4 rejected / 23 approved. The approved ones yield 19 POs
+// (4 without a PO, 10 active, 7 completed, 2 cancelled). Every PO total equals its PR estimate.
 export const PR_SCENARIOS: PrScenario[] = [
-  // --- warning row: Engineering 2026 Q1, approved + active PO รวม 850,000 / total 1,000,000 = 85% ---
+  // The 85% warning row: Engineering 2026 Q1, 850,000 committed of 1,000,000
   {
     dept: 'Engineering',
     title: 'จัดซื้อโน้ตบุ๊กทีมพัฒนา',
@@ -361,7 +358,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     po: { vendor: 2, status: PoStatus.PARTIALLY_RECEIVED },
   }, // 250,000
 
-  // --- active PO ที่เหลือ (draft2/sent2/ack1/partial2) ---
+  // Remaining active POs: 2 draft, 2 sent, 1 acknowledged, 2 partially received
   {
     dept: 'Finance',
     title: 'จัดซื้อเครื่องพิมพ์เลเซอร์',
@@ -426,7 +423,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     po: { vendor: 9, status: PoStatus.PARTIALLY_RECEIVED, damaged: true },
   }, // 200,000
 
-  // --- completed PO (7) → used; rating 6 ใบ (เว้นใบ 17 ไม่ rate) ---
+  // Completed POs (7) become used budget; 6 of them are rated, one is left unrated on purpose
   {
     dept: 'Finance',
     title: 'จัดซื้อโน้ตบุ๊กฝ่ายบัญชี',
@@ -491,7 +488,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     po: { vendor: 10, status: PoStatus.COMPLETED, splitGrn: true },
   }, // 80,000 (ยังไม่ rate)
 
-  // --- cancelled PO (2) → reserved คืน 0 ---
+  // Cancelled POs (2) release their reservation back to 0
   {
     dept: 'IT',
     title: 'จัดซื้อโน้ตบุ๊ก (ยกเลิกภายหลัง)',
@@ -511,7 +508,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     po: { vendor: 19, status: PoStatus.CANCELLED },
   }, // 90,000 → 0 (vendor blacklisted)
 
-  // --- approved ไม่มี PO (4) → reserved += PR.est ---
+  // Approved without a PO (4): the PR estimate stays reserved
   {
     dept: 'Engineering',
     title: 'จัดซื้อไวท์บอร์ดห้องประชุม',
@@ -545,7 +542,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     lines: [{ item: 11, qty: 8 }],
   }, // 52,000
 
-  // --- rejected (4) ---
+  // Rejected (4)
   {
     dept: 'Operations',
     title: 'จัดซื้อ Server Rack เพิ่ม',
@@ -583,7 +580,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     lines: [{ item: 5, qty: 1 }],
   },
 
-  // --- submitted (7) ---
+  // Submitted (7)
   {
     dept: 'Engineering',
     title: 'จัดซื้อจอเพิ่มทีม QA',
@@ -641,7 +638,7 @@ export const PR_SCENARIOS: PrScenario[] = [
     lines: [{ item: 11, qty: 12 }],
   },
 
-  // --- draft (6) ---
+  // Draft (6)
   {
     dept: 'Engineering',
     title: 'ร่าง: ปากกาทีม',
@@ -692,7 +689,7 @@ export const PR_SCENARIOS: PrScenario[] = [
   },
 ];
 
-// announcements หน้า login — 5 รายการ (1 ปักหมุด). icon ใช้ enum member (type-safe, ตรง EXTRA_USERS)
+// Login-page announcements: 5 rows, one pinned
 export const ANNOUNCEMENTS: Array<{
   title: string;
   detail: string;

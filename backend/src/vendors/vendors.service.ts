@@ -88,12 +88,8 @@ export class VendorsService {
     return saved;
   }
 
-  // The cached payload round-trips through Redis as JSON: on a hit, Vendor instances
-  // come back as plain objects and Date columns as ISO strings. That is lossless here
-  // ONLY because Vendor has no @Expose getters or @Transform members, so
-  // ClassSerializerInterceptor emits identical JSON on hit and miss — unlike /auth/me,
-  // which must re-hydrate via plainToInstance (see AuthService.getProfile). Adding an
-  // @Expose/@Transform member to Vendor would require re-hydrating here too.
+  // The cached payload round-trips through Redis as JSON. That is lossless only because Vendor has no
+  // @Expose/@Transform members — adding one would need re-hydration, as in AuthService.getProfile.
   findAll(query: VendorQueryDto): Promise<VendorListResult> {
     return this.cache.getOrSetNamespaced(
       CacheKeys.vendorListNs,
@@ -114,7 +110,7 @@ export class VendorsService {
     if (isBlacklisted !== undefined) {
       qb.andWhere('vendor.isBlacklisted = :isBlacklisted', { isBlacklisted });
     }
-    // filter ด้วย subquery แทน andWhere บน select join เพื่อไม่ให้ categories array ของ vendor ถูกตัดเหลือเฉพาะ category ที่ match (P3-2)
+    // A subquery, not a filter on the joined rows — that would trim each vendor's categories to the match
     if (categoryId) {
       qb.andWhere(
         (qb2) => {
@@ -204,10 +200,8 @@ export class VendorsService {
       comment: r.comment,
       ratedBy: {
         id: r.raterId,
-        // Denormalized name snapshot. This payload is cached under vendorRatingsNs
-        // (TTL VENDOR_RATINGS = 120s) and is intentionally NOT invalidated when the rater
-        // renames via AuthService.updateProfile. A hit may therefore show the old name for
-        // up to the TTL — accepted as bounded, self-healing, display-only staleness.
+        // Denormalized snapshot: this cache is deliberately not invalidated when the rater renames, so
+        // a hit can show the old name until the TTL expires (display-only, self-healing).
         fullName: [r.raterFirstName, r.raterMiddleName, r.raterLastName].filter(Boolean).join(' '),
       },
       createdAt: r.createdAt,

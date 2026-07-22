@@ -13,12 +13,12 @@ export type ActionButton = {
 
 export interface ActionButtonsProps {
   buttons: ActionButton[]
-  /** ความกว้าง track บน sm+ : 4 (default)=¼ ต่อปุ่ม right-aligned · 2=½ เต็มแถว (dialog/label ยาว) · 3=⅓ */
+  /** track width on sm+: 4 (default) = quarter-width right-aligned buttons, 3 = third, 2 = half */
   cols?: 2 | 3 | 4
   className?: string
 }
 
-// literal class เต็ม (Tailwind purge เห็น) — ห้าม interpolate
+// Full literal class names so Tailwind can see them — never interpolate these
 const SM_GRID: Record<number, string> = {
   2: 'sm:grid-cols-2',
   3: 'sm:grid-cols-3',
@@ -38,7 +38,7 @@ export function ActionButtons({ buttons, cols = 4, className }: ActionButtonsPro
   return (
     <div className={cn('grid grid-cols-1 gap-2', SM_GRID[cols], className)}>
       {buttons.map((b, i) => {
-        // right-align: ปุ่มแรกเริ่มที่ col (cols-n+1), ไล่ไปขวา — ใส่ explicit ทุกปุ่ม
+        // right-aligned: the first button starts at cols-n+1, every button gets an explicit start
         const start = cols - n + 1 + i
         return (
           <Button

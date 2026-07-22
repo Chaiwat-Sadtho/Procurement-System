@@ -12,15 +12,9 @@ interface RowLinkProps {
 }
 
 /**
- * Accessible link for the primary cell of a clickable list row.
- *
- * The row keeps a mouse-only onClick for the whole-row hit target, but the
- * keyboard / screen-reader navigation path is THIS real `<a href>`. That keeps
- * the row a native table row (no role="button" clobbering the grid/cell
- * semantics) and lets Cmd/Ctrl/middle-click open the detail in a new tab.
- *
- * stopPropagation keeps a click on the link from also firing the row's onClick
- * (which would push the same route twice).
+ * Accessible link for the primary cell of a clickable list row. The row's own onClick stays
+ * mouse-only; this real `<a href>` carries keyboard and screen-reader navigation, keeps the row a
+ * native table row, and supports Cmd/Ctrl/middle-click. stopPropagation prevents a double push.
  */
 export function RowLink({ to, children, className }: RowLinkProps) {
   return (

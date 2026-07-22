@@ -23,9 +23,8 @@ export class AnnouncementsService {
     private readonly cache: CacheService,
   ) {}
 
-  // Public list shown on the login page: active only, pinned first then newest.
-  // Cached as a mapped plain array (no Date/getter → JSON round-trip safe);
-  // every write invalidates the namespace.
+  // Public login-page list: active only, pinned first. Cached as a plain array (JSON round-trip safe)
+  // and invalidated by every write.
   findActive(): Promise<PublicAnnouncement[]> {
     return this.cache.getOrSetNamespaced(
       CacheKeys.announcementPublicNs,
@@ -47,7 +46,7 @@ export class AnnouncementsService {
     );
   }
 
-  // Admin list (PO): all announcements incl inactive; not cached (low traffic, must be fresh).
+  // Admin list: includes inactive rows and is not cached (low traffic, must be fresh)
   findAll(): Promise<Announcement[]> {
     return this.repo.find({ order: { isPinned: 'DESC', createdAt: 'DESC' } });
   }

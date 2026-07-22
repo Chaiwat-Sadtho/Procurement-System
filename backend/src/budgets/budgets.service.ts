@@ -63,9 +63,7 @@ export class BudgetsService {
     try {
       return await this.budgetRepository.save(budget);
     } catch (err) {
-      // Race safety net: the findOne check above can be bypassed by a concurrent
-      // insert. The DB unique constraint (incl. the annual partial index) then
-      // raises 23505 — surface it as a ConflictException, not a 500.
+      // Race safety net: a concurrent insert slips past the findOne check — map DB 23505 to 409, not 500.
       if ((err as { code?: string }).code === '23505') {
         throw new ConflictException(
           `Budget for department ${dto.departmentId} in ${dto.fiscalYear} Q${dto.quarter ?? 'annual'} already exists`,
@@ -83,7 +81,7 @@ export class BudgetsService {
     if (query.fiscalYear) where.fiscalYear = query.fiscalYear;
 
     if (user.role === UserRole.MANAGER) {
-      // manager: บังคับแผนกตัวเอง (override query.departmentId) — dept จาก payload (สดทุก request)
+      // Managers are pinned to their own department (overrides query.departmentId)
       where.departmentId = requireManagerDepartmentId(user);
     } else if (query.departmentId) {
       where.departmentId = query.departmentId;
@@ -142,8 +140,7 @@ export class BudgetsService {
     return Object.assign(budget, { remaining, usagePercent });
   }
 
-  // money trail: PR ที่อนุมัติแล้วและขยับงบก้อนนี้ + PO ที่ผูกอยู่ (ถ้ามี)
-  // 2-step ORM (ไม่ raw SQL → unit-testable): หา approved PR ตาม dept/year/quarter → join active PO
+  // Money trail: approved PRs that moved this budget + their active PO (2 ORM steps, no raw SQL → unit-testable)
   async getTransactions(
     id: number,
     user: { id: number; role: UserRole; departmentId?: number | null },
@@ -156,7 +153,7 @@ export class BudgetsService {
       where: {
         departmentId: budget.departmentId,
         fiscalYear: budget.fiscalYear,
-        // quarter null = งบรายปี (match PR ที่ quarter IS NULL) · มิฉะนั้น match ตรง (ไม่มี fallback)
+        // null quarter = annual budget; otherwise an exact match, no fallback
         quarter: (budget.quarter == null
           ? IsNull()
           : budget.quarter) as FindOptionsWhere<PurchaseRequest>['quarter'],
@@ -167,7 +164,7 @@ export class BudgetsService {
     });
     if (prs.length === 0) return [];
 
-    // active PO = 1 ใบ/PR (UQ_active_po_per_pr where status != cancelled)
+    // At most one active PO per PR (UQ_active_po_per_pr, status != cancelled)
     const pos = await this.poRepository.find({
       where: { prId: In(prs.map((p) => p.id)), status: Not(PoStatus.CANCELLED) },
     });
@@ -203,8 +200,7 @@ export class BudgetsService {
     });
   }
 
-  // P5-3: where clause กลางสำหรับ reserve/release/consume — เล็ง budget row ตาม quarter
-  // quarter == null → งบรายปี (IsNull), 1-4 → ไตรมาสนั้น (match ตรง ไม่มี fallback)
+  // Shared where-clause for reserve/release/consume: null quarter = annual row, 1-4 = that quarter (exact)
   private budgetWhere(
     departmentId: number,
     fiscalYear: number,
@@ -217,13 +213,11 @@ export class BudgetsService {
     };
   }
 
-  // P5-3: label period ใช้ใน NotFound message
   private periodLabel(quarter: number | null): string {
     return quarter == null ? 'รายปี (annual)' : `Q${quarter}`;
   }
 
-  // detail-scope: manager เข้าถึงงบของแผนกอื่นไม่ได้ (ใช้ร่วม getSummary + getTransactions)
-  // dept มาจาก auth payload (requireManagerDepartmentId) — JwtStrategy rehydrate สดทุก request → ไม่ re-load DB
+  // Managers cannot read another department's budget; dept comes from the JWT payload (rehydrated per request)
   private assertCanAccessDept(
     departmentId: number,
     user: { role: UserRole; departmentId?: number | null },
@@ -243,8 +237,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: pessimistic write lock กัน lost update เมื่อ 2 approve จองงบ row เดียวกันพร้อมกัน
-    // ต้องเรียกภายใน transaction เสมอ (PR approve ส่ง txManager มาให้อยู่แล้ว)
+    // Write lock (always called inside a transaction) — concurrent approvals on the same row would lose an update
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
       lock: { mode: 'pessimistic_write' },
@@ -287,7 +280,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: pessimistic write lock กัน lost update เมื่อ release ชน consume/reserve บน budget row เดียวกัน
+    // Write lock — release can collide with consume/reserve on the same budget row
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
       lock: { mode: 'pessimistic_write' },
@@ -309,7 +302,7 @@ export class BudgetsService {
   ): Promise<void> {
     const mgr = txManager ?? this.dataSource.manager;
 
-    // P5-4: lock row เดียวกัน กัน lost update เมื่อ GRN หลายใบ consume budget เดียวกันพร้อมกัน
+    // Write lock — several GRNs can consume the same budget row concurrently
     const budget = await mgr.findOne(Budget, {
       where: this.budgetWhere(departmentId, fiscalYear, quarter),
       lock: { mode: 'pessimistic_write' },
@@ -328,9 +321,7 @@ export class BudgetsService {
     });
   }
 
-  // P5-6: ปรับ reserved ให้สะท้อนยอด PO จริงตอนสร้าง PO (delta = PO total - PR estimate)
-  // delta > 0 (PO แพงกว่าที่ประเมิน) ต้องเช็คงบคงเหลือก่อน เพื่อกัน used ทะลุ total ตอน consume
-  // delta < 0 (PO ถูกกว่า) คืนงบส่วนเกิน ไม่ต้อง validate
+  // Reconcile the reservation with the real PO total (delta = PO - PR estimate); a positive delta re-checks remaining budget
   async adjustReservedAmount(
     departmentId: number,
     fiscalYear: number,
@@ -347,7 +338,7 @@ export class BudgetsService {
     });
     if (!budget) return;
 
-    // ดิบ (ไม่ปัดผ่าน round2) — ใช้เฉพาะ validate เกินงบ + warning 80%; ค่าที่ store ใช้ applyAdjust ด้านล่าง
+    // Unrounded — only for the over-budget check and the 80% warning; the stored value goes through applyAdjust below
     const newReserved = Math.max(0, Number(budget.reservedAmount) + delta);
 
     if (delta > 0) {
@@ -391,7 +382,7 @@ export class BudgetsService {
     });
     if (managers.length === 0) return;
 
-    // procurement officer รับแจ้งงบหลายแผนก → ใส่ชื่อแผนกในข้อความให้แยกออกว่าเป็นงบของแผนกไหน
+    // Procurement officers get warnings for many departments — name the department in the message
     const department = await this.departmentRepository.findOne({
       where: { id: departmentId },
     });

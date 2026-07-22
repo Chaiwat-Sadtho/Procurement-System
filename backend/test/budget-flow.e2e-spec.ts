@@ -324,7 +324,7 @@ describe('Budget reserve/consume + audit + notification (e2e)', () => {
     expect(grnActions).toContain('GRN_CREATED');
   });
 
-  // --- QUARTERLY RESERVE (P5-3): a Q2 PR reserves the Q2 row, not the annual row ---
+  // --- QUARTERLY RESERVE: a Q2 PR reserves the Q2 row, not the annual row ---
 
   it('reserves the quarterly (Q2) budget without affecting the annual budget', async () => {
     // PO creates a Q2 budget for the same dept

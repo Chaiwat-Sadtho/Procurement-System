@@ -171,7 +171,7 @@ describe('toUpdatePayload', () => {
     })
   })
 
-  // M5: เคลียร์ notes ตอน edit ต้องส่ง null (omit = BE ไม่แตะ field → ค่าเก่าค้าง)
+  // เคลียร์ notes ตอน edit ต้องส่ง null (omit = BE ไม่แตะ field → ค่าเก่าค้าง)
   it('sends notes: null when blank so the backend clears the stored value', () => {
     expect(toUpdatePayload({ ...validValues, notes: '' }).notes).toBeNull()
     expect(toUpdatePayload({ ...validValues, notes: '   ' }).notes).toBeNull()

@@ -16,15 +16,13 @@ export function usePurchaseOrder(id: number) {
     enabled: id > 0,
   })
 
-  // send/acknowledge only flip PO status — no budget/eligibility move, so keep this lean.
+  // send/acknowledge only flip status — no budget or eligibility change
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ['purchase-order', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
   }
 
-  // cancel releases the reserved budget (P5-2) and returns the PR to the eligible-for-PO
-  // picker, so it must refresh both on top of the status caches (M3). ['budget'] (singular)
-  // is the detail money-trail page — a distinct prefix from ['budgets'].
+  // Cancelling releases budget and puts the PR back in the picker, so both need refreshing too
   function invalidateCancel() {
     invalidate()
     void queryClient.invalidateQueries({ queryKey: ['purchase-requests', { eligibleForPo: true }] })

@@ -2,13 +2,8 @@ import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerException, ThrottlerGuard, ThrottlerRequest } from '@nestjs/throttler';
 
 /**
- * ThrottlerGuard variant with two behaviours:
- *  1. Master switch — when THROTTLE_ENABLED=false, skip throttling entirely. The
- *     e2e suite sets this because many specs hammer /auth/login from 127.0.0.1 and
- *     would otherwise trip the limit.
- *  2. Fail-open — if the Redis storage layer throws (Redis down), allow the request
- *     instead of returning 500 (availability-first, matching CacheService). A real
- *     ThrottlerException (limit exceeded) must still propagate to a 429.
+ * ThrottlerGuard that can be switched off (THROTTLE_ENABLED=false, used by the e2e suite) and falls
+ * open when the Redis storage throws — availability-first, matching CacheService.
  */
 @Injectable()
 export class FailOpenThrottlerGuard extends ThrottlerGuard {

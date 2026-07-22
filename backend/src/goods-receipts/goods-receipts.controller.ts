@@ -25,7 +25,7 @@ export class GoodsReceiptsController {
     return this.grnService.create(user.id, dto);
   }
 
-  // H3: read = Manager + PO เท่านั้น (mirror FE routing) — เหตุผลเดียวกับ PO controller
+  // Manager + PO only — same reason as the PO controller (PR data leaks through the relation)
   @ApiOperation({ summary: 'ดู GRN list (Manager, PO)' })
   @UseGuards(RolesGuard)
   @Roles(UserRole.MANAGER, UserRole.PROCUREMENT_OFFICER)

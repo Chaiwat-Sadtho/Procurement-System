@@ -15,7 +15,7 @@ interface BudgetListFilterFormProps {
   defaultFiscalYear: number
   /** seeds the year + dept inputs from the URL; consumed once at mount — remount via key to change */
   initialValues?: BudgetListFilterResult
-  // manager: ล็อกแผนกตัวเอง (disabled + prefill) — BE enforce ซ้ำ (defense in depth)
+  // managers get their own department pre-filled and disabled (the backend re-checks anyway)
   lockedDepartmentId?: number | null
   onSubmit: (result: BudgetListFilterResult) => void
   onClear?: () => void

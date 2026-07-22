@@ -3,14 +3,9 @@ import { seconds, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { RedisOptions } from 'ioredis';
 
-/**
- * Object form of ThrottlerModuleOptions. The exported union also allows a bare
- * `ThrottlerOptions[]`; narrowing here lets callers read `.throttlers`/`.storage`
- * without union-narrowing while staying assignable to ThrottlerModuleOptions.
- */
+/** Object form of ThrottlerModuleOptions — narrowed so callers can read `.throttlers`/`.storage` directly. */
 type ThrottlerOptionsObject = Extract<ThrottlerModuleOptions, { throttlers: unknown }>;
 
-/** Parse a positive-integer env var via ConfigService, else fall back. */
 export function envInt(config: ConfigService, key: string, fallback: number): number {
   const raw = config.get<string>(key);
   const n = raw === undefined ? NaN : Number(raw);
@@ -30,16 +25,8 @@ function buildRedisUrl(config: ConfigService): string {
 
 export const GLOBAL_THROTTLER_NAME = 'default';
 
-/**
- * ioredis options for the throttler's own Redis client:
- *  - lazyConnect: do not open a socket on construction — connect on the first
- *    throttled request. Keeps unit tests that only build options (never issue a
- *    command) from leaking an open handle, and avoids connecting at boot.
- *  - enableOfflineQueue:false + maxRetriesPerRequest:1: fail fast when Redis is
- *    down so the guard's fail-open path triggers immediately instead of hanging.
- * The (url, options) overload keeps disconnectRequired=true, so the storage closes
- * its own connection on module destroy.
- */
+// lazyConnect keeps option-building socket-free (no jest handle leak); the fail-fast options let the
+// guard fail open immediately instead of hanging when Redis is down.
 const THROTTLER_REDIS_OPTIONS: RedisOptions = {
   lazyConnect: true,
   enableOfflineQueue: false,
@@ -60,9 +47,7 @@ export function buildThrottlerOptions(config: ConfigService): ThrottlerOptionsOb
   };
 }
 
-// Per-route override values are read at import time (decorator evaluation). Real
-// env vars (docker-compose `environment`) override fine; .env-only is not
-// guaranteed because this import may run before ConfigModule loads .env.
+// Read at import time (decorator evaluation): real env vars win, but .env may not be loaded yet.
 export const AUTH_THROTTLE = {
   default: { ttl: seconds(60), limit: Number(process.env.THROTTLE_AUTH_LIMIT) || 5 },
 };

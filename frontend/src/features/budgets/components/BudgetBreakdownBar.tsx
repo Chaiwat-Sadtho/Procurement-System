@@ -7,7 +7,7 @@ interface BudgetBreakdownBarProps {
   usagePercent: number
 }
 
-// stacked bar: จองแล้ว=ส้ม / ใช้จริง=ฟ้า / คงเหลือ=เขียว (สี category ตาม design spec §4.2)
+// Stacked bar: reserved = orange, used = blue, remaining = green
 export function BudgetBreakdownBar({ total, reserved, used, usagePercent }: BudgetBreakdownBarProps) {
   const safeTotal = total > 0 ? total : 1
   const remaining = Math.max(0, total - reserved - used)

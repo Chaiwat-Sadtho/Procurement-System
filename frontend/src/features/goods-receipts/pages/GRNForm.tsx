@@ -22,9 +22,7 @@ interface GRNFormProps {
   defaultValues: GrnFormValues
 }
 
-// PO analog POForm (create path only). GRN is immutable (contract §7): no mode union,
-// no toUpdatePayload/updateMutation, no budget hooks/preview, no owner check, no PR/vendor
-// Combobox — the host (GRNFormPage) has already chosen the PO.
+// The GRN counterpart of POForm, create-only: GRNs are immutable and the host has already picked the PO
 export function GRNForm({ po, defaultValues }: GRNFormProps) {
   const navigate = useNavigate()
   const { createMutation } = useGRNMutations()
@@ -39,7 +37,7 @@ export function GRNForm({ po, defaultValues }: GRNFormProps) {
   const isPending = createMutation.isPending
   const { isDirty, isValid } = form.formState
 
-  // feed the presentational preview the two figures it compares per line (§4A.2+4)
+  // the two figures the preview compares per line
   const watchedItems = useWatch({ control: form.control, name: 'items' })
   const previewItems = (watchedItems ?? []).map((line) => ({
     remaining: line.remaining,
@@ -47,8 +45,7 @@ export function GRNForm({ po, defaultValues }: GRNFormProps) {
   }))
 
   async function onSubmit(values: GrnFormValues) {
-    // synchronous in-flight guard: react-query's isPending flips after render,
-    // so a fast second click can slip through; this ref locks synchronously
+    // Synchronous guard: isPending only flips after render, so a fast second click would slip through
     if (inFlight.current) return
     inFlight.current = true
     try {

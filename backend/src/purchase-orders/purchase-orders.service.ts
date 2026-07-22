@@ -50,9 +50,7 @@ export class PurchaseOrdersService {
 
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    // นับเฉพาะ PO ของปีปัจจุบัน (prefix PO-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
-    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    // Yearly running number: numeric MAX over PO-YYYY-* (row count breaks after DELETE, lexical sort past 9999)
     const rows = await this.poRepository.find({
       where: { poNumber: Like(`PO-${year}-%`) },
       select: { poNumber: true },
@@ -68,7 +66,7 @@ export class PurchaseOrdersService {
       throw new BadRequestException('Can only create PO from approved Purchase Requests');
     }
 
-    // P4-2: กันสร้าง PO ซ้ำจาก PR เดียว — approved PR แปลงเป็น PO ได้ครั้งเดียว (ยกเว้น PO ที่ถูกยกเลิก)
+    // An approved PR converts to a PO exactly once (cancelled POs excepted)
     const existingPo = await this.poRepository.findOne({
       where: { prId: dto.prId, status: Not(PoStatus.CANCELLED) },
     });
@@ -78,9 +76,7 @@ export class PurchaseOrdersService {
       );
     }
 
-    // H1: ถ้า PR นี้เคยมี PO ถูก cancel — cancel ได้ release reservation ทั้งก้อนไปแล้ว (P5-2)
-    // เส้นทาง delta ด้านล่างตั้งสมมติฐานว่า PR estimate ยังถูกจองอยู่ ซึ่งไม่จริงแล้ว
-    // → ต้อง reserve ใหม่เต็มยอด PO (ผ่าน validate งบ) แทนการ adjust delta
+    // A cancelled PO already released the reservation → reserve the full PO amount again, not a delta
     const hadCancelledPo = await this.poRepository.findOne({
       where: { prId: dto.prId, status: PoStatus.CANCELLED },
       select: { id: true },
@@ -127,8 +123,8 @@ export class PurchaseOrdersService {
     }
     const prDepartmentId: number = pr.departmentId;
 
-    // P5-6: reserved ถูกจองด้วย PR estimate ตอน approve — ปรับให้ตรงยอด PO จริง (delta) ภายใน transaction เดียวกับการ save PO
-    // ถ้า PO แพงกว่างบคงเหลือ adjustReservedAmount จะ throw → rollback ไม่สร้าง PO (กัน used ทะลุ total ตอน consume)
+    // The reservation still holds the PR estimate — move it to the real PO total inside the save tx,
+    // where exceeding the remaining budget throws and rolls back instead of creating the PO.
     const reserveDelta = Number(totalAmount) - Number(pr.totalEstimatedAmount);
 
     let savedPo: PurchaseOrder;
@@ -172,14 +168,13 @@ export class PurchaseOrdersService {
     } catch (err) {
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         const constraint = (err as { constraint?: string }).constraint;
-        // P4-2: index บังคับว่า PR มี active PO ได้ใบเดียว — ถ้า app-level check หลุดเพราะ race DB จะจับตรงนี้
+        // The DB index catches the duplicate when the app-level check above loses a race
         if (constraint === 'UQ_active_po_per_pr') {
           throw new ConflictException(`Purchase Request ${dto.prId} already has an active PO`);
         }
-        // ถ้า 2 request gen po_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
+        // Two concurrent po_number generations collided — let the client retry
         throw new ConflictException('PO number collision, please retry');
       }
-      // error อื่นที่ไม่ใช่ 23505 (รวม audit write fail ภายใน tx) → re-throw → rollback → HTTP 500
       throw err;
     }
 
@@ -222,8 +217,7 @@ export class PurchaseOrdersService {
       qb.andWhere('po.status IN (:...receivable)', {
         receivable: [PoStatus.ACKNOWLEDGED, PoStatus.PARTIALLY_RECEIVED],
       });
-    // POs that already have a GRN (history filter) — partially_received + completed.
-    // acknowledged ถูกตัดออก (ยังไม่มี GRN) ต่างจาก receivable ที่รวม acknowledged.
+    // History filter: POs that already have a GRN — acknowledged has none, unlike `receivable` above
     if (withReceipts)
       qb.andWhere('po.status IN (:...withReceipts)', {
         withReceipts: [PoStatus.PARTIALLY_RECEIVED, PoStatus.COMPLETED],
@@ -267,7 +261,7 @@ export class PurchaseOrdersService {
     if (dto.notes !== undefined) po.notes = dto.notes;
 
     if (dto.items) {
-      // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว PO จะเหลือ 0 item
+      // delete-recreate must be atomic — a failed re-save would leave the PO with zero items
       const items = dto.items;
       const oldTotal = Number(po.totalAmount);
       const pr = po.purchaseRequest;
@@ -288,9 +282,7 @@ export class PurchaseOrdersService {
         po.items = await manager.save(PurchaseOrderItem, newItems);
         po.totalAmount = sumMoney(po.items.map((item) => item.totalPrice));
 
-        // P5-6 (F2): keep the dept budget reserved in sync with the edited total —
-        // mirror create's delta-gate. A positive delta beyond remaining budget throws
-        // inside this transaction → the item delete/recreate rolls back (PO unchanged).
+        // Keep the reserved budget in sync with the edited total; going over throws here → rollback
         if (pr?.departmentId != null) {
           await this.budgetsService.adjustReservedAmount(
             pr.departmentId,
@@ -366,8 +358,8 @@ export class PurchaseOrdersService {
         manager,
       );
 
-      // P5-2: release reserved budget ของ PR ที่ผูกอยู่ ภายใน tx เดียวกับ cancel (atomic, กัน budget leak)
-      // (PO ที่ COMPLETED ยกเลิกไม่ได้ และ consume เกิดเฉพาะตอน complete → ไม่มีทาง double-release กับ consume)
+      // Release the PR's reservation inside the cancel tx; COMPLETED POs cannot be cancelled, so this
+      // can never double-release against a consume.
       const pr = await manager.findOne(PurchaseRequest, {
         where: { id: po.prId },
         select: {
@@ -376,14 +368,14 @@ export class PurchaseOrdersService {
           fiscalYear: true,
           quarter: true,
           status: true,
-        }, // ตัด totalEstimatedAmount (dead field โค้ดเดิม) — release ใช้ Number(po.totalAmount) ไม่ใช่ PR estimate
+        }, // no totalEstimatedAmount: the release uses the real PO total
       });
       if (pr && pr.status === PrStatus.APPROVED && pr.departmentId != null) {
         await this.budgetsService.releaseReservedAmount(
           pr.departmentId,
           pr.fiscalYear ?? new Date().getFullYear(),
-          pr.quarter, // P5-3: release งบไตรมาสเดียวกับที่ reserve ไว้
-          Number(po.totalAmount), // P5-6: reserved สะท้อนยอด PO จริง (ปรับตอน create) ไม่ใช่ PR estimate
+          pr.quarter,
+          Number(po.totalAmount), // reserved mirrors the real PO total (adjusted at create)
           manager,
         );
       }
@@ -415,7 +407,7 @@ export class PurchaseOrdersService {
     try {
       savedRating = await this.ratingRepository.save(rating);
     } catch (err) {
-      // P4-4: ถ้า 2 request ผ่าน findOne พร้อมกัน DB unique constraint (UQ_vendor_rating_po) จะ reject ตัวที่สอง
+      // Concurrent raters both pass the findOne check — UQ_vendor_rating_po rejects the second
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         throw new ConflictException('This Purchase Order has already been rated');
       }

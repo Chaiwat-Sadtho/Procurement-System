@@ -138,7 +138,7 @@ describe('BudgetsService', () => {
     });
   });
 
-  // M6: committed-floor rule — invariant เงินตัวเดียวของ update() ที่เคยไม่มี test
+  // committed-floor rule — ห้ามลด totalAmount ต่ำกว่า reserved + used
   describe('update', () => {
     it('should raise totalAmount and save', async () => {
       mockBudgetRepo.findOne.mockResolvedValue({
@@ -267,7 +267,7 @@ describe('BudgetsService', () => {
       warnSpy.mockRestore();
     });
 
-    // P5-3: quarter เป็นเลข → where ต้อง match quarter ตรง ไม่ใช่ IsNull
+    // quarter เป็นเลข → where ต้อง match quarter ตรง ไม่ใช่ IsNull
     it('should query budget row matching the quarter when quarter is set', async () => {
       mockDataSource.manager.findOne.mockResolvedValue({
         ...mockBudget,
@@ -477,8 +477,7 @@ describe('BudgetsService', () => {
     });
   });
 
-  // review #183 M2: GET /budgets/department/:id เคยเปิดทุก role + ไม่ scope (IDOR) —
-  // ต้องใช้ assertCanAccessDept เหมือน getSummary/getTransactions
+  // GET /budgets/department/:id ต้อง scope ด้วย assertCanAccessDept เหมือน getSummary/getTransactions (กัน IDOR)
   describe('findByDepartment (role scoping)', () => {
     it('PO can list budgets of any department', async () => {
       mockBudgetRepo.find.mockResolvedValue([mockBudget]);

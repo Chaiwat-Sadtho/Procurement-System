@@ -184,7 +184,7 @@ describe('GoodsReceiptsService', () => {
         items: [{ poItemId: 1, receivedQuantity: 2, condition: ItemCondition.GOOD }],
       });
 
-      // P5-6: reserved สะท้อนยอด PO จริง → consume release ยอด PO (1000) ไม่ใช่ PR estimate (1200), usedToAdd=PO amount
+      // reserved สะท้อนยอด PO จริง → consume release ยอด PO (1000) ไม่ใช่ PR estimate (1200), usedToAdd=PO amount
       expect(mockBudgetsService.consumeAmount).toHaveBeenCalledWith(
         3,
         2025,
@@ -296,7 +296,7 @@ describe('GoodsReceiptsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequest on over-receipt (received > ordered) (P4-3)', async () => {
+    it('should throw BadRequest on over-receipt (received > ordered)', async () => {
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {
@@ -321,7 +321,7 @@ describe('GoodsReceiptsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should scope GRN running number to current year and not break past 9999 (L2)', async () => {
+    it('should scope GRN running number to current year and not break past 9999', async () => {
       const year = new Date().getFullYear();
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
@@ -393,7 +393,7 @@ describe('GoodsReceiptsService', () => {
       expect(savedPoCalls[0].status).toBe(PoStatus.PARTIALLY_RECEIVED);
     });
 
-    it('should reject duplicate poItemId in one payload that cumulatively over-receives (P4-3)', async () => {
+    it('should reject duplicate poItemId in one payload that cumulatively over-receives', async () => {
       const manager = createMockEntityManager(mockAcknowledgedPo);
       manager.findOne.mockImplementation((entity: any) => {
         if (entity === PurchaseOrder) {

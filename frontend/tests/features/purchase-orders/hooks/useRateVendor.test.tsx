@@ -47,7 +47,7 @@ describe('useRateVendor', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(3))
     expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-order', 7] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['vendor', 3] })
-    // the vendors LIST ratingAvg column changes on a new rating → refresh it too (M3)
+    // the vendors LIST ratingAvg column changes on a new rating → refresh it too
     expect(spy).toHaveBeenCalledWith({ queryKey: ['vendors'] })
     // success must NOT touch the narrow rating sub-key (that is the error path)
     expect(spy).not.toHaveBeenCalledWith({ queryKey: ['purchase-order', 7, 'rating'] })

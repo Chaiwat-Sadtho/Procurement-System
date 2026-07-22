@@ -57,8 +57,7 @@ export function PRListPage() {
   useClampPageToTotal(data?.meta.totalPages)
 
   const isEmployee = user?.role === 'employee'
-  // running number sticks to the page actually returned by the server (meta),
-  // not the local page state which momentarily leads the fetch
+  // Numbering follows the page the server returned, not the local state that leads the fetch
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 

@@ -35,7 +35,7 @@ export function POBudgetPreview({ budget, prEstimate, poTotal }: POBudgetPreview
   const total = Number(budget.totalAmount)
   const reserved = Number(budget.reservedAmount)
   const used = Number(budget.usedAmount)
-  // §4A: remaining is computed client-side (not present in the /budgets array)
+  // remaining is computed client-side (not present in the /budgets array)
   const remaining = total - reserved - used
 
   const delta = Number(poTotal) - Number(prEstimate)

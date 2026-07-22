@@ -360,7 +360,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(200);
   });
 
-  // --- H3 (review 2026-07-07): PO/GRN read = MANAGER + PROCUREMENT_OFFICER เท่านั้น ---
+  // --- PO/GRN read = MANAGER + PROCUREMENT_OFFICER เท่านั้น ---
   // FE routing กัน employee ออกจากหน้า PO/GRN อยู่แล้ว — BE ต้อง mirror ไม่งั้น employee
   // อ่านข้อมูล PR ของคนอื่น (ที่ PR module ห้ามไว้) ผ่าน PO/GRN endpoints ได้
 
@@ -399,7 +399,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
       .expect(403);
   });
 
-  // L6: POST GRN = PROCUREMENT_OFFICER เท่านั้น (guard ตัดก่อน validation — ไม่ต้องส่ง body จริง)
+  // POST GRN = PROCUREMENT_OFFICER เท่านั้น (guard ตัดก่อน validation — ไม่ต้องส่ง body จริง)
   it('POST /api/v1/goods-receipts — 403 for employee', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/goods-receipts')
@@ -497,7 +497,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     expect((cancelRes.body as PurchaseOrderResponse).status).toBe('cancelled');
   });
 
-  // --- P4-2: double-PO guard ---
+  // --- double-PO guard ---
 
   it('POST /api/v1/purchase-orders — rejects 2nd PO from a PR that already has an active PO', async () => {
     // prId เดิมมี PO (completed) ผูกอยู่แล้ว → สร้าง PO ซ้ำต้องโดน 409
@@ -605,7 +605,7 @@ describe('PurchaseOrders + GRN (e2e)', () => {
     expect(afterReserved - before).toBeCloseTo(4000, 2);
   });
 
-  // M5: FE เคลียร์ notes ด้วยการส่ง null — contract ที่ BE ต้องคงไว้
+  // FE เคลียร์ notes ด้วยการส่ง null — contract ที่ BE ต้องคงไว้
   // (omit field = ไม่แตะค่าเดิม จึงใช้เคลียร์ไม่ได้; IsOptional ข้าม null → ผ่าน validation)
   it('PATCH /api/v1/purchase-orders/:id — notes: null clears a previously saved note', async () => {
     const draftPoId = await freshDraftPo(1000);

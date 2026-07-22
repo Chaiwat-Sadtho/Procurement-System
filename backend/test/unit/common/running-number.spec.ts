@@ -7,7 +7,7 @@ describe('nextRunningSeq', () => {
   it('returns the max suffix + 1 regardless of input order', () => {
     expect(nextRunningSeq(['PR-2026-0003', 'PR-2026-0001', 'PR-2026-0002'])).toBe(4);
   });
-  it('does not truncate suffixes past 9999 (L2: slice(-4) bug)', () => {
+  it('does not truncate suffixes past 9999', () => {
     expect(nextRunningSeq(['PR-2026-9999'])).toBe(10000);
   });
   it('picks the numeric max, not the lexical max, above 9999', () => {

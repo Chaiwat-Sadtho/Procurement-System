@@ -3,7 +3,7 @@ import type { QueryEnabledOptions } from '@/shared/types'
 import { budgetsApi } from '../api'
 import type { BudgetListParams } from '../types'
 
-// search-first: params เป็น object จริงเสมอ; การยิง query ควบคุมด้วย { enabled } (มิเรอร์ group A)
+// Search-first: params are always a real object; { enabled } decides when the query fires
 export function useBudgets(
   params: BudgetListParams,
   { enabled = true }: QueryEnabledOptions = {},

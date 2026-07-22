@@ -4,8 +4,7 @@ import type { AnnouncementPayload } from '../types'
 
 export function useAnnouncementMutations() {
   const queryClient = useQueryClient()
-  // prefix invalidate: ['announcements'] covers both ['announcements','list'] (admin)
-  // and ['announcements','public'] (login) via react-query fuzzy matching
+  // the prefix covers both the admin list and the public login list
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['announcements'] })
 
   const createMutation = useMutation({

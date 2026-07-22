@@ -11,7 +11,7 @@ import { BudgetListPage } from '@/features/budgets/pages/BudgetListPage'
 // actually lands q + fiscalYear in the URL (wiring + the effect firing). Non-vacuity: stub the
 // page's commit to a no-op → this test fails. Budgets is not paginated → no page param.
 //
-// NOTE (#47, TESTING.md): the real-browser navigate no-op is browser-only; jsdom+RTL flushes
+// NOTE: the real-browser navigate no-op is browser-only; jsdom+RTL flushes
 // the write either way. The direct-write vs effect distinction is verified live (tools/eyeball).
 vi.mock('@/features/budgets/hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
 vi.mock('@/shared/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }))

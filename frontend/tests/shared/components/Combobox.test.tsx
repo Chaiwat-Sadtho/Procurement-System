@@ -42,11 +42,11 @@ describe('Combobox', () => {
   })
 
   // Lock test (regression guard, ไม่ใช่ fix): WCAG "combobox with dialog popup" pattern.
-  // ground-truth #88: Radix PopoverTrigger wire aria-controls={contentId} + aria-haspopup="dialog"
-  // ให้ trigger อยู่แล้ว (react-popover/index.mjs:90-92) → ชี้ไป PopoverContent (role="dialog")
-  // ที่ครอบ cmdk listbox. haspopup="dialog" ถูกต้องเพราะ popup มี search input ข้างใน (ไม่ใช่
-  // listbox ล้วน) — อย่า "แก้" เป็น "listbox". test นี้ล็อกความสัมพันธ์ทั้งเส้นกัน refactor
-  // (เลิกใช้ Radix/cmdk) พังเงียบ. ดู TESTING.md #88 (mutation-proven non-vacuous).
+  // Radix PopoverTrigger wire aria-controls={contentId} + aria-haspopup="dialog"
+  // ให้ trigger อยู่แล้ว → ชี้ไป PopoverContent (role="dialog") ที่ครอบ cmdk listbox.
+  // haspopup="dialog" ถูกต้องเพราะ popup มี search input ข้างใน (ไม่ใช่ listbox ล้วน) —
+  // อย่า "แก้" เป็น "listbox". test นี้ล็อกความสัมพันธ์ทั้งเส้นกัน refactor
+  // (เลิกใช้ Radix/cmdk) พังเงียบ.
   it('aria-controls ของ trigger ชี้ไป dialog popup ที่ครอบ listbox เมื่อเปิด (WCAG combobox)', async () => {
     render(<Combobox value="" onChange={vi.fn()} options={options} />)
     const trigger = screen.getByRole('combobox')

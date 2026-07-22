@@ -42,7 +42,7 @@ describe('usePurchaseRequest dashboard invalidation', () => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-request', 1] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['purchase-requests'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['dashboard'] })
-      // approve reserves budget → refresh list/preview + detail money-trail (M3);
+      // approve reserves budget → refresh list/preview + detail money-trail;
       // dashboard budgets + eligible picker covered by the broad prefixes above
       expect(spy).toHaveBeenCalledWith({ queryKey: ['budgets'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['budget'] })

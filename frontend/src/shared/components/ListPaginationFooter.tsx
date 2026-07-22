@@ -2,7 +2,7 @@ import { Button } from '@/shared/components/ui/button'
 import { PageSizeSelect } from '@/shared/components/PageSizeSelect'
 
 interface ListPaginationFooterProps {
-  /** precomputed summary text (page X of Y, total) — content is page-specific */
+  /** page-specific summary text, e.g. "page X of Y" */
   summary: string
   page: number
   totalPages: number
@@ -14,11 +14,7 @@ interface ListPaginationFooterProps {
   nextLabel?: string
 }
 
-/**
- * Pagination footer for list pages. The summary sits in a polite status region
- * so screen readers announce the new "page X of Y" after navigating, and the
- * page-size selector / prev-next controls stay consistent across every list.
- */
+/** Pagination footer for list pages; the summary is a polite status region so navigation is announced. */
 export function ListPaginationFooter({
   summary,
   page,

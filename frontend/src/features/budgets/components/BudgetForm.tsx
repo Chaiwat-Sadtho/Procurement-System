@@ -57,8 +57,7 @@ export function BudgetForm(props: BudgetFormProps) {
   const { createMutation, updateMutation } = useBudgetMutations()
   const inFlight = useRef(false)
 
-  // resolver rebuilt each render (cheap) — mirror POForm/PRForm/VendorForm; an edit
-  // resolver always reflects the current committed floor via makeEditBudgetSchema.
+  // Rebuilt each render so an edit resolver always carries the current committed floor
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(isEdit ? makeEditBudgetSchema(props.committed) : createBudgetSchema),
     defaultValues,
@@ -89,7 +88,7 @@ export function BudgetForm(props: BudgetFormProps) {
       }
       navigate(`/budgets/${savedId}`)
     } catch (e) {
-      // 409 = งวดนี้มีงบอยู่แล้ว (unique key ซ้ำ)
+      // 409 = a budget already exists for this period
       const status = (e as { response?: { status?: number } }).response?.status
       toast.error(status === 409 ? 'มีงบประมาณงวดนี้อยู่แล้ว' : getApiErrorMessage(e))
     } finally {

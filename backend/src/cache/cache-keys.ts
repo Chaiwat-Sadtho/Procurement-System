@@ -1,7 +1,4 @@
-/**
- * Central registry of cache keys, namespaces and TTLs (seconds) so read and
- * write paths across services stay in sync. CacheService multiplies TTL by 1000.
- */
+/** Central registry of cache keys, namespaces and TTLs (seconds) so read and write paths stay in sync. */
 export const CacheTtl = {
   REFERENCE: 3600, // vendor-categories, departments (rarely change)
   AUTH_ME: 300,

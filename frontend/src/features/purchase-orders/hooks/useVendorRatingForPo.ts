@@ -3,10 +3,8 @@ import type { QueryEnabledOptions } from '@/shared/types'
 import { purchaseOrdersApi } from '../api'
 
 /**
- * Read the vendor rating for a PO (`GET /purchase-orders/:id/rating`, null if unrated).
- * Sub-key of the PO detail (`['purchase-order', id]`) so rating after a successful
- * mutation flips this section to read-only via prefix-cascade invalidation.
- * Caller gates `enabled` on PO being completed (only completed POs can be rated).
+ * The vendor rating for a PO, null while unrated. Keyed as a sub-key of the PO detail so invalidating
+ * the detail also flips this section to read-only after a successful rating.
  */
 export function useVendorRatingForPo(poId: number, { enabled = true }: QueryEnabledOptions = {}) {
   return useQuery({

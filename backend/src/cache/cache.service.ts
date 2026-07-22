@@ -3,10 +3,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 
 /**
- * Single abstraction over the cache backend. Feature services depend on this,
- * never on cache-manager directly, so the store can be swapped and mocked easily.
- * Every method swallows backend errors (graceful degradation): a downed Redis
- * degrades to a cache miss / no-op invalidate rather than failing the request.
+ * The only cache abstraction feature services depend on (never cache-manager directly). Every method
+ * swallows backend errors: a downed Redis degrades to a miss / no-op instead of failing the request.
  */
 @Injectable()
 export class CacheService {
@@ -61,11 +59,7 @@ export class CacheService {
     return gen ?? 1;
   }
 
-  /**
-   * Namespaced cache-aside. The key embeds the namespace's current generation
-   * (`{namespace}:g{gen}:{subkey}`) so invalidateNamespace can retire every key
-   * in the namespace at once by bumping the counter — no SCAN/delByPrefix needed.
-   */
+  /** Namespaced cache-aside: the key embeds the namespace generation, so bumping one counter retires them all (no SCAN). */
   async getOrSetNamespaced<T>(
     namespace: string,
     subkey: string,
@@ -79,8 +73,7 @@ export class CacheService {
 
   async invalidateNamespace(namespace: string): Promise<void> {
     const gen = await this.generation(namespace);
-    // TTL 0 = no expiry: the generation counter must outlive cached values,
-    // otherwise it could reset and resurrect a stale generation's keys.
+    // TTL 0 = never expires: an expired counter would resurrect a stale generation's keys.
     await this.set(this.genKey(namespace), gen + 1, 0);
   }
 }

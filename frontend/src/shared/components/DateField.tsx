@@ -26,9 +26,8 @@ export function DateField({ id, value, onChange, error }: DateFieldProps) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState(() => (value ? isoToBuddhistText(value) : ''))
 
-  // sync ข้อความที่แสดงเมื่อ value เปลี่ยนจากภายนอก (reset/default) — ไม่ทับตอนกำลังพิมพ์.
-  // ปรับ state ระหว่าง render (React-recommended) แทน setState ใน effect → ไม่เกิด cascading
-  // render รอบสอง และไม่ต้อง suppress react-hooks/set-state-in-effect
+  // Re-sync the displayed text when value changes from outside (reset/default) without overwriting
+  // what the user is typing. Adjusting state during render avoids a second cascading render.
   const [prevValue, setPrevValue] = useState(value)
   if (value !== prevValue) {
     setPrevValue(value)
@@ -51,11 +50,10 @@ export function DateField({ id, value, onChange, error }: DateFieldProps) {
     setOpen(false)
   }
 
-  // แจ้งเตือนเมื่อพิมพ์ครบรูปแบบ DD/MM/YYYY แล้วแต่เป็นวันที่ที่เป็นไปไม่ได้
-  // (เดือน > 12 / วัน > 31 / วันที่ไม่มีจริงเช่น 31/02) — ไม่ nag ระหว่างยังพิมพ์ไม่ครบ
+  // Only complain once DD/MM/YYYY is fully typed but impossible — no nagging mid-entry
   const isComplete = /^\d{2}\/\d{2}\/\d{4}$/.test(text)
   const showInvalid = isComplete && buddhistTextToIso(text) === ''
-  // invalid-format สำคัญกว่า error จาก form (เช่น "required") เพราะตรงกับสิ่งที่ผู้ใช้เพิ่งพิมพ์
+  // the format error wins over the form's (e.g. "required") — it matches what was just typed
   const message = showInvalid ? 'กรุณากรอกวันที่ให้ถูกต้อง' : (error ?? '')
 
   return (

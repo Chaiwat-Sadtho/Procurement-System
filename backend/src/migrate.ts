@@ -1,10 +1,10 @@
 import { AppDataSource } from './data-source';
 
-// Standalone migration runner — รันใน 'migrate' service ครั้งเดียวก่อน backend pool boot
-// กัน race เมื่อหลาย instance รัน migrationsRun พร้อมกัน (docs/features/load-balancing/spec.md ข้อ 4.3)
+// Standalone migration runner: the 'migrate' service runs it once before the backend pool boots, so
+// instances never race each other.
 
-// postgres healthcheck (pg_isready) อาจผ่านก่อน accept TCP จริงตอน cold start (first-boot init)
-// → retry เฉพาะตอน connect แบบ bounded; migration error เอง (หลัง connect ติดแล้ว) ไม่ retry = fail ชัด exit 1
+// pg_isready can pass before Postgres accepts TCP on a cold start → retry the connect (bounded) only.
+// A migration error itself is not retried: it fails loudly with exit 1.
 async function initWithRetry(attempts = 5, delayMs = 2000): Promise<void> {
   for (let i = 1; i <= attempts; i++) {
     try {

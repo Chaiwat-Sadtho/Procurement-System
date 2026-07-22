@@ -10,17 +10,14 @@ export function usePurchaseRequest(id: number) {
     enabled: id > 0,
   })
 
-  // submit/reject don't move budget; ['purchase-requests'] prefix already covers the
-  // eligible-for-PO picker and ['dashboard'] covers the dashboard budget cards.
+  // submit/reject do not move budget, and these prefixes already cover the picker and dashboard
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ['purchase-request', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
     void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 
-  // approve reserves the dept budget → also refresh the budget list/preview (['budgets']) and
-  // the detail money-trail page (['budget'] — distinct prefix). Dashboard budgets + eligible
-  // picker are already covered by invalidate()'s broad prefixes above (M3).
+  // Approving reserves budget, so the list and the money-trail page (a distinct prefix) need refreshing
   function invalidateApprove() {
     invalidate()
     void queryClient.invalidateQueries({ queryKey: ['budgets'] })

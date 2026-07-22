@@ -51,9 +51,7 @@ export class PurchaseRequestsService {
 
   private async generatePrNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    // นับเฉพาะ PR ของปีปัจจุบัน (prefix PR-YYYY-) เพื่อ reset running number รายปี (P2-3/S-3)
-    // ดึงเลขทั้งปีแล้วหา MAX แบบ numeric (nextRunningSeq) แทนการนับแถว — count ต่ำกว่า suffix สูงสุดหลัง DELETE
-    // → gen ซ้ำ → 23505; และ ORDER BY lexical + slice(-4) เดิมพังถาวรเมื่อเลข > 9999 (L2).
+    // Yearly running number: numeric MAX over PR-YYYY-* (row count breaks after DELETE, lexical sort past 9999)
     const rows = await this.prRepository.find({
       where: { prNumber: Like(`PR-${year}-%`) },
       select: { prNumber: true },
@@ -92,7 +90,7 @@ export class PurchaseRequestsService {
       departmentId: requester.departmentId,
       title: dto.title,
       requiredDate: dto.requiredDate,
-      quarter: dto.quarter ?? null, // P5-3: null = งบรายปี
+      quarter: dto.quarter ?? null, // null = annual budget
       status: PrStatus.DRAFT,
       totalEstimatedAmount,
       items,
@@ -101,7 +99,7 @@ export class PurchaseRequestsService {
     try {
       return await this.prRepository.save(pr);
     } catch (err) {
-      // ถ้า 2 request gen pr_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry (parity กับ PO/GRN)
+      // Two concurrent pr_number generations collided — let the client retry (same as PO/GRN)
       if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
         throw new ConflictException('PR number collision, please retry');
       }
@@ -109,7 +107,7 @@ export class PurchaseRequestsService {
     }
   }
 
-  // role-scope กลาง: ใช้ทั้ง findAll และ stats เพื่อกัน scope เพี้ยนคนละทาง
+  // Shared by findAll and stats so the two can never scope differently
   private applyRoleScope(
     qb: SelectQueryBuilder<PurchaseRequest>,
     user: { id: number; role: UserRole; departmentId?: number | null },
@@ -117,12 +115,11 @@ export class PurchaseRequestsService {
     if (user.role === UserRole.EMPLOYEE) {
       qb.andWhere('pr.requesterId = :userId', { userId: user.id });
     } else if (user.role === UserRole.MANAGER) {
-      // dept จาก auth payload (สดทุก request) — ไม่ re-load user จาก DB
       qb.andWhere('pr.departmentId = :deptId', {
         deptId: requireManagerDepartmentId(user),
       });
     }
-    // PROCUREMENT_OFFICER: no scope filter — sees all PRs across departments (intentional)
+    // PROCUREMENT_OFFICER: no scope filter — sees every department's PRs (intentional)
   }
 
   async findAll(
@@ -156,8 +153,8 @@ export class PurchaseRequestsService {
     this.applyRoleScope(qb, user);
 
     if (status) qb.andWhere('pr.status = :status', { status });
-    // §3.1/§4A: เฉพาะ PR ที่พร้อมแปลงเป็น PO ใหม่ — approved + มีแผนก + ยังไม่มี PO ที่ยัง active.
-    // NOT EXISTS อ้าง column ดิบ (pr_id / status) ของตาราง purchase_orders → ต้อง e2e จริง (mock qb พิสูจน์ mapping ไม่ได้)
+    // Ready to become a PO: approved, has a department, and no active PO yet. The NOT EXISTS names raw
+    // purchase_orders columns, so only e2e can prove the mapping (a mocked query builder cannot).
     if (eligibleForPo) {
       qb.andWhere('pr.status = :eligibleStatus', {
         eligibleStatus: PrStatus.APPROVED,
@@ -277,12 +274,11 @@ export class PurchaseRequestsService {
     }
 
     if (user.role === UserRole.MANAGER) {
-      // dept จาก auth payload (สดทุก request) — ไม่ re-load user จาก DB
       if (pr.departmentId !== requireManagerDepartmentId(user)) {
         throw new ForbiddenException('Cannot access PRs from other departments');
       }
     }
-    // PROCUREMENT_OFFICER: no access restriction — can view any PR (intentional)
+    // PROCUREMENT_OFFICER: can view any PR (intentional)
 
     return pr;
   }
@@ -303,8 +299,8 @@ export class PurchaseRequestsService {
     if (dto.requiredDate) pr.requiredDate = dto.requiredDate;
 
     if (dto.items) {
-      // delete-recreate ของ items ต้อง atomic — ถ้า save ใหม่ล้มหลัง delete ไปแล้ว
-      // draft PR จะเหลือ 0 item + totalEstimatedAmount stale (pattern เดียวกับ PO update)
+      // delete-recreate must be atomic — a failed re-save would leave the draft with zero items and a
+      // stale totalEstimatedAmount (same pattern as PO update)
       const items = dto.items;
       return this.dataSource.transaction(async (manager) => {
         await manager.delete(PurchaseRequestItem, { prId: id });
@@ -405,13 +401,12 @@ export class PurchaseRequestsService {
       throw new ForbiddenException('Cannot approve PRs from other departments');
     }
 
-    // P5-5: ตรึงปีงบประมาณตอน approve เพื่อใช้ค่าเดิมตลอด lifecycle (reserve→consume/release)
+    // Pin the fiscal year at approval so the whole lifecycle (reserve → consume/release) hits one budget row
     const fiscalYear = new Date().getFullYear();
 
     const savedPr = await this.dataSource.transaction(async (txManager) => {
-      // H2: lock PR row + re-check status ใน tx — เช็คนอก tx อย่างเดียวกัน race ไม่ได้:
-      // 2 approve พร้อมกัน = reserve ซ้ำ / approve ชน reject = reserved ค้างถาวร
-      // (budget row lock ใน reserveAmount กัน lost-update ที่ตัวเลข แต่กันจองซ้ำระดับ PR ไม่ได้)
+      // Lock the PR row and re-check status: two concurrent approvals would reserve twice, and an
+      // approve racing a reject would strand the reservation. Locking the budget row alone cannot stop it.
       const lockedPr = await txManager.findOne(PurchaseRequest, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -428,7 +423,7 @@ export class PurchaseRequestsService {
       await this.budgetsService.reserveAmount(
         prDepartmentId,
         fiscalYear,
-        lockedPr.quarter, // P5-3: จองงบไตรมาสที่ PR เลือก (null = งบรายปี)
+        lockedPr.quarter, // the quarter the PR chose (null = annual budget)
         Number(lockedPr.totalEstimatedAmount),
         txManager,
       );
@@ -485,8 +480,8 @@ export class PurchaseRequestsService {
     }
 
     const saved = await this.dataSource.transaction(async (txManager) => {
-      // H2: lock + re-check เหมือน approve — approve ที่ commit ก่อนต้องชนะ
-      // (ไม่งั้น PR จบที่ REJECTED ทั้งที่ reserve งบไปแล้ว = ค้างถาวร ไม่มีทาง release)
+      // Lock and re-check as in approve — an approval that commits first must win, otherwise the PR ends
+      // up REJECTED with budget already reserved and nothing left to release it.
       const lockedPr = await txManager.findOne(PurchaseRequest, {
         where: { id },
         lock: { mode: 'pessimistic_write' },

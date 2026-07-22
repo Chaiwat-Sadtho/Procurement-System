@@ -2,29 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 export interface UrlFilterConfig<T> {
-  /** filter values เมื่อ URL ไม่มี param (หรือ param ผิด) */
+  /** filter values when the URL has no param (or a bad one) */
   defaults: T
-  /** อ่าน filter จาก URL — ต้อง defensive (param ผิด → fallback default, ไม่ throw) */
+  /** read filters from the URL — must be defensive (bad param → default, never throw) */
   parse: (params: URLSearchParams) => T
-  /** เขียน canonical filter ลง params (mutate): set ค่าที่ไม่ใช่ default, delete ตัวที่เป็น default */
+  /** write canonical filters into params (mutates): set non-defaults, delete defaults */
   serialize: (values: T, params: URLSearchParams) => void
-  /**
-   * commit/clear reset page=1 หรือไม่ (default true = หน้า paginated เช่น Vendors).
-   * หน้า client-side filter ที่ไม่มี usePagination (Users) ตั้ง false → URL ไม่มี page ค้าง
-   */
+  /** reset page=1 on commit/clear (default true); client-side-filter pages without usePagination set false */
   resetPage?: boolean
 }
 
 export interface UseUrlFiltersResult<T> {
-  /** = parse(searchParams) เสมอ (ไม่ขึ้นกับ q) */
+  /** = parse(searchParams), always */
   filters: T
-  /** = searchParams.has('q') — sentinel "ค้นแล้ว"/auto-search */
+  /** = searchParams.has('q') — the "has searched" sentinel */
   hasSearched: boolean
-  /** string เสถียรของ filter param + q (ใช้เป็น form key); ไม่รวม page/limit */
+  /** stable string of the filter params + q (used as a form key); excludes page/limit */
   signature: string
-  /** 1 navigation: serialize(values) + set q=1 + page=1 (คง limit/param อื่น) */
+  /** one navigation: serialize(values) + q=1 + page=1 (keeps limit) */
   commit: (values: T) => void
-  /** 1 navigation: serialize(defaults)=ลบ filter + delete q + page=1 (คง limit) */
+  /** one navigation: clear every filter + q, page=1 (keeps limit) */
   clear: () => void
 }
 
@@ -36,7 +33,7 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
 
   const filters = useMemo(
     () => config.parse(searchParams),
-    // config = stable module-level object per page (same eslint-disable pattern as usePagination)
+    // config is a stable module-level object per page
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [searchParams],
   )
@@ -50,14 +47,8 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, hasSearched])
 
-  // gotcha #47 (TESTING.md): a commit/clear triggered by RHF handleSubmit runs in an
-  // async microtask where setSearchParams (= navigate) is a no-op — only setState survives.
-  // So commit/clear record intent via setState (action); the URL is written here in a normal
-  // post-commit effect (React-managed flow → the write lands). The effect keys on `action`
-  // alone (NOT searchParams) so pagination's URL writes never re-trigger it, and it performs
-  // no setState of its own (that would trip react-hooks/set-state-in-effect) — each commit/
-  // clear stores a fresh object, so the effect fires exactly once per action with no clear
-  // needed. StrictMode's double-invoked mount effect is a no-op (action === null on mount).
+  // setSearchParams is a no-op inside RHF's async handleSubmit microtask, so commit/clear only record
+  // intent and the URL is written here. Keyed on `action` alone → pagination's writes never re-trigger it.
   useEffect(() => {
     if (!action) return
     setSearchParams((prev) => {
@@ -69,7 +60,7 @@ export function useUrlFilters<T>(config: UrlFilterConfig<T>): UseUrlFiltersResul
         config.serialize(config.defaults, p) // defaults serialize → deletes every filter key
         p.delete('q')
       }
-      if (config.resetPage !== false) p.set('page', '1') // paginated pages reset to page 1 (result set changes); non-paginated (Users) opt out
+      if (config.resetPage !== false) p.set('page', '1') // non-paginated pages (Users) opt out
       return p
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
