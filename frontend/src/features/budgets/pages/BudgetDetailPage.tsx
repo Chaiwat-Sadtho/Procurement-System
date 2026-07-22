@@ -71,7 +71,7 @@ export function BudgetDetailPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="งบทั้งหมด" value={budget.totalAmount} />
         <SummaryCard label="จองแล้ว" value={budget.reservedAmount} />
         <SummaryCard label="ใช้จริง" value={budget.usedAmount} />
