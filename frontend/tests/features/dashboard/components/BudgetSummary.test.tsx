@@ -83,6 +83,13 @@ describe('BudgetSummary', () => {
     expect(screen.getByTestId('budget-year-select')).toBeInTheDocument()
   })
 
+  it('lets the filter row wrap so the fixed-width selects cannot push the page sideways', () => {
+    mockBudgets([budget({})])
+    render(<BudgetSummary scope={{}} />)
+    const row = screen.getByTestId('budget-dept-select').closest('div.flex.items-center.justify-between')
+    expect(row).toHaveClass('flex-wrap')
+  })
+
   it('manager (fixed dept): hides department filter, keeps year filter', () => {
     mockBudgets([budget({})])
     render(<BudgetSummary scope={{ departmentId: 1 }} />)
