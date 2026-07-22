@@ -19,7 +19,20 @@ describe('ActionButtons', () => {
       />,
     )
     const grid = container.querySelector('div')
-    expect(grid).toHaveClass('grid', 'grid-cols-1', 'sm:grid-cols-4')
+    expect(grid).toHaveClass(
+      'grid',
+      'grid-cols-1',
+      'sm:[grid-template-columns:repeat(4,minmax(min-content,1fr))]',
+    )
+  })
+
+  it.each([2, 3, 4] as const)('sizes cols=%i tracks with a min-content floor', (cols) => {
+    const { container } = render(
+      <ActionButtons cols={cols} buttons={[{ key: 'a', label: 'ยกเลิกแบล็คลิสต์' }]} />,
+    )
+    expect(container.querySelector('div')).toHaveClass(
+      `sm:[grid-template-columns:repeat(${cols},minmax(min-content,1fr))]`,
+    )
   })
 
   it('right-aligns the cluster: each button gets an explicit sm:col-start (n=2, cols=4 -> 3,4)', () => {
@@ -60,7 +73,9 @@ describe('ActionButtons', () => {
         ]}
       />,
     )
-    expect(container.querySelector('div')).toHaveClass('sm:grid-cols-2')
+    expect(container.querySelector('div')).toHaveClass(
+      'sm:[grid-template-columns:repeat(2,minmax(min-content,1fr))]',
+    )
     expect(screen.getByRole('button', { name: 'ยกเลิก' })).toHaveClass('sm:col-start-1')
     expect(screen.getByRole('button', { name: 'ยืนยัน' })).toHaveClass('sm:col-start-2')
   })
