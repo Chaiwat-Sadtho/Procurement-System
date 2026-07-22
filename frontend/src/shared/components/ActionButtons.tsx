@@ -20,9 +20,9 @@ export interface ActionButtonsProps {
 
 // Full literal class names so Tailwind can see them — never interpolate these
 const SM_GRID: Record<number, string> = {
-  2: 'sm:grid-cols-2',
-  3: 'sm:grid-cols-3',
-  4: 'sm:grid-cols-4',
+  2: 'sm:[grid-template-columns:repeat(2,minmax(min-content,1fr))]',
+  3: 'sm:[grid-template-columns:repeat(3,minmax(min-content,1fr))]',
+  4: 'sm:[grid-template-columns:repeat(4,minmax(min-content,1fr))]',
 }
 
 const COL_START: Record<number, string> = {
