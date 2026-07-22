@@ -5,7 +5,7 @@ export type StatusFilter = 'all' | 'active' | 'inactive'
 export interface UserFilterValues {
   /** substring matched against fullName + email */
   search: string
-  /** 'all' | Role */
+  /** 'all' or a role */
   role: string
   status: StatusFilter
 }
@@ -16,10 +16,7 @@ export const DEFAULT_USER_FILTERS: UserFilterValues = {
   status: 'all',
 }
 
-/**
- * Client-side filter. `GET /users` returns the full array in memory, so the
- * list is cheap to filter on every keystroke.
- */
+/** Client-side filter: GET /users returns the whole list, so filtering per keystroke is cheap. */
 export function filterUsers(users: User[], filters: UserFilterValues): User[] {
   const search = filters.search.trim().toLowerCase()
   return users.filter((u) => {

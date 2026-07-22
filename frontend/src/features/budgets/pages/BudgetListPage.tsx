@@ -35,9 +35,9 @@ export function BudgetListPage() {
   const isManager = user?.role === 'manager'
   const canCreate = user?.role === 'procurement_officer'
 
-  // search-first + filters-in-URL (มิเรอร์ group A): filters/q อยู่ใน URL (survive refresh); query ยิงเมื่อ hasSearched
+  // Search-first: filters live in the URL so they survive a refresh, and the query only fires once searched
   const { filters, hasSearched, signature, commit, clear } = useUrlFilters(budgetUrlFilterConfig)
-  // manager: บังคับแผนกตัวเอง แม้ URL ถูกปั้นเป็นแผนกอื่น (BE enforce ซ้ำ — defense in depth)
+  // Managers are pinned to their own department even if the URL says otherwise (the backend re-checks)
   const appliedParams: BudgetListParams = {
     fiscalYear: filters.fiscalYear,
     departmentId: isManager ? (user?.departmentId ?? undefined) : filters.departmentId,
@@ -45,7 +45,6 @@ export function BudgetListPage() {
   const { data, isLoading, isError, refetch } = useBudgets(appliedParams, { enabled: hasSearched })
 
   function handleSubmit(result: BudgetListFilterResult) {
-    // manager: บังคับแผนกตัวเอง (BE enforce ซ้ำ)
     const departmentId = isManager ? (user?.departmentId ?? undefined) : result.departmentId
     commit({ fiscalYear: result.fiscalYear, departmentId })
   }
@@ -54,7 +53,7 @@ export function BudgetListPage() {
     clear()
   }
 
-  // เรียง remaining น้อย→มาก (ใกล้หมดขึ้นก่อน); remaining = total - reserved - used (FE คำนวณ)
+  // Sorted by remaining budget ascending, so the tightest rows surface first
   const rows = useMemo(() => {
     if (!data) return []
     return [...data]

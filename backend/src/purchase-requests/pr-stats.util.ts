@@ -11,8 +11,7 @@ export interface PrStatsResponse {
 type CountedStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 const COUNTED: CountedStatus[] = ['draft', 'submitted', 'approved', 'rejected'];
 
-// map raw GROUP BY rows → response. ตัด under_review (และ status อื่นที่ไม่อยู่ใน COUNTED) ทิ้ง.
-// getRawMany คืน count เป็น string → แปลงเป็น number.
+// Map raw GROUP BY rows onto the response: statuses outside COUNTED are dropped, string counts coerced.
 export function mapStatsRows(rows: { status: PrStatus; count: string }[]): PrStatsResponse {
   const counts: Record<CountedStatus, number> = {
     draft: 0,

@@ -12,7 +12,7 @@ export function parseVendorFilters(params: URLSearchParams): VendorListFilterVal
   const rawBl = params.get('isBlacklisted')
   const isBlacklisted = rawBl === 'true' || rawBl === 'false' ? rawBl : 'all'
   const rawCat = params.get('categoryId')
-  // defensive = SYNTACTIC only (digits). ไม่เช็คว่ามีใน category list (membership = follow-up)
+  // syntactic check only — membership in the category list is not verified
   const categoryId = rawCat && /^\d+$/.test(rawCat) ? rawCat : 'all'
   return { search, isBlacklisted, categoryId }
 }

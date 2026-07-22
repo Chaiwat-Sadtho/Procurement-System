@@ -1,6 +1,4 @@
-// รวม format ของ running number (PR/PO/GRN) ที่ซ้ำกัน 3 ที่ ให้เป็น single source
-// รูปแบบ `${prefix}-${year}-${pad4(seq)}` เช่น PR-2025-0001 (suffix zero-padded อย่างน้อย 4 หลัก
-// แต่ขยายเองเมื่อ seq > 9999 → PR-2025-10000 ไม่ตัด)
+// Single source for the PR/PO/GRN running-number format: PR-2025-0001 (padded to 4, grows past 9999)
 export function formatRunningNumber(
   prefix: 'PR' | 'PO' | 'GRN',
   year: number,
@@ -9,8 +7,7 @@ export function formatRunningNumber(
   return `${prefix}-${year}-${String(seq).padStart(4, '0')}`;
 }
 
-// หา running number ถัดไปจากชุดเลขของปีเดียวกัน — MAX แบบ numeric (lexical sort พังเมื่อเลข > 9999)
-// parse suffix หลัง '-' ตัวสุดท้ายเต็มความยาว (ไม่ fix 4 หลัก) + ข้าม token ที่ parse ไม่ได้
+// Next sequence for a year: numeric MAX (lexical sort breaks past 9999); unparsable numbers are skipped
 export function nextRunningSeq(existingNumbers: string[]): number {
   const maxSeq = existingNumbers.reduce((max, n) => {
     const seq = Number(n.slice(n.lastIndexOf('-') + 1));

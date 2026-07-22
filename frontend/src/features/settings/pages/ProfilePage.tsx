@@ -39,8 +39,8 @@ export function ProfilePage() {
   const { isDirty } = form.formState
 
   useEffect(() => {
-    // sync from server only when there are no unsaved edits — a background
-    // refetch (refetchOnWindowFocus) must not clobber what the user is typing
+    // Only sync from the server when nothing is unsaved — a background refetch must not
+    // overwrite what the user is typing
     if (user && !isDirty) {
       form.reset({
         firstName: user.firstName ?? '',
@@ -55,8 +55,7 @@ export function ProfilePage() {
       settingsApi.updateProfile(data),
     onSuccess: (updated: User) => {
       queryClient.setQueryData(['currentUser'], updated)
-      // re-sync to the saved values so the form is clean again — Save disables
-      // itself and a second click cannot fire a duplicate request
+      // reset to the saved values so the form is clean and Save disables itself again
       form.reset({
         firstName: updated.firstName ?? '',
         middleName: updated.middleName ?? '',

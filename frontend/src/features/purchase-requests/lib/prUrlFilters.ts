@@ -11,11 +11,8 @@ export const DEFAULT_PR_FILTERS: PRListFilterValues = {
   status: 'all',
 }
 
-// The filter form's status Select offers a SUBSET of PRStatus (no under_review),
-// so the URL's valid status set mirrors the form, not the entity enum — a URL
-// status the form cannot display would round-trip into a blank Select. Partial<>
-// allows the subset while still rejecting any key that is not a real PRStatus
-// (typo guard); adding a status the form should filter by means adding it here.
+// The valid URL statuses mirror the filter form's Select, not the full PRStatus enum — a status the
+// form cannot display would round-trip into a blank Select. Partial<> still rejects typos.
 const PR_FILTER_STATUS_FLAGS = {
   draft: true,
   submitted: true,
@@ -26,10 +23,8 @@ const VALID_PR_STATUS = new Set<string>(Object.keys(PR_FILTER_STATUS_FLAGS))
 
 export function parsePrFilters(params: URLSearchParams): PRListFilterValues {
   const rawStatus = params.get('status')
-  // status is a closed (filterable) enum → keep only a known value, else 'all'
   const status = rawStatus && VALID_PR_STATUS.has(rawStatus) ? rawStatus : 'all'
-  // text + date fields read verbatim (no trim) — serialize trims to canonical form;
-  // dates stay lenient (the form re-validates on submit, URL scrub is out of scope)
+  // Text and dates are read verbatim; serialize is what canonicalises them
   return {
     prNumber: params.get('prNumber') ?? '',
     search: params.get('search') ?? '',
@@ -50,7 +45,7 @@ export function serializePrFilters(v: PRListFilterValues, params: URLSearchParam
   setTrimmed(params, 'prNumber', v.prNumber)
   setTrimmed(params, 'search', v.search)
   setTrimmed(params, 'requesterName', v.requesterName)
-  // dates carry no whitespace (DateField emits ISO) → set when present, else delete
+  // DateField emits ISO, so no trimming needed here
   if (v.from) params.set('from', v.from)
   else params.delete('from')
   if (v.to) params.set('to', v.to)
@@ -63,5 +58,5 @@ export const prUrlFilterConfig: UrlFilterConfig<PRListFilterValues> = {
   defaults: DEFAULT_PR_FILTERS,
   parse: parsePrFilters,
   serialize: serializePrFilters,
-  // no resetPage → default true (PRListPage is paginated via usePagination)
+  // resetPage defaults to true — PRListPage is paginated
 }

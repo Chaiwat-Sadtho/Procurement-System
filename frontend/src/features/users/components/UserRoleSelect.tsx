@@ -21,8 +21,7 @@ interface UserRoleSelectProps {
 
 export function UserRoleSelect({ user, disabled, disabledReason }: UserRoleSelectProps) {
   const { updateRoleMutation } = useUserMutations()
-  // pendingRole is separate from `value` (which stays bound to user.role) so that
-  // cancelling the confirm dialog leaves the trigger showing the original role.
+  // Kept separate from `value` so cancelling the dialog leaves the original role showing
   const [pendingRole, setPendingRole] = useState<Role | null>(null)
   const displayName = user.fullName.trim() || user.email
 

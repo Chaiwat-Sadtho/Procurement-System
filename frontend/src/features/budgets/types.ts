@@ -5,7 +5,7 @@ export interface BudgetDeptRef {
   name: string
 }
 
-// GET /budgets (array, ไม่ paginate) — money coerce เป็น number ที่ api boundary
+// GET /budgets returns a plain array; money is coerced to number at the API boundary
 export interface Budget {
   id: number
   departmentId: number

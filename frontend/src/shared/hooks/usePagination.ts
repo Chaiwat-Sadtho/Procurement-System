@@ -3,9 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const
 
-// Strictly parse a URL param as a plain decimal integer. Number() alone would let
-// scientific notation ('1e21'), hex ('0x10'), whitespace (' 3') and beyond-safe
-// integers through — values that would otherwise reach the API and 500 it.
+// Strict decimal-integer parse: Number() alone would let '1e21', '0x10', ' 3' and unsafe integers
+// through to the API, where they 500.
 function parseIntParam(value: string | null): number | null {
   if (value === null || !/^\d+$/.test(value)) return null
   const n = Number(value)
@@ -24,12 +23,12 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
       ? rawLimit
       : initialLimit
 
-  // normalize: ลบ param ที่ "มีอยู่ + invalid/non-canonical" ออกจาก URL (display ใช้ fallback อยู่แล้ว).
-  // self-contained — ไม่พึ่ง totalPages (clamp แยกอยู่ useClampPageToTotal). auto-correction → replace.
+  // Strip params that are present but invalid — the display already falls back, so correct the URL
+  // with replace. Independent of totalPages, which useClampPageToTotal handles.
   useEffect(() => {
     const pageRaw = searchParams.get('page')
     const limitRaw = searchParams.get('limit')
-    // invalid = parse ไม่ผ่าน OR ผิด domain rule OR ไม่ canonical ('01' parse=1 แต่ String(1)!=='01')
+    // invalid = unparsable, outside the allowed values, or non-canonical ('01' parses to 1)
     const pageInvalid =
       pageRaw !== null && (rawPage === null || rawPage < 1 || String(rawPage) !== pageRaw)
     const limitInvalid =
@@ -47,11 +46,11 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
       },
       { replace: true },
     )
-    // deps แคบโดยตั้งใจ: rawPage/rawLimit derive จาก searchParams, setSearchParams stable
+    // deps kept narrow on purpose: rawPage/rawLimit derive from searchParams, setSearchParams is stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  // merge-safe: clone prev params so unrelated keys (e.g. ?status=) are preserved
+  // Clone prev params so unrelated keys (e.g. ?status=) survive
   function update(next: { page?: number; limit?: number }) {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev)
@@ -82,10 +81,8 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
     update({ page: 1, limit: n })
   }
 
-  // generic merge-safe write for callers that need to set page/limit together with
-  // their own params (e.g. a status filter) in a SINGLE navigation — routing every
-  // URL write through this one setSearchParams instance avoids two writers
-  // clobbering each other when they fire in the same tick.
+  // One shared writer, so a caller setting page/limit together with its own params in the same tick
+  // cannot clobber the other's navigation
   function setParams(mutate: (params: URLSearchParams) => void) {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev)
@@ -97,8 +94,8 @@ export function usePagination(initialPage = 1, initialLimit = 5) {
   return { page, limit, setPage, nextPage, prevPage, goToPage, setLimit, setParams }
 }
 
-// clamp page > totalPages ลง — เรียกหลัง data มี totalPages (ต้อง downstream ของ usePagination).
-// แยกจาก usePagination เพราะ totalPages มาจาก query ที่ใช้ page/limit ของ usePagination (data cycle).
+// Clamp a page beyond totalPages. Separate from usePagination because totalPages comes from the query
+// that usePagination's own page/limit drive.
 export function useClampPageToTotal(totalPages?: number) {
   const [searchParams, setSearchParams] = useSearchParams()
   const rawPage = parseIntParam(searchParams.get('page'))

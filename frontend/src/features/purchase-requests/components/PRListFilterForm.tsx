@@ -67,7 +67,7 @@ export function PRListFilterForm({
 }: PRListFilterFormProps) {
   const [resetKey, setResetKey] = useState(0)
 
-  // restore (initialValues from URL) wins; a fresh form defaults วันสิ้นสุด = วันนี้ (#6)
+  // Values restored from the URL win; a fresh form defaults the end date to today
   const defaultValues: PRListFilterValues = initialValues ?? {
     ...EMPTY_FILTERS,
     to: dateToIso(new Date()),
@@ -88,10 +88,9 @@ export function PRListFilterForm({
   const statusValue = useWatch({ control, name: 'status' }) ?? 'all'
 
   function handleClear() {
-    // ล้าง = กลับเป็นค่าว่างทั้งหมด (รวม to) ไม่ใช่ค่า restore/default — page remount (key) จะ
-    // re-seed เป็น fresh (to=วันนี้) อีกที; การ reset นี้ครอบ standalone form (ไม่มี remount)
+    // Clearing empties every field, including the end date — the page remount re-seeds today's date
     reset(EMPTY_FILTERS)
-    setResetKey((k) => k + 1) // remount DateField → ล้าง buffer ที่พิมพ์ค้าง
+    setResetKey((k) => k + 1) // remount DateField to drop any half-typed text
     onClear?.()
   }
 

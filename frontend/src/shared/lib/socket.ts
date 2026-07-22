@@ -2,9 +2,8 @@ import { io, Socket } from 'socket.io-client'
 
 let socket: Socket | null = null
 
-// Connect to the /notifications namespace on the current origin (dev: Vite proxies
-// /socket.io → :3000; prod: nginx upgrades /socket.io → backend_pool). WS-only so no
-// long-polling handshake → nginx needs no sticky sessions.
+// Connects to the /notifications namespace on the current origin. WebSocket-only: without the
+// long-polling handshake, nginx needs no sticky sessions.
 export function connectNotificationSocket(token: string): Socket {
   if (socket?.connected) return socket
   if (socket) {

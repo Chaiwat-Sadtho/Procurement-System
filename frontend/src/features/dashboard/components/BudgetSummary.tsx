@@ -37,7 +37,7 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
   const { data: departments } = useDepartments()
 
   const yearOptions = [currentYear, currentYear - 1]
-  // เรียงงบเหลือน้อยสุดก่อน (วิกฤตสุดอยู่บน) — แสดงครบทุกตัว เลื่อนดูในการ์ด
+  // Tightest budgets first; every row is listed and the card scrolls
   const sorted = [...(data ?? [])].sort((a, b) => remaining(a) - remaining(b))
 
   return (
@@ -89,7 +89,7 @@ export function BudgetSummary({ scope }: BudgetSummaryProps) {
         ) : sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground">ยังไม่มีงบสำหรับปีนี้</p>
         ) : (
-          // เลื่อนดูในการ์ด (แทนปุ่มแสดงทั้งหมด); header ค้างบนตอน scroll
+          // scrolls inside the card instead of a "show all" button; the header stays pinned
           <div className="max-h-72 overflow-y-auto">
             <Table className="min-w-[280px] [&_td]:px-2 [&_th]:px-2">
               <TableHeader className="sticky top-0 z-10 bg-table-header text-table-header-foreground">

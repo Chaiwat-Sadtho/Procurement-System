@@ -44,7 +44,6 @@ export class GoodsReceiptsService {
 
   async create(receivedBy: number, dto: CreateGoodsReceiptDto): Promise<GoodsReceiptNote> {
     const { grn, poCompleted } = await this.dataSource.transaction(async (manager) => {
-      // 1. Fetch PO with items inside transaction
       const po = await manager.findOne(PurchaseOrder, {
         where: { id: dto.poId },
         relations: { items: true },
@@ -56,8 +55,7 @@ export class GoodsReceiptsService {
         );
       }
 
-      // 2. Generate GRN number ในปีเดียวกัน — หา MAX แบบ numeric จากเลขทั้งปี
-      // (นับแถวพังหลัง DELETE, lexical sort พังเมื่อเลข > 9999; อยู่ใน transaction เดียวกัน)
+      // Yearly running number: numeric MAX over GRN-YYYY-* (row count breaks after DELETE, lexical sort past 9999)
       const year = new Date().getFullYear();
       const grnRows = await manager.find(GoodsReceiptNote, {
         where: { grnNumber: Like(`GRN-${year}-%`) },
@@ -66,17 +64,16 @@ export class GoodsReceiptsService {
       const nextGrn = nextRunningSeq(grnRows.map((r) => r.grnNumber));
       const grnNumber = formatRunningNumber('GRN', year, nextGrn);
 
-      // 3. Validate GRN items + สะสม effective qty ต่อ po item (กัน poItemId ซ้ำใน payload เดียว bypass over-receipt guard)
+      // Accumulate per PO item so repeated poItemId lines in one payload cannot bypass the over-receipt guard
       const effectiveByPoItem = new Map<number, number>();
       const grnItems = dto.items.map((dtoItem) => {
         const poItem = po.items.find((i) => i.id === dtoItem.poItemId);
         if (!poItem) {
           throw new BadRequestException(`PO item ${dtoItem.poItemId} not found in PO ${dto.poId}`);
         }
-        // ของชำรุดไม่นับเป็นของที่รับจริง — เฉพาะ condition=good เท่านั้นที่นับเข้า receivedQuantity
+        // Damaged goods are not counted as received — only condition=good adds to receivedQuantity
         const effectiveQty =
           dtoItem.condition === ItemCondition.GOOD ? Number(dtoItem.receivedQuantity) : 0;
-        // ordered ต้องคลุม received สะสมเดิม + ของที่รับใน payload นี้ทั้งหมด (รวมบรรทัดซ้ำ poItemId เดียวกัน)
         const priorInRequest = effectiveByPoItem.get(dtoItem.poItemId) ?? 0;
         const totalAfterReceipt = Number(poItem.receivedQuantity) + priorInRequest + effectiveQty;
         if (totalAfterReceipt > Number(poItem.quantity)) {
@@ -93,7 +90,7 @@ export class GoodsReceiptsService {
         });
       });
 
-      // 4. ปรับ received_quantity ใน memory แล้วสรุปสถานะ PO ก่อนเขียน DB (เขียน GRN status ครั้งเดียว)
+      // Apply in memory first so the GRN is saved once, already carrying the right status
       for (const poItem of po.items) {
         const received = effectiveByPoItem.get(poItem.id);
         if (received === undefined) continue;
@@ -103,7 +100,6 @@ export class GoodsReceiptsService {
         (item) => Number(item.receivedQuantity) >= Number(item.quantity),
       );
 
-      // 5. Save GRN ครั้งเดียวด้วยสถานะที่ถูกต้อง
       const grnData = manager.create(GoodsReceiptNote, {
         grnNumber,
         poId: dto.poId,
@@ -117,14 +113,13 @@ export class GoodsReceiptsService {
       try {
         savedGrn = await manager.save(GoodsReceiptNote, grnData);
       } catch (err) {
-        // ถ้า 2 request gen grn_number ชนกัน DB unique constraint จะ reject ตัวที่สอง — ให้ client retry
+        // Two concurrent grn_number generations collided — let the client retry
         if (err instanceof QueryFailedError && (err as { code?: string }).code === '23505') {
           throw new ConflictException('GRN number collision, please retry');
         }
         throw err;
       }
 
-      // 6. persist received_quantity ของ po items + สถานะ PO
       for (const poItem of po.items) {
         if (effectiveByPoItem.has(poItem.id)) {
           await manager.save(PurchaseOrderItem, poItem);
@@ -134,7 +129,6 @@ export class GoodsReceiptsService {
       if (allReceived) po.actualDeliveryDate = dto.receivedDate;
       await manager.save(PurchaseOrder, po);
 
-      // 7. เมื่อรับของครบ — consume budget ภายใน transaction เดียวกัน
       if (allReceived) {
         const prData = await manager.findOne(PurchaseRequest, {
           where: { id: po.prId },
@@ -147,18 +141,18 @@ export class GoodsReceiptsService {
           },
         });
         if (prData && prData.departmentId != null) {
-          // ใช้ fiscalYear ที่ตรึงไว้ตอน approve เพื่อ consume budget row เดียวกับที่ reserve
+          // The fiscal year pinned at approval, so this consumes the same row the PR reserved
           await this.budgetsService.consumeAmount(
             prData.departmentId,
             prData.fiscalYear ?? new Date().getFullYear(),
-            prData.quarter, // consume งบไตรมาสเดียวกับที่ reserve
-            Number(po.totalAmount), // reserved สะท้อนยอด PO จริง (ปรับตอน create) → release ยอด PO ไม่ใช่ PR estimate
+            prData.quarter,
+            Number(po.totalAmount), // reserved mirrors the real PO total (adjusted at create)
             Number(po.totalAmount),
             manager,
           );
         } else {
-          // ไม่ควรเกิด — PO ทุกตัวมาจาก PR จริง (UQ_active_po_per_pr). ถ้าเกิด = ข้อมูลเพี้ยน
-          // และ reserved budget จะค้างไม่ถูก release จึง log ไว้ debug (ไม่ throw เพื่อไม่ rollback GRN ที่ถูกต้อง)
+          // Should be unreachable (every PO comes from a PR). Log instead of throwing so a valid GRN
+          // is not rolled back — the reservation stays until someone investigates.
           this.logger.warn(
             `PO ${po.id} completed but PR ${po.prId} has no department/not found — budget not consumed`,
           );
@@ -183,7 +177,7 @@ export class GoodsReceiptsService {
       return { grn: savedGrn, poCompleted: allReceived };
     });
 
-    // notification หลัง transaction commit (best-effort)
+    // Best-effort, after the transaction commits
     if (poCompleted) {
       void this.notificationsService
         .send({

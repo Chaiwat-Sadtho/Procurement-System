@@ -31,8 +31,8 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-// ย่อจำนวนเงินสำหรับพื้นที่จำกัด (แกนชาร์ต / การ์ดสรุปแดชบอร์ด): ฿0 / ฿850K / ฿1.2M
-// ค่าเต็ม (มีสตางค์) ใช้ formatCurrency
+// Short money for tight spaces such as chart axes and dashboard cards: ฿0 / ฿850K / ฿1.2M.
+// Use formatCurrency where the exact amount matters.
 export function formatBahtShort(amount: number): string {
   if (amount >= 1_000_000)
     return `฿${(amount / 1_000_000).toFixed(amount % 1_000_000 === 0 ? 0 : 1)}M`

@@ -22,8 +22,8 @@ const lineSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['good'], message: 'ต้องไม่ติดลบ' })
     if (damaged < 0)
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['damaged'], message: 'ต้องไม่ติดลบ' })
-    // FE-bound stricter than backend: good + damaged ≤ remaining.
-    // Round the sum to 2dp first so float imprecision (0.1+0.2=0.30000000000000004) does not falsely reject an at-bound receive.
+    // Stricter than the backend: good + damaged must fit in what is left. Round first so float
+    // imprecision does not reject an exactly-at-the-bound receive.
     if (Number((good + damaged).toFixed(2)) > line.remaining)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -40,8 +40,7 @@ export const grnFormSchema = z
     items: z.array(lineSchema),
   })
   .superRefine((values, ctx) => {
-    // ≥1 emitted DTO item (ArrayMinSize 1) — threshold mirrors the mapper's 0.01 floor (backend
-    // @Min(0.01)) so a schema-valid form never maps to an empty items[] the backend would 400.
+    // The 0.01 threshold matches the mapper's floor, so a valid form never maps to an empty items[]
     const emitted = values.items.some((l) => safeNum(l.good) >= 0.01 || safeNum(l.damaged) >= 0.01)
     if (!emitted)
       ctx.addIssue({
@@ -53,8 +52,7 @@ export const grnFormSchema = z
 
 export type GrnFormValues = z.infer<typeof grnFormSchema>
 
-// damaged-split mapper: per line emit good item if good>0
-// AND damaged item if damaged>0; drop empty; each emitted qty ≥ 0.01.
+// One form line can emit two DTO items — a good one and a damaged one; empty quantities are dropped
 export function toCreatePayload(values: GrnFormValues): CreateGoodsReceiptPayload {
   const notes = values.notes?.trim()
   const items: CreateGoodsReceiptPayload['items'] = []
@@ -74,8 +72,7 @@ export function toCreatePayload(values: GrnFormValues): CreateGoodsReceiptPayloa
   }
 }
 
-// build form lines from a loaded PO: good defaults to remaining, damaged '0';
-// only lines with remaining > 0 (fully-received lines dropped).
+// Seed the form from a PO: good defaults to what is outstanding, fully-received lines are dropped
 export function createDefaultValues(po: PurchaseOrder): GrnFormValues {
   const items = po.items
     .map((it) => {
@@ -88,7 +85,7 @@ export function createDefaultValues(po: PurchaseOrder): GrnFormValues {
         ordered,
         alreadyReceived,
         remaining,
-        // remaining > 0 guaranteed by the filter below, so no need for a 0-branch here
+        // the filter below guarantees remaining > 0
         good: String(remaining),
         damaged: '0',
       }

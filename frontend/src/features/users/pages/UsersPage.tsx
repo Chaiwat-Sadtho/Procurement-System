@@ -28,8 +28,7 @@ export function UsersPage() {
   const { data: users, isLoading, isError, refetch } = useUsers({ enabled: hasSearched })
   const { data: currentUser } = useCurrentUser()
 
-  // global count: this page is PO-only, so GET /users returns everyone and the
-  // active-PO count is always correct (manager dept-scoping never applies here)
+  // This page is procurement-only, so GET /users returns everyone and the count is global
   const activePoCount = (users ?? []).filter(
     (u) => u.role === 'procurement_officer' && u.isActive,
   ).length

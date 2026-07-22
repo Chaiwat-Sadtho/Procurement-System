@@ -1,8 +1,6 @@
 /**
- * Coerce a possibly non-numeric / non-finite value to a finite number, defaulting to 0.
- * Number(undefined) -> NaN, Number('abc') -> NaN, Number('1e999') -> Infinity all collapse to 0,
- * so neither NaN/Infinity can leak into arithmetic (-> NaN totals) nor into a display (-> "฿NaN").
- * Shared by the PR/PO/GRN form schemas (mapper bound checks) and the dashboard budget boundary.
+ * Coerce any value to a finite number, defaulting to 0, so NaN/Infinity can never leak into a total
+ * or a formatted amount. Shared by the PR/PO/GRN form schemas and the dashboard budget cards.
  */
 export function safeNum(v: string | number | undefined): number {
   const n = Number(v)

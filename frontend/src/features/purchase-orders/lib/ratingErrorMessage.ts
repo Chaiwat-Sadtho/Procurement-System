@@ -1,10 +1,6 @@
 import { getApiErrorMessage } from '@/shared/lib/getApiErrorMessage'
 
-/**
- * Map a rating-mutation error to a Thai toast message. Backend returns English
- * messages (purchase-orders.service rateVendor); the two known business errors
- * are translated, everything else falls through to the generic extractor.
- */
+/** Toast message for a rating error: the two known business errors are translated, the rest fall through. */
 export function ratingErrorMessage(error: unknown): string {
   const raw = getApiErrorMessage(error, 'บันทึกคะแนนไม่สำเร็จ')
   if (raw.includes('already been rated')) return 'ใบสั่งซื้อนี้ให้คะแนนไปแล้ว'

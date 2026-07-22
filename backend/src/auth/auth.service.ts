@@ -116,10 +116,8 @@ export class AuthService {
         return user;
       },
     );
-    // A cache hit comes back JSON-deserialized (plain object): the @Expose() fullName
-    // getter and Date types are lost, so ClassSerializerInterceptor would drop fullName.
-    // Rebuild the User instance so the response shape is identical on hit and miss.
-    // (cast to object so plainToInstance picks the single-object overload, not the array one)
+    // A cache hit returns a plain object, so the @Expose() fullName getter is gone and the serializer
+    // would drop it. Rebuild the instance so hit and miss produce the same response.
     return cached instanceof User ? cached : plainToInstance(User, cached as object);
   }
 
@@ -132,10 +130,8 @@ export class AuthService {
     if (dto.middleName !== undefined) user.middleName = dto.middleName ?? null;
     if (dto.lastName !== undefined) user.lastName = dto.lastName;
     await this.userRepository.save(user);
-    // del before getProfile so the re-read repopulates the cache with fresh data.
-    // A name change is deliberately NOT propagated to vendor:ratings caches, which embed
-    // a denormalized ratedBy.fullName — that staleness self-heals within the ratings TTL
-    // (120s) and is display-only (see VendorsService.queryRatings).
+    // del before getProfile so the re-read repopulates the cache. A rename deliberately does not touch
+    // the vendor:ratings caches — that staleness is display-only and expires with their TTL.
     await this.cache.del(CacheKeys.authMe(userId));
     return this.getProfile(userId);
   }

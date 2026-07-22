@@ -42,15 +42,15 @@ import {
 } from '../goods-receipts/entities/goods-receipt-item.entity';
 import { UserRole } from '../users/entities/user.entity';
 
-// วันที่กลางไตรมาส (fy=ปีปฏิทิน, quarter 1-4) — deterministic, คืน 'YYYY-MM-DD'
+// Deterministic 'YYYY-MM-DD' in the middle of a quarter
 function quarterDate(fy: number, quarter: number, dayOffset = 0): string {
-  const month = (quarter - 1) * 3 + 1; // Q1→Feb(index1) เป็นกลางไตรมาส
+  const month = (quarter - 1) * 3 + 1; // mid-quarter month, e.g. Q1 → February
   const d = new Date(Date.UTC(fy, month, 15 + dayOffset));
   return d.toISOString().slice(0, 10);
 }
 
-// backdate created_at (+ updated_at ถ้ามี) ให้ time-series กราฟมีเรื่องราวข้ามปีงบ
-// (@CreateDateColumn ถูก ORM เซ็ตเป็น now ตอน insert — ต้อง UPDATE ตรงหลังบันทึก)
+// Backdate the timestamps so the charts span several fiscal years; @CreateDateColumn always writes
+// "now" on insert, so this has to run right after each save.
 async function backdate(
   ds: DataSource,
   table: string,
@@ -63,16 +63,16 @@ async function backdate(
 }
 
 export async function seedDemo(ds: DataSource): Promise<void> {
-  // 1) baseline ก่อน (3 dept + 3 บัญชี login เดิม employee@/manager@/procurement@ pw Password123)
+  // Baseline first: 3 departments and the 3 login accounts (password Password123)
   await seedBaseline(ds);
 
-  // 2) เพิ่ม department ให้ครบ 6
+  // Departments, up to 6
   const deptRepo = ds.getRepository(Department);
   await deptRepo.save(EXTRA_DEPARTMENTS.map((name) => ({ name })));
   const allDepts = await deptRepo.find();
   const deptId = new Map(allDepts.map((d) => [d.name, d.id]));
 
-  // 3) เพิ่ม users ให้ครบ 15
+  // Users, up to 15
   const userRepo = ds.getRepository(User);
   const password = await bcrypt.hash('Password123', 10);
   await userRepo.save(
@@ -86,13 +86,13 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     })),
   );
 
-  // 4) vendor categories (6)
+  // Vendor categories
   const catRepo = ds.getRepository(VendorCategory);
   await catRepo.save(VENDOR_CATEGORIES.map((name) => ({ name })));
   const allCats = await catRepo.find();
   const catByName = new Map(allCats.map((c) => [c.name, c]));
 
-  // 5) vendors (20) + category mapping (M2M ผ่าน owning side) — ratingAvg เติมตอน seed ratings
+  // Vendors + category mapping; ratingAvg is filled in once the ratings are seeded
   const vendorRepo = ds.getRepository(Vendor);
   await vendorRepo.save(
     VENDORS.map((v) => ({
@@ -107,7 +107,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     })),
   );
 
-  // 6) budgets (6 dept × 5 period = 30) — reserved/used เติมใน Task 4
+  // Budgets (6 departments x 5 periods); reserved/used are reconciled at the end
   const budgetRepo = ds.getRepository(Budget);
   const budgetRows: Array<Partial<Budget>> = [];
   for (const d of allDepts) {
@@ -124,10 +124,10 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   }
   await budgetRepo.save(budgetRows);
 
-  // 7) เตรียม lookup users (requester=EMPLOYEE ใน dept, approver=MANAGER ใน dept, creator=PROCUREMENT_OFFICER)
+  // Lookups: requester = first EMPLOYEE of the dept, approver = first MANAGER, creator = procurement
   const allUsers = await userRepo.find();
-  const empByDept = new Map<number, number>(); // deptId → userId (EMPLOYEE คนแรก)
-  const mgrByDept = new Map<number, number>(); // deptId → userId (MANAGER คนแรก)
+  const empByDept = new Map<number, number>();
+  const mgrByDept = new Map<number, number>();
   let procurementId = 0;
   for (const u of allUsers) {
     if (u.departmentId == null) continue;
@@ -145,7 +145,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
   const poItemRepo = ds.getRepository(PurchaseOrderItem);
   const ratingRepo = ds.getRepository(VendorRating);
 
-  // running-number counters ต่อ (prefix, year)
+  // Running-number counters, keyed by prefix and year
   const seq: Record<string, number> = {};
   const nextNo = (prefix: string, year: number): string => {
     const key = `${prefix}-${year}`;
@@ -153,7 +153,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     return formatRunningNumber(prefix as 'PR' | 'PO' | 'GRN', year, seq[key]);
   };
 
-  // เก็บ contribution ต่อ budget row เพื่อ simulate ทีหลัง: key `deptId|fy|quarter`
+  // Contributions per budget row (key: deptId|fy|quarter), replayed after all scenarios are built
   type Contribution = {
     kind: 'reserve' | 'active' | 'completed' | 'cancelled';
     est: number;
@@ -203,7 +203,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
 
     if (!sc.po) {
       if (isApproved) {
-        // approved ไม่มี PO → reserved += est
+        // Approved without a PO → the estimate stays reserved
         pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
           kind: 'reserve',
           est,
@@ -213,7 +213,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       continue;
     }
 
-    // ----- build PO (total = est; priceFactor 1) -----
+    // PO totals equal the PR estimate, which keeps the budget reconciliation straightforward
     const poItems = sc.lines.map((l) =>
       poRepo.manager.create(PurchaseOrderItem, {
         prItemId: undefined,
@@ -245,7 +245,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       order: { id: 'ASC' },
     });
 
-    // budget contribution ตามสถานะ PO
+    // Budget contribution depends on the PO status
     if (sc.po.status === PoStatus.COMPLETED) {
       pushContrib(contribByBudget, dId, sc.fy, sc.quarter, {
         kind: 'completed',
@@ -266,10 +266,9 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       });
     }
 
-    // ----- GRN -----
     await seedReceipts(ds, grnRepo, poItemRepo, savedPoItems, po, sc, nextNo);
 
-    // ----- rating (completed เท่านั้น + มี rating) -----
+    // Only completed POs can be rated
     if (sc.po.status === PoStatus.COMPLETED && sc.po.rating != null) {
       await ratingRepo.save(
         ratingRepo.create({
@@ -286,7 +285,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
     }
   }
 
-  // 8) budget reconcile — simulate lifecycle ต่อ budget row ด้วย budget-math (ค่าตรงกับ app)
+  // Replay each budget row's lifecycle through budget-math so the seed matches what the app would store
   const allBudgets = await budgetRepo.find();
   const budgetByKey = new Map(
     allBudgets.map((b) => [`${b.departmentId}|${b.fiscalYear}|${b.quarter}`, b]),
@@ -299,7 +298,7 @@ export async function seedDemo(ds: DataSource): Promise<void> {
         reserved = applyReserve(reserved, c.est);
       } else if (c.kind === 'active') {
         reserved = applyReserve(reserved, c.est);
-        reserved = applyAdjust(reserved, round2(c.poTotal - c.est)); // delta (0 เมื่อ total=est)
+        reserved = applyAdjust(reserved, round2(c.poTotal - c.est));
       } else if (c.kind === 'completed') {
         reserved = applyReserve(reserved, c.est);
         reserved = applyAdjust(reserved, round2(c.poTotal - c.est));
@@ -318,17 +317,14 @@ export async function seedDemo(ds: DataSource): Promise<void> {
       });
   }
 
-  // 9) vendor.ratingAvg = round2(avg(scores))
   for (const [vendorId, scores] of ratingsToAvg) {
     const avg = round2(scores.reduce((s, n) => s + n, 0) / scores.length);
     await vendorRepo.update(vendorId, { ratingAvg: avg });
   }
 
-  // 10) announcements (login page) — 5 รายการ (1 ปักหมุด)
   await ds.getRepository(Announcement).save(ANNOUNCEMENTS);
 }
 
-// push contribution helper (top-level, นอก seedDemo)
 function pushContrib(
   map: Map<
     string,
@@ -353,7 +349,7 @@ function pushContrib(
   map.set(key, arr);
 }
 
-// สร้าง GRN ตามแผนรับของ (completed=รับครบ, partially_received=รับ 60%, splitGrn=2 ใบ, damaged=+1 item ชำรุด)
+// Build the GRNs a scenario asks for: full receipt, 60% partial, split across two notes, or a damaged line
 async function seedReceipts(
   ds: DataSource,
   grnRepo: Repository<GoodsReceiptNote>,
@@ -428,8 +424,8 @@ async function seedReceipts(
   }
 }
 
-// re-derive budget/rating/invariant แบบ aggregate อิสระ (คนละ path กับ simulation ใน seedDemo) แล้ว assert
-// mismatch ใดๆ → throw (fail-fast: npm run seed:demo จะ exit 1)
+// Re-derive budgets, ratings and invariants by aggregation — a different path from the replay in
+// seedDemo — and throw on any mismatch, so `npm run seed:demo` exits 1.
 export async function verifyDemoSeed(ds: DataSource): Promise<void> {
   const fail = (msg: string): never => {
     throw new Error(`verifyDemoSeed FAILED: ${msg}`);
@@ -455,8 +451,8 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     PoStatus.PARTIALLY_RECEIVED,
   ]);
 
-  // 1) structural invariants — ตรวจ topology ก่อน reconcile งบ เพราะข้อ 2 ใช้ find() ที่สมมติว่า
-  //    PR มี non-cancelled PO ได้ ≤1 ใบ (DB บังคับด้วย UQ_active_po_per_pr — ตรวจซ้ำชั้นสองที่นี่)
+  // Topology first: the budget check below uses find(), which assumes a PR has at most one
+  // non-cancelled PO (guaranteed by UQ_active_po_per_pr, re-checked here)
   for (const [prId, prPos] of posByPr) {
     if (prPos.filter((p) => p.status !== PoStatus.CANCELLED).length > 1) {
       fail(`PR ${prId} has >1 non-cancelled PO`);
@@ -475,9 +471,8 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     }
   }
 
-  // 2) budget reserved/used จากการ classify PR/PO (aggregate)
-  // precondition: ทุกยอดเงินเป็นจำนวนเต็ม (CATALOG ราคา×จำนวน) → round2 เป็น no-op และ path นี้
-  // (classify) บวกได้ค่าตรงกับ path replay ใน seedDemo เป๊ะ; ถ้าเพิ่มราคาทศนิยมต้องเทียบแบบ tolerance
+  // Reserved/used derived by classifying each PR/PO. Every catalog amount is a whole number, so this
+  // sum matches the replay exactly; fractional prices would need a tolerance-based comparison.
   const reservedBy = new Map<string, number>();
   const usedBy = new Map<string, number>();
   const add = (m: Map<string, number>, k: string, v: number) =>
@@ -491,10 +486,10 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
     if (completed) add(usedBy, key, Number(completed.totalAmount));
     else if (active) add(reservedBy, key, Number(active.totalAmount));
     else if (prPos.length === 0) add(reservedBy, key, Number(pr.totalEstimatedAmount));
-    // เหลือ: มีแต่ cancelled → 0
+    // anything left has only cancelled POs → contributes 0
   }
-  // ทุก key ที่มี contribution ต้องมี budget row จริง — กัน APPROVED PR ใน period ที่ไม่มีงบ
-  // (seedDemo drop เงียบที่ `if (b)` แล้ว verify จะไม่มีอะไรไปเทียบ = false-negative)
+  // Every contributing key must have a real budget row: seedDemo drops unmatched keys silently, which
+  // would leave nothing to compare here (a false negative).
   const budgetKeys = new Set(budgets.map((b) => `${b.departmentId}|${b.fiscalYear}|${b.quarter}`));
   for (const key of reservedBy.keys()) {
     if (!budgetKeys.has(key)) fail(`approved PR reserves budget ${key} but no budget row exists`);
@@ -543,8 +538,7 @@ export async function verifyDemoSeed(ds: DataSource): Promise<void> {
   );
 }
 
-// ====== CLI: `npm run seed:demo` ======
-// guard → migrate → truncate → seedDemo → verifyDemoSeed → destroy
+// CLI for `npm run seed:demo`: guard → migrate → truncate → seed → verify → destroy
 if (require.main === module) {
   void (async () => {
     if (process.env.DB_NAME === 'procurement_test_db') {

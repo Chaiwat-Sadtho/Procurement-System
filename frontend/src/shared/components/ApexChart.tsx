@@ -13,8 +13,7 @@ interface ApexChartProps {
 }
 
 function usePrefersReducedMotion(): boolean {
-  // read the initial value lazily (avoids setState synchronously in an effect, which
-  // can trigger cascading renders); the effect only subscribes to later changes.
+  // Read lazily so the effect only subscribes to later changes, avoiding a cascading render
   const [reduced, setReduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -27,7 +26,7 @@ function usePrefersReducedMotion(): boolean {
   return reduced
 }
 
-// shallow-merge the nested option groups we control; everything else from caller passes through
+// Shallow-merges the option groups we control; everything else passes through untouched
 function mergeOptions(base: ApexOptions, override: ApexOptions): ApexOptions {
   return {
     ...base,

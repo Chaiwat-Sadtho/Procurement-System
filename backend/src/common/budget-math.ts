@@ -1,19 +1,18 @@
-// เลขคณิตงบประมาณล้วน (pure) — ดึงออกจาก BudgetsService ให้ seed-demo คำนวณค่าที่เก็บลง DB ตรงกับ service เป๊ะ
-// ทุกฟังก์ชันคืน "ค่าที่จะ store" (ปัด 2 ตำแหน่ง + clamp ไม่ติดลบ) — ดู reference_budget_arithmetic_refactor
+// Pure budget arithmetic shared by BudgetsService and seed-demo; every helper returns the value to store (2dp, min 0).
 export const round2 = (n: number): number => Number(n.toFixed(2));
 
-// PR approved → จองงบ (reserved += amount)
+// PR approved → reserve budget
 export const applyReserve = (reserved: number, amount: number): number => round2(reserved + amount);
 
-// PO cancelled → คืนงบจอง (reserved -= amount, ไม่ต่ำกว่า 0)
+// PO cancelled → release the reservation
 export const applyRelease = (reserved: number, amount: number): number =>
   round2(Math.max(0, reserved - amount));
 
-// PO created → ปรับ reserved ตามส่วนต่างยอด PO จริง (delta = PO.total - PR.est; <0 = PO ถูกกว่า)
+// PO created → adjust the reservation by the PO/PR difference (delta < 0 = PO cheaper)
 export const applyAdjust = (reserved: number, delta: number): number =>
   round2(Math.max(0, reserved + delta));
 
-// GRN รับครบ → PO completed (reserved -= reservedToRelease, used += usedToAdd)
+// GRN fully received → release the reservation and book it as used
 export const applyConsume = (
   reserved: number,
   used: number,
