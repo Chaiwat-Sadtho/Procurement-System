@@ -77,6 +77,12 @@ describe('BudgetDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'แก้ไขงบประมาณ' })).not.toBeInTheDocument()
   })
 
+  it('stacks the summary cards below sm so a long currency value cannot overflow its card', () => {
+    renderAt('5')
+    const grid = screen.getByText('งบทั้งหมด').closest('div.grid')
+    expect(grid).toHaveClass('grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-4')
+  })
+
   it('shows a not-found notice when the summary errors', () => {
     summary.mockReturnValue({ data: undefined, isLoading: false, isError: true })
     renderAt('5')

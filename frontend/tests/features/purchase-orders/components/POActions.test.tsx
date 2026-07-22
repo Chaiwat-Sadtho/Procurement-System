@@ -136,7 +136,7 @@ describe('POActions gating', () => {
   it('lays buttons out on a responsive right-aligned col-grid', () => {
     const { container } = renderActions({ status: 'draft' }) // 3 buttons -> right-align col-start 2,3,4
     const grid = container.querySelector('.grid')
-    expect(grid).toHaveClass('grid-cols-1', 'sm:grid-cols-4')
+    expect(grid).toHaveClass('grid-cols-1', 'sm:[grid-template-columns:repeat(4,minmax(min-content,1fr))]')
     expect(container.querySelectorAll('.sm\\:col-start-2').length).toBe(1)
     expect(container.querySelectorAll('.sm\\:col-start-3').length).toBe(1)
     expect(container.querySelectorAll('.sm\\:col-start-4').length).toBe(1)
