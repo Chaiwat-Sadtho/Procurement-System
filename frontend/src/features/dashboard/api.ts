@@ -6,7 +6,7 @@ import type {
   PurchaseRequest,
 } from '@/features/purchase-requests/types'
 
-// Budget shape จาก GET /budgets (array, ไม่ paginate) — ไม่มี remaining/usagePercent (เฉพาะ /:id/summary)
+// Budget shape from GET /budgets — remaining/usagePercent only come from /:id/summary
 export interface DashboardBudget {
   id: number
   departmentId: number
@@ -55,7 +55,7 @@ export const dashboardApi = {
       .get<PRListResponse>('/purchase-requests', { params: { status: 'submitted', limit: 5 } })
       .then((r) => r.data.data),
 
-  // draft + rejected ของ user (role-scoped employee = ของตัวเอง) สำหรับ AttentionList list รายตัว
+  // The user's own drafts and rejections, for the attention list
   getAttentionPRs: (): Promise<{ drafts: PurchaseRequest[]; rejected: PurchaseRequest[] }> =>
     Promise.all([
       api
@@ -72,8 +72,8 @@ export const dashboardApi = {
 
   getBudgets: (params: BudgetParams): Promise<DashboardBudget[]> =>
     api.get<DashboardBudget[]>('/budgets', { params }).then((r) =>
-      // pg numeric กลับมาเป็น string → coerce ที่ boundary ให้ type number เป็นจริง
-      // safeNum กัน non-finite (NaN/Infinity) ไม่ให้หลุดไปคำนวณ (reservedAmount+usedAmount) หรือแสดงผล (฿NaN/฿∞)
+      // pg numeric arrives as a string — coerce here so the declared number type holds, and
+      // safeNum keeps NaN/Infinity out of the totals and the formatted amounts
       r.data.map((b) => ({
         ...b,
         totalAmount: safeNum(b.totalAmount),

@@ -5,10 +5,7 @@ interface ListErrorStateProps {
   onRetry: () => void
 }
 
-/**
- * Error state for list pages. Uses an assertive alert region so a failed fetch
- * is announced immediately, with a retry action.
- */
+/** Error state for list pages: an assertive alert region, so a failed fetch is announced at once. */
 export function ListErrorState({ message, onRetry }: ListErrorStateProps) {
   return (
     <div role="alert" aria-live="assertive" className="text-center py-12 space-y-3">

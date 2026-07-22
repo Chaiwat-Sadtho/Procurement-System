@@ -33,8 +33,7 @@ export function PORatingSection({ po, user }: PORatingSectionProps) {
         setDialogOpen(false)
       },
       onError: (e: unknown) => {
-        // 409/อื่น ๆ → useRateVendor.onError invalidate ['purchase-order', id, 'rating'] แล้ว
-        // (section resync เป็น read-only เอง) — ที่นี่แค่ surface ข้อความ + ปิด dialog
+        // useRateVendor already re-syncs the section on error; this only surfaces the message
         toast.error(ratingErrorMessage(e))
         setDialogOpen(false)
       },

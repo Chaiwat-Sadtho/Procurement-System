@@ -9,7 +9,7 @@ import type {
   UpdateBudgetRequest,
 } from './types'
 
-// pg numeric กลับมาเป็น string → coerce ที่ boundary ให้ type number เป็นจริง (safeNum กัน NaN/Infinity)
+// pg numeric arrives as a string — coerce here so the declared number type holds (safeNum blocks NaN)
 function coerceMoney<T extends { totalAmount: number; reservedAmount: number; usedAmount: number }>(
   b: T,
 ): T {

@@ -41,22 +41,18 @@ export function NavGroupSection({
   const children = group.children.filter((child) => user && child.allowedRoles.includes(user.role))
 
   const storageKey = `${SIDEBAR_GROUP_STORAGE_PREFIX}${group.label}`
-  // Persisted preference is read once at mount. An explicit in-session toggle
-  // (userToggled) always takes precedence so the header is never a dead control
-  // — even on an active-child route the button stays operable (a11y).
+  // Read once at mount; an explicit toggle always wins so the header is never a dead control
   const [persistedCollapsed] = useState(() => localStorage.getItem(storageKey) === 'collapsed')
   const [userToggled, setUserToggled] = useState<boolean | null>(null)
 
-  // Role emptied every child → render nothing (no orphan header).
+  // No visible children for this role → no orphan header
   if (children.length === 0) return null
 
   const contentId = `nav-group-${group.label}`
   const hasActiveChild = children.some(
     (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
   )
-  // Default (no explicit click yet): expanded unless persisted-collapsed, but an
-  // active child route forces it open, overriding the persisted collapsed state.
-  // An explicit user toggle overrides both so the control always works.
+  // Until the user clicks: expanded unless persisted-collapsed, and an active child forces it open
   const expanded = userToggled ?? (hasActiveChild || !persistedCollapsed)
 
   function toggle() {
@@ -92,8 +88,7 @@ export function NavGroupSection({
   )
 }
 
-// Shared nav body used by both the desktop Sidebar and the mobile drawer.
-// onNavigate lets the mobile drawer close itself when a link is tapped.
+// Shared by the desktop sidebar and the mobile drawer; onNavigate lets the drawer close itself
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: user } = useCurrentUser()
   const navigate = useNavigate()

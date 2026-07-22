@@ -18,9 +18,8 @@ function buildRedisUrl(config: ConfigService): string {
 }
 
 /**
- * socket.io adapter backed by Redis pub/sub so emits fan out across backend instances.
- * Graceful-degrade: if Redis is unreachable (e.g. `npm run start:dev` with no Redis),
- * fall back to the default in-memory adapter so the app still boots single-instance.
+ * socket.io adapter backed by Redis pub/sub so emits fan out across backend instances; falls back to
+ * the in-memory adapter when Redis is unreachable, so the app still boots single-instance.
  */
 export class RedisIoAdapter extends IoAdapter {
   private readonly logger = new Logger('RedisIoAdapter');
@@ -52,8 +51,7 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   createIOServer(port: number, options?: ServerOptions): unknown {
-    // Govern WebSocket CORS centrally here (the @WebSocketGateway decorator is
-    // evaluated before ConfigService exists, so it cannot read CORS_ORIGIN).
+    // WebSocket CORS lives here: the @WebSocketGateway decorator runs before ConfigService exists.
     const config = this.appContext.get(ConfigService);
     const cors = {
       origin: resolveCorsOrigin(config.get<string>('CORS_ORIGIN'), config.get<string>('NODE_ENV')),

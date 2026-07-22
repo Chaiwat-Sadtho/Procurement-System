@@ -1,7 +1,6 @@
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
 interface ListLoadingStateProps {
-  /** preserves the per-page data-testid used by existing page tests */
   testId?: string
   rows?: number
   /** announced to screen readers while loading */
@@ -9,9 +8,8 @@ interface ListLoadingStateProps {
 }
 
 /**
- * Loading placeholder for list pages. Wraps the skeleton rows in a polite,
- * busy status region so screen readers announce that data is loading instead
- * of landing on a silent block of decorative skeletons.
+ * Loading placeholder for list pages: skeleton rows inside a polite, busy status region, so screen
+ * readers announce the load instead of landing on decorative blocks.
  */
 export function ListLoadingState({
   testId,

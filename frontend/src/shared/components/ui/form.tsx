@@ -142,7 +142,7 @@ const FormMessage = React.forwardRef<
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? '') : children
 
-  // จองพื้นที่ไว้เสมอ (แม้ยังไม่มี error) เพื่อกัน layout ขยับตอนข้อความ error โผล่
+  // Always reserve the line so the layout does not jump when an error appears
   return (
     <p
       ref={ref}

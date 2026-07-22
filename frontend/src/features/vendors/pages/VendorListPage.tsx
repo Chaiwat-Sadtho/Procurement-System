@@ -50,8 +50,7 @@ export function VendorListPage() {
   const { data, isLoading, isError, refetch } = useVendors(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
-  // running number sticks to the page the server actually returned (meta),
-  // not the local page state which momentarily leads the fetch
+  // Numbering follows the page the server returned, not the local state that leads the fetch
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 

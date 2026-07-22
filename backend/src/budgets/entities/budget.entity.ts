@@ -14,8 +14,8 @@ import { Department } from '../../departments/entities/department.entity';
 
 @Entity('budgets')
 @Unique(['departmentId', 'fiscalYear', 'quarter'])
-// Review #2: composite UNIQUE above lets duplicate annual rows through (Postgres treats
-// NULL quarters as distinct). This partial index enforces one annual budget per dept/year.
+// Postgres treats NULL quarters as distinct, so the UNIQUE above still allows duplicate annual rows —
+// this partial index enforces one annual budget per department and year.
 @Index('UQ_annual_budget_per_dept_year', ['departmentId', 'fiscalYear'], {
   unique: true,
   where: '"quarter" IS NULL',

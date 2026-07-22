@@ -1,6 +1,6 @@
 import type { PaginationParams, PaginatedResponse } from '@/shared/types'
 
-// 6 สถานะตาม PoStatus enum (purchase-order.entity.ts) — partially_received/completed มาจาก GRN module
+// Mirrors the backend PoStatus enum; partially_received/completed are driven by the GRN module
 export type PoStatus =
   | 'draft'
   | 'sent'
@@ -20,7 +20,7 @@ export interface PODeptRef {
   name: string
 }
 
-// vendor/PR refs ที่ join มากับ PO detail (subset ของ entity เต็ม — ใช้แค่ที่ FE ต้องโชว์)
+// Refs joined onto the PO detail — only the fields the UI displays
 export interface POVendorRef {
   id: number
   name: string
@@ -76,9 +76,7 @@ export interface POListParams extends PaginationParams {
 
 export type POListResponse = PaginatedResponse<PurchaseOrder>
 
-// GRN history (read-only) — GET /purchase-orders/:id/goods-receipts = bare array,
-// findByPo() join relations: { items: true } → items มากับ array.
-// GoodsReceiptNote entity ไม่มี updatedAt (มีแค่ createdAt).
+// Read-only GRN history: GET /purchase-orders/:id/goods-receipts returns a bare array with items joined
 export interface GoodsReceiptItemSummary {
   id: number
   grnId: number
@@ -99,7 +97,7 @@ export interface GoodsReceiptSummary {
   createdAt: string
 }
 
-// POST /purchase-orders body (CreatePurchaseOrderDto + CreatePurchaseOrderItemDto)
+// POST /purchase-orders body
 export interface CreatePOItemRequest {
   prItemId?: number
   itemName: string
@@ -116,15 +114,12 @@ export interface CreatePORequest {
   items: CreatePOItemRequest[]
 }
 
-// PATCH /purchase-orders/:id body (UpdatePurchaseOrderDto — draft only):
-// แก้ได้เฉพาะ expectedDeliveryDate/notes/items (prId/vendorId immutable) = ตรง shape ของ UpdatePurchaseOrderDto เป๊ะ
-// notes รับ null ด้วย: null = สั่งเคลียร์ค่าเดิม / omit = ไม่แตะ field
+// PATCH body (draft POs only): prId/vendorId are immutable, and notes accepts null to clear it
 export type UpdatePORequest = Partial<Omit<CreatePORequest, 'prId' | 'vendorId' | 'notes'>> & {
   notes?: string | null
 }
 
-// Vendor rating ของ PO (GET /purchase-orders/:id/rating — VendorRating entity ดิบ
-// ไม่ load relation, null ถ้ายังไม่ rate). createdAt = Date serialized → ISO string.
+// GET /purchase-orders/:id/rating — the raw rating row, null while the PO is unrated
 export interface VendorRating {
   id: number
   vendorId: number
@@ -135,7 +130,7 @@ export interface VendorRating {
   createdAt: string
 }
 
-// POST /purchase-orders/:id/ratings body (RateVendorDto — score required, comment optional)
+// POST /purchase-orders/:id/ratings body
 export interface RateVendorPayload {
   score: number
   comment?: string

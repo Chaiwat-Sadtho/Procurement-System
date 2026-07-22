@@ -43,8 +43,7 @@ export function VendorForm(props: VendorFormProps) {
   const { isDirty, isValid } = form.formState
 
   async function onSubmit(values: VendorFormValues) {
-    // synchronous in-flight guard: react-query's isPending flips after render,
-    // so a fast second click can slip through; this ref locks synchronously
+    // Synchronous guard: isPending only flips after render, so a fast second click would slip through
     if (inFlight.current) return
     inFlight.current = true
     try {

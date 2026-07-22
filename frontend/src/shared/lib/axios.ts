@@ -5,11 +5,9 @@ const api = axios.create({
 })
 
 /**
- * 401 redirect ใช้กับ session ที่หมดอายุ (request ที่ต้อง auth) เท่านั้น —
- * ไม่ใช่กับ 401 ที่แปลว่า "credential ที่กรอกผิด" ไม่ใช่ "session หมด":
- * - `/auth/login` (รหัสผ่าน login ผิด) → ให้หน้า login แสดง error inline
- * - `/auth/me/password` (รหัสผ่านปัจจุบันผิดตอนเปลี่ยนรหัส) → ให้ฟอร์มแสดง toast เอง
- * มิฉะนั้นจะ reload/redirect แล้ว error วูบหาย + ผู้ใช้โดน logout ทั้งที่ session ยังดี.
+ * A 401 means "session expired" everywhere except these paths, where it means "wrong credentials" and
+ * the form shows the error itself. Redirecting there would flash the error away and log the user out
+ * while their session is still valid.
  */
 const CREDENTIAL_CHECK_PATHS = ['/auth/login', '/auth/me/password']
 

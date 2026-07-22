@@ -26,7 +26,7 @@ export function StatusChart({ stats, isLoading }: StatusChartProps) {
         {isLoading || !stats ? (
           <Skeleton data-testid="status-chart-loading" className="h-48 w-full" />
         ) : (
-          // donut อยู่กลางการ์ด (stack) + legend 2 คอลัมน์ใต้ donut
+          // donut centred in the card, with a two-column legend below it
           <div
             data-testid="status-chart-body"
             className="flex flex-col items-center justify-center gap-4"

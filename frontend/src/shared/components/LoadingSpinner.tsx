@@ -1,7 +1,6 @@
 import { cn } from '@/shared/lib/utils'
 
 interface LoadingSpinnerProps {
-  /** preserves a per-page data-testid used by existing page tests */
   testId?: string
   /** announced to screen readers while loading */
   label?: string
@@ -10,10 +9,8 @@ interface LoadingSpinnerProps {
 }
 
 /**
- * Block-level loading indicator for form/detail pages. Wraps the decorative
- * spinner in a polite, busy status region so screen readers announce that the
- * page is loading instead of landing on a silent spinning div. Differs from
- * ListLoadingState (skeleton rows) which is shaped for table/list pages.
+ * Loading indicator for form and detail pages. The spinner sits in a polite, busy status region so
+ * screen readers announce the load. List pages use ListLoadingState (skeleton rows) instead.
  */
 export function LoadingSpinner({ testId, label = 'กำลังโหลด', className }: LoadingSpinnerProps) {
   return (

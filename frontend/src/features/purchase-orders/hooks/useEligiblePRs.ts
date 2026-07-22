@@ -2,9 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { QueryEnabledOptions } from '@/shared/types'
 import { purchaseRequestsApi } from '@/features/purchase-requests/api'
 
-// Pre-filtered PR list for the PO create picker (approved + has department +
-// no active PO). The flag is resolved server-side (slice A); limit is bumped so
-// the Combobox shows every eligible PR without paging.
+// PRs that can still become a PO, for the create picker; the limit is raised so the Combobox never pages
 const ELIGIBLE_PRS_PARAMS = { eligibleForPo: true, limit: 100 } as const
 
 export function useEligiblePRs({ enabled = true }: QueryEnabledOptions = {}) {

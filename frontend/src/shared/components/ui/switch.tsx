@@ -10,9 +10,8 @@ export interface SwitchProps extends Omit<
 }
 
 /**
- * Toggle switch built on a native <button role="switch"> — no Radix dependency.
- * A native button activates on click, Enter and Space; `disabled` is the native
- * attribute (not focusable, no pointer events), matching the repo's Button/Calendar.
+ * Toggle switch on a native <button role="switch"> — no Radix dependency. A native button already
+ * activates on click, Enter and Space, and `disabled` is the real attribute.
  */
 export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
   ({ className, checked, onCheckedChange, disabled, ...props }, ref) => (

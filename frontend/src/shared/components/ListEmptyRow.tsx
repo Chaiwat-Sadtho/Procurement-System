@@ -6,11 +6,7 @@ interface ListEmptyRowProps {
   message?: string
 }
 
-/**
- * Empty-state row for list tables. The message lives in a polite status region
- * so screen readers announce "no results" when a filter clears the table,
- * instead of leaving the user on a silently empty grid.
- */
+/** Empty-state row; the message is a polite status region so "no results" is announced after filtering. */
 export function ListEmptyRow({ colSpan, message = 'ไม่พบข้อมูลตามเงื่อนไข' }: ListEmptyRowProps) {
   return (
     <TableRow>

@@ -1,12 +1,10 @@
 import type { PaginationParams, PaginatedResponse } from '@/shared/types'
 
-// GRN status (goods-receipt-note.entity.ts GrnStatus enum) — partial=รับไม่ครบ, complete=รับครบถ้วน (spec D3)
+// partial = not everything received yet, complete = fully received
 export type GrnStatus = 'partial' | 'complete'
 
-// goods-receipt-item.entity.ts ItemCondition enum — good=สภาพดี, damaged=ชำรุด (spec D6)
 export type ItemCondition = 'good' | 'damaged'
 
-// GET /goods-receipts/:id items (relations: items.poItem) — receivedQuantity DECIMAL → string
 export interface GoodsReceiptItem {
   id: number
   grnId: number
@@ -17,11 +15,11 @@ export interface GoodsReceiptItem {
     quantity: string // decimal(10,2) → string
     unit: string
   }
-  receivedQuantity: string // decimal(10,2) → string (Number() ก่อนคำนวณ)
+  receivedQuantity: string // decimal(10,2) → string
   condition: ItemCondition
 }
 
-// GET /goods-receipts/:id (relations: items.poItem, purchaseOrder) — full detail
+// GET /goods-receipts/:id — full detail
 export interface GoodsReceipt {
   id: number
   grnNumber: string // 'GRN-YYYY-NNNN'
@@ -32,7 +30,7 @@ export interface GoodsReceipt {
     status: string
   }
   receivedBy: number
-  receivedByUser?: { id: number; fullName: string } // only if backend serializes; treat optional
+  receivedByUser?: { id: number; fullName: string }
   receivedDate: string // 'YYYY-MM-DD'
   status: GrnStatus
   notes: string | null
@@ -40,7 +38,7 @@ export interface GoodsReceipt {
   createdAt: string
 }
 
-// GET /goods-receipts list row (findAll relations: items, purchaseOrder) — items present for count
+// GET /goods-receipts list row — items are joined so the list can show a count
 export interface GoodsReceiptListItem {
   id: number
   grnNumber: string
@@ -50,12 +48,11 @@ export interface GoodsReceiptListItem {
   receivedDate: string
   status: GrnStatus
   notes: string | null
-  items: { id: number }[] // length = จำนวนรายการ (list col)
+  items: { id: number }[] // length only — rendered as the line count
   createdAt: string
 }
 
-// PO picker option — GET /purchase-orders?receivable=true → {data:[],meta} mapped to array.
-// Reuse PurchaseOrder shape from PO feature; this is the subset the Combobox needs.
+// PO picker option: the subset of GET /purchase-orders?receivable=true that the Combobox needs
 export interface ReceivablePO {
   id: number
   poNumber: string // 'PO-YYYY-NNNN'
@@ -63,7 +60,7 @@ export interface ReceivablePO {
   status: string // 'acknowledged' | 'partially_received'
 }
 
-// POST /goods-receipts body — CreateGoodsReceiptDto + CreateGrnItemDto (numbers, not strings)
+// POST /goods-receipts body — quantities are numbers here, not strings
 export interface CreateGoodsReceiptItem {
   poItemId: number
   receivedQuantity: number // @Min(0.01)

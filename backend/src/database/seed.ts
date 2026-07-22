@@ -4,7 +4,7 @@ import { Department } from '../departments/entities/department.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
-// reusable — caller จัดการ initialize/destroy เอง (globalSetup reuse ตัวนี้)
+// The caller owns initialize/destroy (the e2e globalSetup reuses this)
 export async function seedBaseline(ds: DataSource) {
   const departmentRepo = ds.getRepository(Department);
   const userRepo = ds.getRepository(User);
@@ -46,7 +46,7 @@ export async function seedBaseline(ds: DataSource) {
   await userRepo.save(users);
 }
 
-// CLI wrapper — `npm run seed` (รันผ่าน ts-node → require.main === module = true)
+// CLI wrapper for `npm run seed`
 if (require.main === module) {
   void (async () => {
     await AppDataSource.initialize();

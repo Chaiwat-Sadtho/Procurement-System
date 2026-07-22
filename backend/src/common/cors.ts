@@ -5,11 +5,8 @@ import type { ConfigService } from '@nestjs/config';
 export const DEV_DEFAULT_ORIGIN = 'http://localhost:5173';
 
 /**
- * Resolve the CORS allowlist from a CORS_ORIGIN value (comma-separated origins).
- *
- * Fail-closed: in production an empty/unset value throws so the app refuses to
- * boot with an open CORS policy. Outside production it falls back to the Vite
- * dev origin so local development works without extra configuration.
+ * Resolve the CORS allowlist from CORS_ORIGIN (comma-separated). Fail-closed: production throws on an
+ * empty value rather than booting with an open policy; elsewhere it falls back to the Vite dev origin.
  */
 export function resolveCorsOrigin(
   rawOrigin: string | undefined,

@@ -1,7 +1,7 @@
 import Decimal from 'decimal.js';
 
-// คำนวณเงินด้วย decimal.js แทน float เพื่อกัน precision error (เช่น 1.03 × 1.5 = 1.545 → 1.55)
-// คืนค่าเป็น number ที่ปัดเป็น 2 ตำแหน่งแล้ว (ค่า 2 ตำแหน่งทศนิยมอยู่ในช่วง safe integer ของ JS)
+// Money math via decimal.js instead of float, to avoid precision errors (1.03 x 1.5 = 1.545 -> 1.55).
+// Every helper returns a number already rounded to 2 decimals.
 
 export function itemTotal(quantity: number | string, unitPrice: number | string): number {
   return new Decimal(quantity).times(unitPrice).toDecimalPlaces(2).toNumber();

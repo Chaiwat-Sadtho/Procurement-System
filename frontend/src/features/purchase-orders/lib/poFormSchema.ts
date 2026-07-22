@@ -9,8 +9,7 @@ const itemSchema = z.object({
   quantity: z
     .string()
     .min(1, 'กรุณาระบุจำนวน')
-    // Number.isFinite also rejects NaN and Infinity ('1e999'), so the latter cannot leak into the
-    // mapped payload (Number(Infinity) -> JSON null -> backend 400).
+    // Number.isFinite also rejects NaN and Infinity, which would serialise to null and 400 the request
     .refine(
       (v) => Number.isFinite(Number(v)) && Number(v) >= 0.01,
       'จำนวนต้องมากกว่าหรือเท่ากับ 0.01',
@@ -57,7 +56,7 @@ export function toUpdatePayload(values: POFormValues): UpdatePORequest {
   const notes = values.notes?.trim()
   return {
     expectedDeliveryDate: values.expectedDeliveryDate,
-    // blank → null = สั่ง BE เคลียร์ค่าเดิม (ถ้า omit field BE จะไม่แตะ → เคลียร์ notes ไม่ได้)
+    // blank → null tells the backend to clear the notes; omitting the field would leave them as-is
     notes: notes || null,
     items: mapItems(values),
   }

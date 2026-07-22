@@ -34,8 +34,7 @@ export function GRNListPage() {
   const { data: user } = useCurrentUser()
   const canCreate = user?.role === 'procurement_officer'
 
-  // history filter: POs that have a GRN (partially_received + completed), not the
-  // create picker's receivable set — completed POs are the bulk of GRN history
+  // History filter uses POs that already have a GRN, not the create picker's receivable set
   const { data: pos } = useReceivedPOs()
   const poOptions = pos ?? []
 
@@ -49,8 +48,7 @@ export function GRNListPage() {
   const { data, isLoading, isError, refetch } = useGoodsReceipts(queryParams, { enabled: hasSearched })
   useClampPageToTotal(data?.meta.totalPages)
 
-  // running number sticks to the page the server actually returned (meta),
-  // not the local page state which momentarily leads the fetch
+  // Numbering follows the page the server returned, not the local state that leads the fetch
   const displayPage = data?.meta.page ?? page
   const displayLimit = data?.meta.limit ?? limit
 

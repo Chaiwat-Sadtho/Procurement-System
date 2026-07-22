@@ -67,10 +67,8 @@ export class PrQueryDto {
   @IsString()
   order?: 'ASC' | 'DESC' = 'DESC';
 
-  // First boolean query flag in this DTO. Query strings arrive as 'true'/'false',
-  // so @IsBoolean alone would reject the string — @Transform coerces it first.
-  // โดยตั้งใจ: เฉพาะ 'true' (หรือ boolean true) → true; ค่าอื่นทุกค่า (รวม 'banana'/'1'/absent) → false
-  // (ไม่มี 400) เพราะ branch เดียวที่มีผลคือ truthy = "กรอง"; ค่าอื่น = "ไม่กรอง" = พฤติกรรมเดิม
+  // Query strings arrive as 'true'/'false', so @Transform coerces before @IsBoolean. Only 'true' filters;
+  // anything else means "no filter" rather than a 400.
   @ApiPropertyOptional({
     description: 'เฉพาะ PR ที่พร้อมแปลงเป็น PO (approved + มีแผนก + ยังไม่มี PO active)',
   })

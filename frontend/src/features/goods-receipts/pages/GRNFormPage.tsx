@@ -8,10 +8,9 @@ import { useReceivablePOs } from '../hooks/useReceivablePOs'
 import { GRNForm } from './GRNForm'
 import { createDefaultValues } from '../lib/grnFormSchema'
 
-// Host for the GRN create flow. Unlike POFormPage's create path (which seeds the form
-// immediately), a GRN must first pick a receivable PO, then load that PO in full so
-// createDefaultValues can build one form line per still-outstanding PO item. The picker
-// therefore lives outside GRNForm; GRN is immutable so there is no edit branch.
+// Host for the GRN create flow. A GRN must first pick a receivable PO and load it in full before the
+// form can be seeded, so the picker lives here rather than inside GRNForm. GRNs are immutable, so
+// there is no edit branch.
 export function GRNFormPage() {
   const [selectedPoId, setSelectedPoId] = useState(0)
 
@@ -55,8 +54,7 @@ export function GRNFormPage() {
         )}
 
         {po && (
-          // key={po.id} forces a remount when switching PO so react-hook-form
-          // re-seeds from the new PO's createDefaultValues instead of keeping stale prefill
+          // the key forces a remount on PO change, so the form re-seeds instead of keeping stale prefill
           <GRNForm key={po.id} po={po} defaultValues={createDefaultValues(po)} />
         )}
       </div>

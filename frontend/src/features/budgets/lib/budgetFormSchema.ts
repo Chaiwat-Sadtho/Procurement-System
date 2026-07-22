@@ -6,10 +6,10 @@ export const QUARTER_ANNUAL = 'annual'
 const amountField = z
   .string()
   .min(1, 'กรุณาระบุงบประมาณ')
-  // Number.isFinite reject NaN/Infinity ('1e999') ไม่ให้หลุดไป payload (Number(Infinity)->null->400)
+  // Number.isFinite also rejects NaN and Infinity, which would serialise to null and 400 the request
   .refine((v) => Number.isFinite(Number(v)) && Number(v) >= 1, 'งบประมาณต้องมากกว่าหรือเท่ากับ 1')
 
-// create: department + year + quarter(string) + amount — mirror CreateBudgetDto
+// Mirrors CreateBudgetDto
 export const createBudgetSchema = z.object({
   departmentId: z.number().refine((v) => v > 0, 'กรุณาเลือกแผนก'),
   fiscalYear: z
@@ -23,7 +23,7 @@ export const createBudgetSchema = z.object({
 
 export type BudgetFormValues = z.infer<typeof createBudgetSchema>
 
-// edit: totalAmount ต้อง >= committed (reserved+used) ด้วย — factory inject committed
+// Editing adds one rule: the total can never drop below what is already committed
 export function makeEditBudgetSchema(committed: number) {
   return createBudgetSchema.extend({
     totalAmount: amountField.refine(

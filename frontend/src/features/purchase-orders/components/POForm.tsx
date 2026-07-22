@@ -35,8 +35,7 @@ export function POForm(props: POFormProps) {
   const { mode, defaultValues } = props
   const navigate = useNavigate()
   const isEdit = mode === 'edit'
-  // edit mode: the PO's own PR is excluded from the eligible list (it already has an
-  // active PO), so resolve the summary card + budget from the PO's purchaseRequest ref
+  // In edit mode the PO's own PR is not in the eligible list, so read it from the PO instead
   const editPr = props.mode === 'edit' ? props.pr : undefined
   const { createMutation, updateMutation } = usePOMutations()
   const inFlight = useRef(false)
@@ -48,14 +47,13 @@ export function POForm(props: POFormProps) {
   })
 
   const { data: eligible, isLoading: prsLoading } = useEligiblePRs()
-  // pull a large page of vendors for the dropdown; filter blacklist client-side
+  // one large page of vendors for the dropdown; blacklist is filtered client-side
   const { data: vendorsPage } = useVendors({ limit: 100 }, { enabled: true })
 
   const prList = useMemo(() => eligible?.data ?? [], [eligible?.data])
   const vendorList = vendorsPage?.data ?? []
 
-  // prId/vendorId are numbers in POFormValues (poFormSchema = z.number); the
-  // Combobox works in strings, so bridge with String()/Number() at the seam.
+  // The form holds prId/vendorId as numbers while the Combobox works in strings — bridged at the seam
   const selectedPrId = useWatch({ control: form.control, name: 'prId' })
   const selectedPR = useMemo(
     () => prList.find((pr) => pr.id === selectedPrId) ?? editPr,
@@ -67,8 +65,7 @@ export function POForm(props: POFormProps) {
       value: String(pr.id),
       label: `${pr.prNumber} — ${pr.title}`,
     })),
-    // edit mode: PO's PR is absent from the eligible list — add it so the disabled
-    // picker shows the PR number instead of falling back to the placeholder
+    // add the edited PO's PR so the disabled picker shows its number, not the placeholder
     ...(editPr && !prList.some((pr) => pr.id === editPr.id)
       ? [{ value: String(editPr.id), label: editPr.prNumber }]
       : []),
@@ -77,9 +74,7 @@ export function POForm(props: POFormProps) {
     .filter((v) => !v.isBlacklisted)
     .map((v) => ({ value: String(v.id), label: v.name }))
 
-  // budget preview: the form resolves the matching budget row itself
-  // (useBudgetForPR + matchBudgetForPR, exact-quarter no-fallback) and feeds the
-  // presentational POBudgetPreview the budget + the two figures it compares.
+  // The form resolves the matching budget row itself and hands POBudgetPreview the two figures it compares
   const watchedItems = useWatch({ control: form.control, name: 'items' })
   const poTotal = (watchedItems ?? []).reduce(
     (sum, it) => sum + safeNum(it?.quantity) * safeNum(it?.unitPrice),
@@ -115,8 +110,7 @@ export function POForm(props: POFormProps) {
   }
 
   async function onSubmit(values: POFormValues) {
-    // synchronous in-flight guard: react-query's isPending flips after render,
-    // so a fast second click can slip through; this ref locks synchronously
+    // Synchronous guard: isPending only flips after render, so a fast second click would slip through
     if (inFlight.current) return
     inFlight.current = true
     try {

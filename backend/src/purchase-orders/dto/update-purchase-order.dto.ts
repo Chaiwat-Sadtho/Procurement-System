@@ -16,7 +16,7 @@ export class UpdatePurchaseOrderDto {
   @IsDateString()
   expectedDeliveryDate?: string;
 
-  // null = สั่งเคลียร์ notes (IsOptional ข้ามทั้ง undefined/null — null ผ่าน IsString ได้)
+  // null clears the notes; omitting the field leaves them untouched
   @ApiPropertyOptional({ nullable: true, description: 'ส่ง null เพื่อเคลียร์ notes เดิม' })
   @IsOptional()
   @IsString()

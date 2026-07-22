@@ -62,9 +62,7 @@ export function PRForm(props: PRFormProps) {
   const { isDirty, isValid } = form.formState
 
   async function onSave(values: PRFormValues, intent: 'draft' | 'submit') {
-    // Synchronous in-flight guard: react-query's isPending updates after render,
-    // so a fast second click can slip through before it flips. This ref locks
-    // synchronously to prevent a duplicate submit.
+    // Synchronous guard: isPending only flips after render, so a fast second click would slip through
     if (inFlight.current) return
     inFlight.current = true
     try {
@@ -98,8 +96,8 @@ export function PRForm(props: PRFormProps) {
     }
   }
 
-  // handleSubmit returns an event handler; the inFlight ref inside onSave is read on
-  // submit, never during render (same false positive as the <form> onSubmit below).
+  // react-hooks/refs false positive: handleSubmit returns an event handler, so the ref is read on
+  // submit, never during render
   // eslint-disable-next-line react-hooks/refs
   const onSubmitForApproval = form.handleSubmit((v) => onSave(v, 'submit'))
 
@@ -107,8 +105,6 @@ export function PRForm(props: PRFormProps) {
     <Form {...form}>
       <form
         className="mx-auto max-w-4xl space-y-6"
-        // react-hooks/refs false positive: handleSubmit returns an event handler — the
-        // inFlight ref inside onSave is read on submit, never during render.
         // eslint-disable-next-line react-hooks/refs
         onSubmit={form.handleSubmit((v) => onSave(v, 'draft'))}
       >
@@ -191,7 +187,7 @@ export function PRForm(props: PRFormProps) {
               disabled: isPending,
               onClick: () => navigate(-1),
             },
-            // draft save is a no-op on an unchanged form -> gate on isDirty too (matches VendorForm + form-submit preference)
+            // saving a draft is a no-op on an unchanged form, so gate on isDirty too
             {
               key: 'draft',
               label: 'บันทึกร่าง',
@@ -199,7 +195,7 @@ export function PRForm(props: PRFormProps) {
               variant: 'secondary',
               disabled: !isDirty || !isValid || isPending,
             },
-            // submit-for-approval changes state (draft -> pending) so it stays usable on an unchanged valid draft: gate on validity only, not isDirty
+            // submitting changes state even on an unchanged draft, so gate on validity only
             {
               key: 'submit',
               label: 'บันทึก + ส่งอนุมัติ',

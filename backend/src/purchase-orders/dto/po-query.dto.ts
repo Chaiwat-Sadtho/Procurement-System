@@ -37,8 +37,8 @@ export class PoQueryDto {
   @Type(() => Number)
   prId?: number;
 
-  // Query strings arrive as 'true'/'false', so @IsBoolean alone would reject the string —
-  // @Transform coerces it first. เฉพาะ 'true' (หรือ boolean true) → true; ค่าอื่น → false (ไม่กรอง, ไม่มี 400).
+  // Query strings arrive as 'true'/'false', so @Transform coerces before @IsBoolean. Only 'true' filters;
+  // anything else means "no filter" rather than a 400.
   @ApiPropertyOptional({
     description: 'เฉพาะ PO ที่รับของได้ (acknowledged + partially_received)',
   })
@@ -47,8 +47,7 @@ export class PoQueryDto {
   @IsBoolean()
   receivable?: boolean;
 
-  // history-filter twin of `receivable`: PO ที่มี GRN แล้ว = partially_received + completed
-  // (GRN list dropdown ใช้กรองประวัติ — ต่างจาก create picker ที่ใช้ receivable). coerce เดียวกัน.
+  // History twin of `receivable`: POs that already have a GRN, used by the GRN list filter
   @ApiPropertyOptional({
     description: 'เฉพาะ PO ที่มีการรับของแล้ว (partially_received + completed)',
   })

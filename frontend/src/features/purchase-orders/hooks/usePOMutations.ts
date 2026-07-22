@@ -5,10 +5,8 @@ import type { CreatePORequest, UpdatePORequest } from '../types'
 export function usePOMutations() {
   const queryClient = useQueryClient()
 
-  // Budget surface a PO write moves: create/update re-adjust the dept's reserved amount
-  // (delta gate). ['budgets'] = budget list + PO-form preview; ['budget'] = the detail
-  // money-trail page (summary/transactions — a DISTINCT prefix, NOT covered by ['budgets']);
-  // ['dashboard','budgets'] = dashboard reserved/used cards.
+  // A PO write re-adjusts the department's reserved amount, which shows up in three places.
+  // ['budget'] is a distinct prefix from ['budgets'] — the money-trail page, not the list.
   function invalidateBudget() {
     void queryClient.invalidateQueries({ queryKey: ['budgets'] })
     void queryClient.invalidateQueries({ queryKey: ['budget'] })
@@ -24,7 +22,7 @@ export function usePOMutations() {
   function invalidateOne(id: number) {
     void queryClient.invalidateQueries({ queryKey: ['purchase-order', id] })
     void queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
-    // editing a draft PO's items re-adjusts reserved (eligibility unchanged → no picker key)
+    // editing items re-adjusts reserved, but PR eligibility is unchanged → no picker key here
     invalidateBudget()
   }
 

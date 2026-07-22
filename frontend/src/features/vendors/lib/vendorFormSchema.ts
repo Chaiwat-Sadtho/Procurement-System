@@ -4,14 +4,14 @@ import type { Vendor, VendorPayload } from '../types'
 export const vendorFormSchema = z.object({
   name: z.string().trim().min(1, 'กรุณาระบุชื่อผู้ขาย').max(255, 'ไม่เกิน 255 ตัวอักษร'),
   taxId: z.string().trim().max(20, 'ไม่เกิน 20 ตัวอักษร'),
-  // email max(255) mirror DB column email varchar(255)
+  // 255 mirrors the DB column width
   email: z.union([
     z.literal(''),
     z.string().trim().email('อีเมลไม่ถูกต้อง').max(255, 'ไม่เกิน 255 ตัวอักษร'),
   ]),
   phone: z.string().trim().max(20, 'ไม่เกิน 20 ตัวอักษร'),
   address: z.string().trim(),
-  // ห้ามใส่ .default([]) — zod4 + @hookform/resolvers v5: .default ทำให้ INPUT type optional → TS2322 ที่ resolver
+  // No .default([]) here: with zod4 + resolvers v5 it makes the input type optional and breaks the resolver
   categoryIds: z.array(z.number()),
 })
 

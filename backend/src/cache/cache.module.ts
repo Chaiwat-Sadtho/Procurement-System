@@ -4,10 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createKeyv } from '@keyv/redis';
 import { CacheService } from './cache.service';
 
-/**
- * Global cache module: registers a Keyv Redis store and exposes CacheService.
- * REDIS_* are optional (graceful degradation) — defaults let dev run without Redis.
- */
+/** Global cache module: a Keyv Redis store behind CacheService. REDIS_* are optional so dev runs without Redis. */
 @Global()
 @Module({
   imports: [
@@ -19,27 +16,21 @@ import { CacheService } from './cache.service';
         const host = config.get<string>('REDIS_HOST') ?? 'localhost';
         const port = config.get<number>('REDIS_PORT') ?? 6379;
         const password = config.get<string>('REDIS_PASSWORD') ?? '';
-        // Optional logical-DB selector. Unset in dev/prod (Redis db 0); the e2e suite
-        // sets REDIS_DB=1 so its cache state can never collide with a dev/prod cache on
-        // the same Redis instance — the keys are un-prefixed, so without this a dev
-        // server left running on :3000 could race the test's invalidation.
+        // Logical-DB selector: the e2e suite sets REDIS_DB=1 so its un-prefixed keys cannot
+        // collide with a dev server's cache on the same Redis instance.
         const db = config.get<string>('REDIS_DB') ?? '';
         const auth = password ? `:${password}@` : '';
         const dbPath = db ? `/${db}` : '';
         const keyv = createKeyv({
           url: `redis://${auth}${host}:${port}${dbPath}`,
           socket: {
-            // Graceful degradation: with the default (unbounded) reconnect, the very
-            // first command awaits a connection that never comes when Redis is down,
-            // hanging the request. Give up after a couple quick retries so the command
-            // settles (miss) fast and CacheService falls back to the DB; each later
-            // call retries fresh, so the cache recovers once Redis returns.
+            // Bounded reconnect: the default (unbounded) one hangs the first command while
+            // Redis is down. Give up fast → miss → DB fallback; later calls retry and recover.
             reconnectStrategy: (retries) => (retries > 2 ? false : Math.min(retries * 100, 300)),
             connectTimeout: 2000,
           },
         });
-        // A downed Redis still emits 'error' on the Keyv store; without a listener
-        // Node would crash ("Unhandled 'error' event"). Log and keep serving.
+        // A downed Redis emits 'error' on the store; without a listener Node crashes.
         keyv.on('error', (err) => logger.warn(`redis cache unavailable: ${err}`));
         return { stores: [keyv] };
       },

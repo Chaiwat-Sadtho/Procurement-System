@@ -25,7 +25,7 @@ export enum PoStatus {
 }
 
 @Entity('purchase_orders')
-// หนึ่ง PR ที่ approved แปลงเป็น active PO ได้ครั้งเดียว (PO ที่ถูก cancel ไม่นับ) — บังคับระดับ DB กัน race
+// One approved PR yields one active PO (cancelled ones excluded), enforced in the DB to survive races
 @Index('UQ_active_po_per_pr', ['prId'], {
   unique: true,
   where: `status != 'cancelled'`,
